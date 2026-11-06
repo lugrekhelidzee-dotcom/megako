@@ -333,7 +333,12 @@ tbody tr:hover td{background:#fafcfd}
 .brandbox .bn{font-weight:700;color:#fff;font-size:15px;line-height:1.15}
 .brandbox .bs{font-size:11.5px;color:var(--side-mute)}
 .navs{flex:1;overflow-y:auto;margin:0 -4px;padding:0 4px}
-.ng{font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--side-mute);padding:14px 10px 6px;font-weight:600}
+.ng{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;cursor:pointer;font:inherit;font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--side-mute);padding:12px 10px 8px;font-weight:600;text-align:left;border-radius:8px}
+.ng:hover{color:var(--side-ink);background:rgba(255,255,255,.04)}
+.ng span:first-child{flex:1}
+.ng .chev{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;transition:transform .18s;transform:rotate(-90deg)}
+.ng.op .chev{transform:none}
+.ng .nc{text-transform:none;letter-spacing:0}
 .ni{display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;color:var(--side-ink);padding:9px 10px;border-radius:10px;cursor:pointer;font-weight:500;text-align:left;font-size:14px;position:relative}
 .ni:hover{background:rgba(255,255,255,.06);color:#fff}
 .ni.on{background:rgba(18,163,131,.18);color:#fff}
@@ -820,6 +825,9 @@ box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
 pin:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
 up:'<path d="M12 16V4M6 10l6-6 6 6M4 20h16"/>'};
 const svg=k=>`<svg class="i" viewBox="0 0 24 24">${IC[k]||""}</svg>`;
+let NGO=null;try{NGO=JSON.parse(localStorage.getItem("mg.ngo")||"null")}catch(e){}
+function ngOpen(g,items){if(NGO&&g in NGO)return NGO[g];return items.some(x=>x[0]===S.tab)}
+function ngToggle(g,open){NGO=NGO||{};NGO[g]=!open;try{localStorage.setItem("mg.ngo",JSON.stringify(NGO))}catch(e){}}
 function mView(){
   const T=D.tasks,tot=T.length,done=T.filter(t=>t.status==="დადასტურებული").length,rev=T.filter(t=>t.status==="შესრულებული").length,
     open=T.filter(active).length,late=T.filter(isLate).length,today=T.filter(isToday).length,unseen=D.reports.filter(r=>!r.seen).length;
@@ -832,7 +840,7 @@ function mView(){
     ["","ქსელების მართვა (KAM)",[["k-sales","გაყიდვები",0,"",IC.chart],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]]];
   const TT={my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა"};
   let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">JDE vs MEGAKO</div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
-  <nav class="navs">${NAV.map(([_,g,items])=>`<div class="ng">${g}</div>`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}"><svg class="i" viewBox="0 0 24 24">${ic}</svg>${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")).join("")}</nav>
+  <nav class="navs">${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0);return `<button class="ng ${op?"op":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}"><span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}"><svg class="i" viewBox="0 0 24 24">${ic}</svg>${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+`</div>`:"")}).join("")}</nav>
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
   <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button><div class="tt">${TT[S.tab]||"JDE vs MEGAKO"}<small>${todayLine()}</small></div><button class="ib" data-a="refresh" title="განახლება">${svg("refresh")}</button></header>
   ${["today","rev","all"].includes(S.tab)?`<div class="kpis">
@@ -1183,7 +1191,7 @@ const A={
   mgr(){S.askPin=true;render();setTimeout(()=>$("#pin")&&$("#pin").focus(),0)},
   async pinok(){const p=($("#pin")||{}).value||"";try{await run("checkPin",p);S.pin=p;S.who="__m";ls.set("mg.who","__m");ls.set("mg.pin",p);S.tab="my";render()}catch(e){toast(errMsg(e))}},
   tab(v){S.tab=v;S.open=null;S.del=null;S.side=false;render();scrollTo(0,0)},
-  sidetog(){S.side=!S.side;render()},sidex(){S.side=false;render()},
+  sidetog(){S.side=!S.side;render()},ngt(v,el){ngToggle(v,el.getAttribute("aria-expanded")==="true");render()},sidex(){S.side=false;render()},
   atab(v){if(v==="tasks"){S.tnew={};newTasks().forEach(t=>S.tnew[t.id]=1);const mx=myTasks().map(t=>String(t.createdAt||"")).sort().pop()||"";if(mx)ls.set(tSeenKey(),mx)}
     if(v==="files"){S.fnew={};newFiles().forEach(f=>S.fnew[f.id]=1);const mx=myFiles().map(f=>String(f.time||"")).sort().pop()||"";if(mx)ls.set("mg.fseen."+S.who,mx)}
     if(v==="tours")S.noteFor=null;S.atab=v;render();scrollTo(0,0)},
