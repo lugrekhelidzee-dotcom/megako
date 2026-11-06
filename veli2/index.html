@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-<title>ველის გუნდი 2</title>
+<title>JDE vs MEGAKO</title>
 <base target="_blank">
 <meta charset="utf-8">
 <meta name="theme-color" content="#0e7c66"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -416,6 +416,9 @@ body.auth{background:radial-gradient(1200px 600px at 10% -10%,#d7f2ea,transparen
 .klog{font-size:13px;margin-top:10px;display:flex;flex-direction:column;gap:3px}
 label.btn.disabled{opacity:.6;pointer-events:none}
 
+.tmframe{display:block;width:100%;height:calc(100vh - 96px);min-height:520px;border:1px solid var(--line);border-radius:var(--radius);background:#f3f5fa}
+@media(max-width:999px){.tmframe{height:calc(100vh - 80px)}}
+
 </style>
 </head>
 <body>
@@ -555,7 +558,7 @@ function todayLine(){if(!D.today)return"";const[y,m,d]=D.today.split("-").map(Nu
 
 function startView(){return `<div class="authc">`+startView0()+`</div>`}
 function startView0(){
-  let h=`<div class="lgm">MG</div><h1>ველის გუნდი <span class="v2badge">2</span></h1><div class="small muted" style="margin-bottom:14px">მეგაკო · ${todayLine()}</div>`;
+  let h=`<div class="lgm">MG</div><h1>JDE vs MEGAKO</h1><div class="small muted" style="margin-bottom:14px">მეგაკო · ${todayLine()}</div>`;
   if(!D.agents.length)return h+`<div class="empty"><b>აგენტები ჯერ არ არის</b>მენეჯერმა ცხრილის „აგენტები“ ფურცელში უნდა ჩაწეროს სახელი და გვარი.</div>`+pinRow();
   return h+`<h2>ვინ ხარ?</h2><input type="text" id="agq" data-in="agq" value="${esc(S.agq)}" placeholder="მოძებნე შენი სახელი ან გვარი…" autocomplete="off" style="max-width:420px"><div class="who" id="wholist">${whoList()}</div>`+pinRow()}
 function whoList(){const q=norm(S.agq);const l=D.agents.filter(a=>!q||norm(a.name).includes(q));
@@ -823,15 +826,15 @@ function mView(){
   const pct=tot?Math.round((done+rev)/tot*100):0;
   const todayCnt=T.filter(t=>isLate(t)||isToday(t)).length;
   const prNow=D.promos.filter(promoNow).length;
-  const NAV=[["","მთავარი",[["today","დღეს",todayCnt,"",IC.today],["rev","შესამოწმებელი",rev,"",IC.rev],["all","ყველა დავალება",0,"",IC.all]]],
+  const NAV=[["","მთავარი",[["my","ჩემი დავალებები",0,"",IC.all],["today","დღეს",todayCnt,"",IC.today],["rev","შესამოწმებელი",rev,"",IC.rev],["all","ყველა დავალება",0,"",IC.all]]],
     ["","გუნდი",[["team","აგენტები",0,"",IC.team],["rep","ფოტო-რეპორტები",unseen,"",IC.rep],["chat","ჩატი",chatUnread(),"",IC.chat]]],
     ["","ქსელები",[["promo","აქციები",prNow,"pr",IC.promo],["orders","შეკვეთები",0,"",IC.orders],["files","ფაილები",0,"",IC.files]]],
     ["","ქსელების მართვა (KAM)",[["k-sales","გაყიდვები",0,"",IC.chart],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]]];
-  const TT={today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა"};
-  let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">ველის გუნდი <span class="v2badge">2</span></div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
+  const TT={my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა"};
+  let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">JDE vs MEGAKO</div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
   <nav class="navs">${NAV.map(([_,g,items])=>`<div class="ng">${g}</div>`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}"><svg class="i" viewBox="0 0 24 24">${ic}</svg>${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")).join("")}</nav>
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
-  <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button><div class="tt">${TT[S.tab]||"ველის გუნდი"}<small>${todayLine()}</small></div><button class="ib" data-a="refresh" title="განახლება">${svg("refresh")}</button></header>
+  <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button><div class="tt">${TT[S.tab]||"JDE vs MEGAKO"}<small>${todayLine()}</small></div><button class="ib" data-a="refresh" title="განახლება">${svg("refresh")}</button></header>
   ${["today","rev","all"].includes(S.tab)?`<div class="kpis">
     <div class="kpi"><div class="muted">სულ დავალება</div><div class="v">${tot}</div></div>
     <div class="kpi"><div class="muted">შესასრულებელი</div><div class="v">${open}</div></div>
@@ -841,6 +844,7 @@ function mView(){
     <div class="kpi ${today?"warn":""}"><div class="muted">დღეს იწურება</div><div class="v">${today}</div></div>
     <div class="kpi"><div class="muted">შესრულება</div><div class="v">${pct}%</div><div class="progress"><div style="width:${pct}%"></div></div></div>
   </div>`:""}`;
+  if(S.tab==="my")return h+`<iframe class="tmframe" src="../tasks/" title="ჩემი დავალებები"></iframe>`;
   if(String(S.tab).startsWith("k-"))return h+kamView();
   if(S.tab==="team")return h+teamView();
   if(S.tab==="rep")return h+repView();
@@ -1177,7 +1181,7 @@ const A={
     catch(e){S.loginBusy=false;render();toast(errMsg(e));const i=$("#lp1");if(i){i.value="";i.focus()}}},
   enter(v){S.tabInit=0;S.tday=null;S.tnew={};S.fnew={};S.noteFor=null;S.who=v;ls.set("mg.who",v);S.af={task:null,store:"",note:"",photos:[]};S.ord={date:"",rows:null,loading:false,q:"",open:{},netOpen:{},catOpen:{}};S.atab=startTab();render()},
   mgr(){S.askPin=true;render();setTimeout(()=>$("#pin")&&$("#pin").focus(),0)},
-  async pinok(){const p=($("#pin")||{}).value||"";try{await run("checkPin",p);S.pin=p;S.who="__m";ls.set("mg.who","__m");ls.set("mg.pin",p);S.tab="today";render()}catch(e){toast(errMsg(e))}},
+  async pinok(){const p=($("#pin")||{}).value||"";try{await run("checkPin",p);S.pin=p;S.who="__m";ls.set("mg.who","__m");ls.set("mg.pin",p);S.tab="my";render()}catch(e){toast(errMsg(e))}},
   tab(v){S.tab=v;S.open=null;S.del=null;S.side=false;render();scrollTo(0,0)},
   sidetog(){S.side=!S.side;render()},sidex(){S.side=false;render()},
   atab(v){if(v==="tasks"){S.tnew={};newTasks().forEach(t=>S.tnew[t.id]=1);const mx=myTasks().map(t=>String(t.createdAt||"")).sort().pop()||"";if(mx)ls.set(tSeenKey(),mx)}

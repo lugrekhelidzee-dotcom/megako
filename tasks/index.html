@@ -1,0 +1,1621 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>დავალებები · JDE vs MEGAKO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one working column — date + KPI strip, sticky view tabs, quick-add, then the active view. Ledger-like, navy ink on cool paper. */
+:root{
+  --bg:#F3F5FA; --surface:#FFFFFF; --sunk:#E9EDF5; --ink:#0F1B3D; --muted:#5A6688; --line:#D9DFEB;
+  --accent:#1E3A8A; --accent-2:#2F5BD3; --on-accent:#FFFFFF;
+  --red:#C3302A; --red-bg:#FCE9E7; --amber:#A76400; --amber-bg:#FDF1DC; --green:#0E7F57; --green-bg:#E2F5EC;
+  --blue:#2459D6; --blue-bg:#E7EEFD; --grey:#717C96; --grey-bg:#EDEFF4;
+  --shadow:0 1px 2px rgba(15,27,61,.06),0 4px 14px rgba(15,27,61,.06);
+  --f-display:"Noto Serif Georgian","Sylfaen",Georgia,serif;
+  --f-body:"Noto Sans Georgian","Segoe UI","Sylfaen",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r:10px; --wa:#1E9E52; --vb:#6E58E8;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1020; --surface:#141B30; --sunk:#1B2440; --ink:#E5EAF7; --muted:#97A3C2; --line:#28334F;
+  --accent:#9DB2FF; --accent-2:#B7C7FF; --on-accent:#0B1020;
+  --red:#FF8A80; --red-bg:#3A1B1E; --amber:#F2B34C; --amber-bg:#352814; --green:#5FD3A2; --green-bg:#12302A;
+  --blue:#8DB1FF; --blue-bg:#18264A; --grey:#9AA3BA; --grey-bg:#222A40;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --surface:#141B30; --sunk:#1B2440; --ink:#E5EAF7; --muted:#97A3C2; --line:#28334F;
+  --accent:#9DB2FF; --accent-2:#B7C7FF; --on-accent:#0B1020;
+  --red:#FF8A80; --red-bg:#3A1B1E; --amber:#F2B34C; --amber-bg:#352814; --green:#5FD3A2; --green-bg:#12302A;
+  --blue:#8DB1FF; --blue-bg:#18264A; --grey:#9AA3BA; --grey-bg:#222A40;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1180px;margin:0 auto}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;padding-top:22px}
+.top h1{font-family:var(--f-display);font-size:26px;line-height:1.2;margin:0;letter-spacing:.2px;text-wrap:balance}
+.date{color:var(--muted);font-size:13px}
+.date b{color:var(--ink);font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:16px}
+.kpi{background:var(--surface);padding:10px 14px;display:flex;flex-direction:column;gap:2px;border:0;text-align:left}
+.kpi span{font-size:11.5px;color:var(--muted);letter-spacing:.2px;overflow-wrap:anywhere;line-height:1.3}
+@media (max-width:520px){.kpi{padding:8px 10px}.kpi span{font-size:10.5px}.kpi strong{font-size:19px}}
+.kpi strong{font-family:var(--f-num);font-size:22px;font-weight:500;line-height:1.2}
+.kpi.click:hover{background:var(--sunk)}
+.kpi .bar{height:4px;border-radius:2px;background:var(--sunk);overflow:hidden;margin-top:4px}
+.kpi .bar i{display:block;height:100%;background:var(--green)}
+@media (max-width:860px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi.wide{grid-column:span 2}}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin-top:14px;border-bottom:1px solid var(--line);display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:12px 12px 10px;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .c{font-family:var(--f-num);font-size:11px;background:var(--sunk);color:var(--muted);padding:0 6px;border-radius:9px}
+.tab .c.hot{background:var(--red-bg);color:var(--red)}
+
+/* quick add */
+.qa{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-wrap:wrap;gap:8px;padding:8px;align-items:center}
+.qa input[type=text]{flex:1 1 260px;min-width:0;border:0;background:none;padding:8px 8px;font-size:15px}
+.qa input[type=text]:focus{outline:none}
+.qa .opts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sel,.inp{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:13px;max-width:100%}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:500}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chipbtn{border:1px solid var(--line);background:none;border-radius:20px;padding:4px 10px;font-size:12.5px;color:var(--muted)}
+.chipbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+main{margin-top:20px}
+.sec{margin-bottom:26px}
+.sec h2{font-family:var(--f-display);font-size:17px;margin:0 0 10px;display:flex;align-items:baseline;gap:8px}
+.sec h2 .n{font-family:var(--f-num);font-size:12px;color:var(--muted);font-weight:500}
+.sec h2.red{color:var(--red)}
+.list{display:flex;flex-direction:column;gap:6px}
+.empty{color:var(--muted);font-size:13px;padding:14px 16px;border:1px dashed var(--line);border-radius:var(--r)}
+
+/* task card */
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:flex;gap:10px;padding:10px 12px 10px 14px;align-items:flex-start}
+.card::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--pri,var(--line))}
+.card.p-high{--pri:var(--red)} .card.p-med{--pri:var(--amber)} .card.p-low{--pri:var(--green)}
+.card.is-done{opacity:.62}
+.card.is-done .ttl{text-decoration:line-through}
+.card.drag{opacity:.4}
+.chk{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:var(--surface);margin-top:0;display:grid;place-items:center;padding:0}
+.chk:not(.on) svg{opacity:.35}
+.chk:not(.on) svg{stroke:var(--muted)}
+@media (max-width:520px){.chk{width:28px;height:28px}.card{flex-wrap:wrap}.card .acts{width:100%;justify-content:flex-end;padding-left:38px}}
+.chk:hover{border-color:var(--green)}
+.chk.on{background:var(--green);border-color:var(--green)}
+.chk svg{width:12px;height:12px;stroke:var(--surface);stroke-width:3;fill:none;opacity:0}
+.chk.on svg,.chk:hover svg{opacity:1}
+.chk:hover:not(.on) svg{stroke:var(--green)}
+.body{flex:1;min-width:0;cursor:pointer}
+.ttl{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-top:4px;font-size:12px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:20px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.t-obj{background:var(--sunk);color:var(--ink)}
+.s-overdue{background:var(--red-bg);color:var(--red)} .s-today{background:var(--amber-bg);color:var(--amber)}
+.s-soon{background:var(--amber-bg);color:var(--amber)} .s-ok{background:var(--green-bg);color:var(--green)}
+.s-done{background:var(--green-bg);color:var(--green)} .s-postponed{background:var(--grey-bg);color:var(--grey)}
+.s-nodue{background:var(--grey-bg);color:var(--grey)}
+.st-todo{background:var(--amber-bg);color:var(--amber)} .st-doing{background:var(--blue-bg);color:var(--blue)}
+.st-done{background:var(--green-bg);color:var(--green)} .st-postponed{background:var(--grey-bg);color:var(--grey)}
+.note{font-size:12.5px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+.pbar{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden;width:90px;display:inline-block;vertical-align:middle}
+.pbar i{display:block;height:100%;background:var(--accent-2)}
+.recur{display:inline-flex;align-items:center;gap:3px}
+.recur svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+.acts{display:flex;gap:4px;flex:none}
+.mini{border:1px solid var(--line);background:none;border-radius:6px;font-size:11.5px;padding:3px 8px;color:var(--muted)}
+.mini:hover{color:var(--ink);background:var(--sunk)}
+
+/* board + week */
+.cols{display:grid;gap:12px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.col{background:var(--sunk);border-radius:var(--r);padding:10px;min-height:120px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.col.over{outline:2px dashed var(--accent-2);outline-offset:-2px}
+.col h3{margin:0 0 4px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.col .card{padding:8px 10px 8px 12px}
+.col .acts{display:none}
+.week{display:grid;gap:10px;grid-template-columns:repeat(7,minmax(0,1fr))}
+.day h3 .d{font-family:var(--f-num);font-weight:500;color:var(--muted);font-size:12px}
+.day.today{background:var(--blue-bg)}
+.day.past h3{color:var(--red)}
+@media (max-width:980px){.week{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.cols,.week{grid-template-columns:minmax(0,1fr)}}
+
+/* table */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.filters .inp{flex:1 1 200px;min-width:0}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:880px;font-size:13px}
+th{text-align:left;font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.2px;background:var(--sunk);padding:9px 10px;white-space:nowrap;cursor:pointer;user-select:none}
+th.sorted::after{content:" ↓";color:var(--accent-2)}
+td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}
+tr.row:hover td{background:var(--sunk)}
+tr.row{cursor:pointer}
+tr.r-overdue td:first-child{box-shadow:inset 3px 0 var(--red)}
+tr.r-today td:first-child,tr.r-soon td:first-child{box-shadow:inset 3px 0 var(--amber)}
+tr.r-done td{color:var(--muted)}
+tr.r-done .tname{text-decoration:line-through}
+.tname{font-weight:600}
+td.num{white-space:nowrap}
+
+/* analytics */
+.agrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:820px){.agrid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.panel h3{margin:0 0 12px;font-family:var(--f-display);font-size:15px}
+.brow{display:grid;grid-template-columns:120px minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:12.5px;margin-bottom:7px}
+.brow .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stack{display:flex;height:14px;border-radius:3px;overflow:hidden;background:var(--sunk)}
+.stack i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:baseline}
+.c-todo{background:var(--amber)} .c-doing{background:var(--blue)} .c-done{background:var(--green)} .c-postponed{background:var(--grey)}
+.od{color:var(--red);font-weight:600}
+svg.spark text{fill:var(--muted);font-family:var(--f-num);font-size:10px}
+
+/* settings */
+.lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:700px){.lists{grid-template-columns:minmax(0,1fr)}}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--sunk);border-radius:20px;padding:3px 4px 3px 10px;font-size:13px}
+.pill button{border:0;background:none;color:var(--muted);width:20px;height:20px;border-radius:50%;padding:0;line-height:1}
+.pill button:hover{background:var(--red-bg);color:var(--red)}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.addrow{display:flex;gap:6px}
+.addrow .inp{flex:1;min-width:0}
+.hint{font-size:12.5px;color:var(--muted)}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(8,12,28,.45);z-index:20;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;max-height:100%;overflow:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h2{margin:0 0 14px;font-family:var(--f-display);font-size:18px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form .full{grid-column:1/-1}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+.form .inp,.form .sel{font-size:14px;padding:8px 10px;width:100%;color:var(--ink)}
+.form textarea{resize:vertical;min-height:64px}
+.mfoot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-top:18px}
+.mfoot .r{display:flex;gap:8px}
+@media (max-width:520px){.form{grid-template-columns:minmax(0,1fr)}}
+.rng{display:flex;gap:10px;align-items:center}
+.rng input{flex:1}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 14px;display:flex;gap:14px;align-items:center;z-index:30;font-size:13.5px;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.toast button{background:none;border:0;color:var(--bg);font-weight:700;text-decoration:underline;padding:0}
+.contacts{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.crow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) 28px;gap:8px;align-items:center;padding:8px 10px;background:var(--sunk);border-radius:8px;font-size:13px}
+.crow .ph{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.crow button{border:0;background:none;color:var(--muted);border-radius:50%;width:26px;height:26px;padding:0}
+.crow button:hover{background:var(--red-bg);color:var(--red)}
+.cadd{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px}
+.cadd .inp,.cadd .sel{min-width:0;width:100%}
+@media (max-width:620px){.crow,.cadd{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.crow button{justify-self:end}}
+.sendbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.sendbtns a,.sendbtns button{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:11px 10px;font-weight:600;font-size:14px;text-decoration:none;border:1px solid transparent}
+.b-wa{background:var(--wa);color:#fff}
+.b-vb{background:var(--vb);color:#fff}
+.b-cp{background:var(--surface);border-color:var(--line)!important;color:var(--ink)}
+.sendbtns a:hover{filter:brightness(1.07)}
+.sendbtns a[aria-disabled="true"]{opacity:.45;pointer-events:none}
+@media (max-width:460px){.sendbtns{grid-template-columns:minmax(0,1fr)}}
+.t-who{background:var(--blue-bg);color:var(--blue)}
+.daybar{display:flex;justify-content:flex-end;margin:-6px 0 14px}
+.parse{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding:0 8px 4px;font-size:12px;color:var(--muted);align-items:center}
+.parse .tag{background:var(--blue-bg);color:var(--blue)}
+.subs{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.subs li{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.subs li.d span{text-decoration:line-through;color:var(--muted)}
+.sbox{flex:none;width:16px;height:16px;border:1.5px solid var(--muted);border-radius:4px;background:none;padding:0;margin-top:2px;display:grid;place-items:center}
+.sbox.on{background:var(--accent-2);border-color:var(--accent-2)}
+.sbox svg{width:10px;height:10px;stroke:var(--surface);stroke-width:3;fill:none;opacity:0}
+.sbox.on svg{opacity:1}
+.subs-ed{display:flex;flex-direction:column;gap:6px}
+.subs-ed .lbl{font-size:12px;color:var(--muted);font-weight:500}
+.srow{display:flex;gap:8px;align-items:center}
+.srow .inp{flex:1;min-width:0}
+.srow .x{border:0;background:none;color:var(--muted);width:26px;height:26px;border-radius:50%;padding:0}
+.srow .x:hover{background:var(--red-bg);color:var(--red)}
+.lastlog{font-size:12.5px;color:var(--ink);margin-top:5px;padding:4px 8px;background:var(--sunk);border-radius:6px;overflow-wrap:anywhere}
+.lastlog .when{color:var(--muted);font-family:var(--f-num);font-size:11px;margin-left:6px;white-space:nowrap}
+.col .lastlog{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.oc-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:16px}
+.oc-btns .btn{padding:11px 8px;font-size:13.5px}
+.oc-btns .btn.done{background:var(--green);border-color:var(--green);color:var(--surface)}
+.oc-btns .btn.move.primary{background:var(--blue);border-color:var(--blue);color:var(--surface)}
+.oc-btns .btn:disabled{opacity:.45;cursor:not-allowed}
+@media (max-width:460px){.oc-btns{grid-template-columns:minmax(0,1fr)}}
+.oc-move{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.loglist{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto}
+.loglist div{font-size:12.5px;padding:6px 8px;background:var(--sunk);border-radius:6px;overflow-wrap:anywhere}
+.loglist b{font-weight:600;font-size:11px;margin-right:6px}
+.k-done{color:var(--green)} .k-moved{color:var(--blue)} .k-note{color:var(--muted)}
+.files{display:flex;flex-wrap:wrap;gap:8px}
+.fthumb{position:relative;width:76px;height:76px;border-radius:8px;overflow:hidden;background:var(--sunk);border:1px solid var(--line);flex:none}
+.fthumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.fthumb .x{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(10,14,30,.65);color:#fff;padding:0;line-height:1;font-size:14px}
+.fdoc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;height:100%;font-size:10.5px;color:var(--ink);text-decoration:none;padding:4px;text-align:center;overflow-wrap:anywhere;line-height:1.2}
+.fdoc b{font-family:var(--f-num);font-size:11px;color:var(--accent-2)}
+.fadd{width:76px;height:76px;border-radius:8px;border:1.5px dashed var(--line);background:none;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:none}
+.fadd:hover{border-color:var(--accent-2);color:var(--accent-2)}
+.fadd span{font-size:22px;line-height:1}
+.cardfiles{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.cardfiles .fthumb{width:54px;height:54px}
+.lightbox{position:fixed;inset:0;z-index:40;background:rgba(5,8,18,.88);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lightbox img{max-width:100%;max-height:calc(100vh - 90px);border-radius:8px}
+.lightbox .bar{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;gap:8px}
+.lightbox .bar a,.lightbox .bar button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;padding:8px 12px;font-size:13px;text-decoration:none}
+.docchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 9px;font-size:12px;color:var(--ink);max-width:100%}
+.docchip b{font-family:var(--f-num);font-size:10.5px;color:var(--green)}
+.docchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+.docchip:hover{border-color:var(--accent-2)}
+button.fdoc{border:0;background:none;cursor:pointer}
+.sheetview{background:var(--surface);color:var(--ink);border-radius:12px;width:100%;max-width:1000px;max-height:calc(100vh - 80px);display:flex;flex-direction:column;overflow:hidden}
+.sheetview header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.sheetview header h3{margin:0;font-size:14px;overflow-wrap:anywhere}
+.sheettabs{display:flex;gap:4px;overflow-x:auto;padding:8px 14px 0}
+.sheetbody{overflow:auto;padding:0 0 8px}
+.sheetbody table{min-width:0;font-size:12px;border-collapse:collapse}
+.sheetbody td,.sheetbody th{border:1px solid var(--line);padding:4px 8px;white-space:nowrap;cursor:default}
+.sheetbody th{position:sticky;top:0;background:var(--sunk);font-family:var(--f-num);font-weight:500}
+.sheetbody td.n{text-align:right;font-family:var(--f-num)}
+.alarm{position:fixed;left:50%;transform:translateX(-50%);top:calc(14px + env(safe-area-inset-top,0px));z-index:50;width:min(460px,calc(100% - 32px));background:var(--surface);border:2px solid var(--amber);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:16px}
+.alarm h3{margin:0 0 4px;font-size:13px;color:var(--amber);letter-spacing:.3px}
+.alarm .t{font-weight:700;font-size:17px;overflow-wrap:anywhere}
+.alarm .m{font-size:12.5px;color:var(--muted);margin-top:2px}
+.alarm .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+@media (prefers-reduced-motion:no-preference){.alarm{animation:ring .9s ease-in-out 3}}
+@keyframes ring{0%,100%{transform:translateX(-50%) rotate(0)}20%{transform:translateX(-50%) rotate(-1.5deg)}40%{transform:translateX(-50%) rotate(1.5deg)}60%{transform:translateX(-50%) rotate(-1deg)}80%{transform:translateX(-50%) rotate(1deg)}}
+a.mini{text-decoration:none;display:inline-flex;align-items:center}
+.bell{border:0;background:none;color:var(--muted);font-size:12.5px;padding:2px 6px;border-radius:6px}
+.bell:hover{background:var(--sunk)}
+.upl{font-size:12px;color:var(--muted)}
+.banner{margin-top:14px;padding:10px 14px;border-radius:var(--r);background:var(--amber-bg);color:var(--amber);font-size:13px}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.card:hover{border-color:var(--muted)}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>დავალებების მენეჯერი</h1>
+      <div class="date" id="today"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><div class="date" id="sync">იტვირთება…</div><button class="bell" id="bell" type="button"></button></div>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <section class="kpis" id="kpis" aria-label="მაჩვენებლები"></section>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <form class="qa" id="qa" autocomplete="off">
+    <input type="text" id="qa-title" placeholder="მაგ: ხვალ 11:00 ელენეს დავურეკო @მაგნიტი !!" aria-label="ახალი დავალების დასახელება">
+    <div class="opts">
+      <select class="sel" id="qa-obj" aria-label="ობიექტი"></select>
+      <select class="sel" id="qa-cat" aria-label="კატეგორია"></select>
+      <select class="sel" id="qa-pri" aria-label="პრიორიტეტი">
+        <option value="high">მაღალი</option><option value="med" selected>საშუალო</option><option value="low">დაბალი</option>
+      </select>
+      <div class="chips" id="qa-due" role="group" aria-label="ვადა"></div>
+      <button type="button" class="btn ghost" id="qa-more">დეტალურად</button>
+      <button type="submit" class="btn primary">დამატება</button>
+    </div>
+    <div class="parse" id="qa-parse" hidden></div>
+  </form>
+
+  <main id="view"></main>
+</div>
+<div id="modal-root"></div>
+<input type="file" id="file-input" multiple accept="image/*,application/pdf,video/mp4,video/webm,.csv,.txt,.md,.json,.heic,.heif,.xlsx,.docx,.pptx,.zip,.xls,.doc" hidden>
+<div id="toast-root"></div>
+
+<script>
+/* JDE vs MEGAKO — დავალებების მენეჯერის მონაცემები Supabase-ში (Claude-ის არტიფაქტის საცავის ნაცვლად) */
+(function () {
+  const API = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/kam";
+  const getPin = () => { try { return localStorage.getItem("mg.pin"); } catch (e) { return null; } };
+  const setPin = p => { try { localStorage.setItem("mg.pin", p); } catch (e) {} };
+  async function call(op, a) {
+    let r; try { r = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ args: [getPin(), op, a || {}] }) }); }
+    catch (e) { const x = new Error("network"); x.code = "unavailable"; throw x; }
+    const j = await r.json().catch(() => null);
+    if (!j || !j.ok) { const x = new Error((j && j.error) || "error"); x.code = /PIN/.test(x.message) ? "permission_denied" : "unavailable"; throw x; }
+    return j.r;
+  }
+  let cache = null; const listeners = [];
+  async function poll() {
+    try { const rows = await call("docs"); cache = new Map(rows.map(r => [r.path, r.data])); listeners.forEach(l => l.fire()); return true; }
+    catch (e) { listeners.forEach(l => l.err && l.err(e)); throw e; }
+  }
+  function docRef(path) {
+    return {
+      set: async b => { await call("docSet", { path, data: b }); if (cache) cache.set(path, b); },
+      delete: async () => { await call("docDel", { path }); if (cache) cache.delete(path); },
+      onSnapshot(cb, err) { const l = { fire: () => { const d = cache.get(path); cb({ exists: d !== undefined, data: () => d }); }, err }; listeners.push(l); if (cache) l.fire(); return () => {}; },
+    };
+  }
+  function coll(name) {
+    const o = {
+      doc: id => docRef(name + "/" + id),
+      limit: () => o,
+      onSnapshot(cb, err) {
+        const l = { fire: () => { const docs = [...cache.entries()].filter(([k]) => k.startsWith(name + "/") && k.indexOf("/", name.length + 1) < 0).map(([k, v]) => ({ id: k.slice(name.length + 1), data: () => v })); cb({ docs }); }, err };
+        listeners.push(l); if (cache) l.fire(); return () => {};
+      },
+    };
+    return o;
+  }
+  const db = { doc: docRef, collection: coll };
+  const toB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(blob); });
+  const assets = {
+    upload: async (blob, o) => call("fileUp", { b64: await toB64(blob), type: (o && o.type) || blob.type || "" }),
+    delete: id => call("fileDel", { id }),
+    list: async () => ({ usage: { bytes: 0, maxBytes: 1024 * 1048576, files: 0, maxFiles: 10000 } }),
+  };
+  const downloads = {
+    save: async ({ filename, data }) => { const u = URL.createObjectURL(new Blob([data])); const a = document.createElement("a"); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); },
+  };
+  let ready = null;
+  async function connect() {
+    for (let i = 0; i < 3; i++) {
+      if (!getPin()) { const p = window.prompt("შეიყვანე მენეჯერის PIN"); if (!p) return false; setPin(p.trim()); }
+      try { await poll(); return true; }
+      catch (e) { if (e.code === "permission_denied") { try { localStorage.removeItem("mg.pin"); } catch (x) {} continue; } return false; }
+    }
+    return false;
+  }
+  window.claude = { use: async name => {
+    if (name === "db") { ready = ready || connect(); return (await ready) ? db : null; }
+    if (name === "assets") return assets;
+    if (name === "downloads") return downloads;
+    return null;
+  } };
+  setInterval(() => { if (cache && document.visibilityState === "visible") poll().catch(() => {}); }, 20000);
+  document.addEventListener("visibilitychange", () => { if (cache && document.visibilityState === "visible") poll().catch(() => {}); });
+})();
+
+</script>
+<script>
+(() => {
+"use strict";
+/* ---------- constants ---------- */
+const STATUS = { todo:"შესასრულებელი", doing:"მიმდინარე", done:"შესრულებული", postponed:"გადავადებული" };
+const STATUS_ORDER = ["todo","doing","done","postponed"];
+const PRI = { high:"მაღალი", med:"საშუალო", low:"დაბალი" };
+const PRI_RANK = { high:0, med:1, low:2 };
+const RECUR = { "":"არ მეორდება", daily:"ყოველდღე", weekdays:"სამუშაო დღეებში (ორშ–პარ)", weekly:"ყოველ კვირა", monthly:"ყოველ თვე" };
+const MONTHS = ["იან","თებ","მარ","აპრ","მაი","ივნ","ივლ","აგვ","სექ","ოქტ","ნოე","დეკ"];
+const MONTHS_FULL = ["იანვარი","თებერვალი","მარტი","აპრილი","მაისი","ივნისი","ივლისი","აგვისტო","სექტემბერი","ოქტომბერი","ნოემბერი","დეკემბერი"];
+const WD = ["კვირა","ორშაბათი","სამშაბათი","ოთხშაბათი","ხუთშაბათი","პარასკევი","შაბათი"];
+const WD_S = ["კვი","ორშ","სამ","ოთხ","ხუთ","პარ","შაბ"];
+const DEFAULT_LISTS = {
+  categories:["სამუშაო","პირადი","ფინანსები","განათლება","ჯანმრთელობა","ოჯახი","სხვა"],
+  objects:["გუნდი","მეგაკო","ორი ნაბიჯი","მაგნიტი","კალათა","ჯიბე","ექსპრეს ქსელი","ზღაპარი","მადაგონი","სხვა"]
+};
+const VIEWS = [["today","დღეს"],["week","კვირა"],["board","დაფა"],["all","ყველა"],["done","შესრულებული"],["stats","ანალიტიკა"],["settings","პარამეტრები"]];
+
+/* ---------- state ---------- */
+const S = {
+  tasks: new Map(), lists: {...DEFAULT_LISTS}, contacts: [], assets: null, loaded:false, db:null, downloads:null,
+  view: "today", quickDue: 0,
+  f: { q:"", status:"active", obj:"", cat:"", pri:"", sort:"due" },
+  d: { q:"", obj:"", period:"30" },
+};
+try { const v = localStorage.getItem("tm.view"); if (VIEWS.some(x=>x[0]===v)) S.view = v; } catch(e){}
+try { const f = JSON.parse(localStorage.getItem("tm.f")||"null"); if (f) Object.assign(S.f, f, {q:""}); } catch(e){}
+
+/* ---------- dates ---------- */
+const pad = n => String(n).padStart(2,"0");
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const ms = s => { const [y,m,d] = s.split("-").map(Number); return Date.UTC(y,m-1,d); };
+const iso = t => new Date(t).toISOString().slice(0,10);
+const addDays = (s,n) => iso(ms(s) + n*864e5);
+const diff = s => Math.round((ms(s) - ms(todayStr()))/864e5);
+const wday = s => new Date(ms(s)).getUTCDay();
+const fmt = s => s ? `${s.slice(8,10)}.${s.slice(5,7)}.${s.slice(0,4)}` : "—";
+const fmtShort = s => `${+s.slice(8,10)} ${MONTHS[+s.slice(5,7)-1]}`;
+function stepRecur(s, r){
+  if (r==="daily") return addDays(s,1);
+  if (r==="weekly") return addDays(s,7);
+  if (r==="weekdays"){ let n = addDays(s,1); while ([0,6].includes(wday(n))) n = addDays(n,1); return n; }
+  if (r==="monthly"){ const [y,m,d] = s.split("-").map(Number); const ny = m===12?y+1:y, nm = m===12?1:m+1;
+    const last = new Date(Date.UTC(ny,nm,0)).getUTCDate(); return `${ny}-${pad(nm)}-${pad(Math.min(d,last))}`; }
+  return null;
+}
+function nextOccurrence(t){
+  const today = todayStr(); let n = stepRecur(t.due || today, t.recur);
+  while (n && n < today) n = stepRecur(n, t.recur);
+  return n;
+}
+
+/* ---------- derived ---------- */
+const nowHM = () => { const n = new Date(); return `${pad(n.getHours())}:${pad(n.getMinutes())}`; };
+function dueState(t){
+  if (t.status==="done") return "done";
+  if (t.status==="postponed") return "postponed";
+  if (!t.due) return "nodue";
+  const d = diff(t.due), late = d===0 && t.time && t.time < nowHM();
+  return d<0 || late ? "overdue" : d===0 ? "today" : d<=2 ? "soon" : "ok";
+}
+function dueLabel(t){
+  const st = dueState(t), d = t.due ? diff(t.due) : 0;
+  switch(st){
+    case "done": return "შესრულებულია";
+    case "postponed": return "გადავადებულია";
+    case "nodue": return "ვადის გარეშე";
+    case "overdue": return d<0 ? `ვადაგადაცილებულია · ${-d} დღე` : `ვადა გავიდა ${t.time}-ზე`;
+    case "today": return t.time ? `დღეს ${t.time}` : "დღეს იწურება";
+    case "soon": return (d===1 ? "ხვალ" : `${d} დღეში`) + (t.time ? ` ${t.time}` : "");
+    default: return `${fmtShort(t.due)}${t.time?` ${t.time}`:""} · ${d} დღე`;
+  }
+}
+const all = () => [...S.tasks.values()];
+const active = t => t.status!=="done";
+const dueKey = t => (t.due||"9999") + (t.time||"99:99");
+function cmpPriDue(a,b){
+  return (PRI_RANK[a.pri]??1)-(PRI_RANK[b.pri]??1) || dueKey(a).localeCompare(dueKey(b)) || (a.created||0)-(b.created||0);
+}
+function cmpDuePri(a,b){
+  return dueKey(a).localeCompare(dueKey(b)) || (PRI_RANK[a.pri]??1)-(PRI_RANK[b.pri]??1);
+}
+const subsOf = t => Array.isArray(t.subs) ? t.subs : [];
+const subsRatio = t => { const L = subsOf(t); return L.length ? L.filter(x=>x.d).length / L.length : null; };
+const progressOf = t => t.status==="done" ? 1 : (subsRatio(t) ?? (+t.progress||0));
+function stats(list){
+  const s = { total:list.length, todo:0, doing:0, done:0, postponed:0, overdue:0, today:0, soon:0, prog:0 };
+  for (const t of list){ s[t.status] = (s[t.status]||0)+1; const d = dueState(t); if (d==="overdue") s.overdue++; if (d==="today") s.today++; if (d==="soon") s.soon++; s.prog += progressOf(t); }
+  s.prog = s.total ? s.prog/s.total : 0; s.rate = s.total ? s.done/s.total : 0; return s;
+}
+
+/* ---------- helpers ---------- */
+const $ = (sel, root=document) => root.querySelector(sel);
+const esc = s => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const opt = (v, label, sel) => `<option value="${esc(v)}"${sel?" selected":""}>${esc(label)}</option>`;
+const ICON_CHECK = `<svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3.5"/></svg>`;
+const ICON_RECUR = `<svg viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 0 1 9.6-3.7M13.5 8a5.5 5.5 0 0 1-9.6 3.7"/><path d="M12.5 1.5v3h-3M3.5 14.5v-3h3"/></svg>`;
+const newId = () => "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+/* ---------- smart quick-add parser ---------- */
+const WD_STEMS = [["ორშაბათ",1],["სამშაბათ",2],["ოთხშაბათ",3],["ხუთშაბათ",4],["პარასკევ",5],["შაბათ",6]];
+function parseQuick(raw){
+  let s = " " + raw + " ";
+  const r = {}, today = todayStr();
+  const cut = (re, fn) => { const m = s.match(re); if (!m) return false; if (fn(m) === false) return false; s = s.slice(0, m.index) + " " + s.slice(m.index + m[0].length); return true; };
+  const B = "(?=[\\s,.;!?]|$)";
+  const pick = (sym, list, key) => {
+    const low = s.toLowerCase();
+    for (const o of [...list].sort((a,b)=>b.length-a.length)){
+      const i = low.indexOf(sym + o.toLowerCase());
+      if (i >= 0){ r[key] = o; s = s.slice(0,i) + " " + s.slice(i + 1 + o.length); return; }
+    }
+    cut(new RegExp("\\s\\" + sym + "(\\S+)"), m => { const tok = m[1].toLowerCase(); const o = list.find(x => x.toLowerCase().startsWith(tok)); if (!o) return false; r[key] = o; });
+  };
+  pick("@", S.lists.objects, "obj");
+  pick("#", S.lists.categories, "cat");
+  if (!cut(new RegExp("\\s(!!+|!მაღალი)" + B), () => { r.pri = "high"; }))
+    if (!cut(new RegExp("\\s!დაბალი" + B), () => { r.pri = "low"; }))
+      cut(new RegExp("\\s!საშუალო" + B), () => { r.pri = "med"; });
+  cut(new RegExp("\\s(ყოველ ?დღე)" + B), () => { r.recur = "daily"; }) ||
+  cut(new RegExp("\\sსამუშაო დღეებში" + B), () => { r.recur = "weekdays"; }) ||
+  cut(new RegExp("\\s(ყოველ ?კვირა|ყოველკვირეულად)" + B), () => { r.recur = "weekly"; }) ||
+  cut(new RegExp("\\s(ყოველ ?თვე|ყოველთვიურად)" + B), () => { r.recur = "monthly"; });
+  cut(/\s([01]?\d|2[0-3]):([0-5]\d)(?:-?(?:ზე|სთ|საათზე))?(?=[\s,.;!?-]|$)/, m => { r.time = `${pad(+m[1])}:${m[2]}`; }) ||
+  cut(new RegExp("\\s([01]?\\d|2[0-3])(?: საათ(?:ზე|ისთვის)?|-ზე| ?-?სთ(?:-?ზე)?)" + B), m => { r.time = `${pad(+m[1])}:00`; });
+  cut(/\s(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?(?:-?(?:ზე|მდე|ში))?(?=[\s,;!?-]|$)/, m => {
+    const d = +m[1], mo = +m[2]; if (d<1 || d>31 || mo<1 || mo>12) return false;
+    let y = m[3] ? +m[3] : +today.slice(0,4); if (y < 100) y += 2000;
+    r.due = `${y}-${pad(mo)}-${pad(d)}`;
+  }) ||
+  cut(new RegExp("\\sდღეს" + B), () => { r.due = today; }) ||
+  cut(new RegExp("\\sხვალ(ე|ამდე|ისთვის)?" + B), () => { r.due = addDays(today,1); }) ||
+  cut(new RegExp("\\sზეგ(ამდე)?" + B), () => { r.due = addDays(today,2); }) ||
+  cut(new RegExp("\\s(\\d+) დღეში" + B), m => { r.due = addDays(today, +m[1]); }) ||
+  cut(new RegExp("\\s(ერთ )?კვირაში" + B), () => { r.due = addDays(today,7); }) ||
+  cut(new RegExp("\\s(" + WD_STEMS.map(x=>x[0]).join("|") + ")(ს|ი|ამდე)?" + B), m => {
+    const target = WD_STEMS.find(x => x[0]===m[1])[1]; r.due = addDays(today, (target - wday(today) + 7) % 7); }) ||
+  cut(new RegExp("\\sკვირას" + B), () => { r.due = addDays(today, (7 - wday(today)) % 7); });
+  if (r.time && !r.due) r.due = today;
+  r.title = s.replace(/\s+/g, " ").trim();
+  return r;
+}
+function renderParse(){
+  const el = $("#qa-parse"); if (!el) return;
+  const raw = $("#qa-title").value; const p = raw.trim() ? parseQuick(raw) : {};
+  const bits = [];
+  if (p.due) bits.push(`ვადა: ${diff(p.due)===0?"დღეს":diff(p.due)===1?"ხვალ":fmtShort(p.due)}${p.time?` ${p.time}`:""}`);
+  if (p.obj) bits.push(p.obj);
+  if (p.cat) bits.push(p.cat);
+  if (p.pri) bits.push(`პრიორიტეტი: ${PRI[p.pri]}`);
+  if (p.recur) bits.push(RECUR[p.recur]);
+  el.hidden = !bits.length;
+  el.innerHTML = bits.length ? `გავიგე: ${bits.map(b=>`<span class="tag">${esc(b)}</span>`).join("")}` : "";
+}
+
+/* ---------- attachments ---------- */
+const filesOf = t => Array.isArray(t.files) ? t.files : [];
+const blobUrl = id => /^https?:/.test(String(id)) ? String(id) : "/_blob/" + id;
+const isImg = f => /^image\//.test(f.type || "");
+const fmtSize = n => n > 1048576 ? (n/1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n/1024)) + " KB";
+const extOf = name => (String(name).split(".").pop() || "").toLowerCase();
+const WRAP = { xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation", zip:"application/zip" };
+const isWrapped = f => !!f.wrapped;
+const docIcon = f => ({xlsx:"XLSX", docx:"DOCX", pptx:"PPTX", zip:"ZIP", pdf:"PDF", csv:"CSV", txt:"TXT", mp4:"MP4", webm:"VIDEO"}[extOf(f.name)] || "FILE");
+const toB64 = file => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(file); });
+const OK_TYPES = { png:"image/png", jpg:"image/jpeg", jpeg:"image/jpeg", gif:"image/gif", webp:"image/webp", svg:"image/svg+xml",
+  mp4:"video/mp4", webm:"video/webm", pdf:"application/pdf", csv:"text/csv", md:"text/markdown", json:"application/json", txt:"text/plain" };
+async function prepFile(file){
+  const ext = extOf(file.name);
+  let type = Object.values(OK_TYPES).includes(file.type) ? file.type : (OK_TYPES[ext] || file.type || "");
+  const rasterIn = /^image\//.test(file.type) || ["heic","heif","jpg","jpeg","png","webp"].includes(ext);
+  // photos: convert HEIC and shrink large images to JPEG (max 2000px side)
+  if (rasterIn && type !== "image/gif" && type !== "image/svg+xml"){
+    const needs = !["image/jpeg","image/png","image/webp"].includes(type) || file.size > 1.5*1048576;
+    if (needs){
+      try {
+        const bmp = await createImageBitmap(file);
+        const k = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+        const c = document.createElement("canvas"); c.width = Math.round(bmp.width*k); c.height = Math.round(bmp.height*k);
+        c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+        const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+        if (blob) return { blob, type:"image/jpeg", name: file.name.replace(/\.[^.]+$/, "") + ".jpg" };
+      } catch(e){ /* fall through to the original file */ }
+    }
+  }
+  if (WRAP[ext]){
+    if (file.size > 14*1048576) throw { code:"too_large" };
+    const b64 = await toB64(file);
+    return { blob: new Blob([b64], {type:"text/plain"}), type:"text/plain", name:file.name, wrapped:true, origType: WRAP[ext], origSize: file.size };
+  }
+  if (ext === "xls" || ext === "doc") throw { code:"old_office" };
+  if (!Object.values(OK_TYPES).includes(type)) throw { code:"unsupported_type" };
+  return { blob:file, type, name:file.name };
+}
+function uploadErr(e, name){
+  const c = e && e.code;
+  if (c === "unsupported_type") return `„${name}“ — ეს ტიპი არ მიიღება. ატვირთეთ ფოტო, PDF, ვიდეო, Excel (.xlsx), Word (.docx), CSV ან TXT.`;
+  if (c === "old_office") return `„${name}“ — ძველი ფორმატია (.xls/.doc). გახსენით და შეინახეთ როგორც .xlsx / .docx („Save As“), მერე ატვირთეთ.`;
+  if (c === "too_large") return `„${name}“ — ზედმეტად დიდია (ფოტო/PDF — 20 MB-მდე, Excel/Word — 14 MB-მდე).`;
+  if (c === "quota_or_state") return "საცავი სავსეა — წაშალეთ ძველი ფაილები.";
+  if (c === "rate_limited") return "ძალიან სწრაფად — სცადეთ რამდენიმე წამში.";
+  return `„${name}“ ვერ აიტვირთა — სცადეთ თავიდან.`;
+}
+// upload picked files into a target list (array of file records); returns new records
+let pickTarget = null;
+function pickFiles(target){
+  if (!S.assets){ toast("ფაილების ატვირთვა ამ ხედში მიუწვდომელია."); return; }
+  pickTarget = target; const inp = $("#file-input"); inp.value = ""; inp.click();
+}
+async function uploadPicked(files){
+  const target = pickTarget; if (!target || !files.length) return;
+  const status = $(target.statusSel);
+  let i = 0;
+  for (const file of files){
+    i++; if (status) status.textContent = `იტვირთება ${i}/${files.length}…`;
+    try {
+      const prep = await prepFile(file);
+      const res = await S.assets.upload(prep.blob, { type: prep.type });
+      const rec = prep.wrapped ? { id: res.id, name: prep.name, type: prep.origType, size: prep.origSize, wrapped: true }
+                               : { id: res.id, name: prep.name, type: res.contentType || prep.type, size: res.sizeBytes || prep.blob.size };
+      target.list.push(rec); target.fresh.push(res.id);
+      target.render();
+    } catch(e){
+      if (e && e.code === "store_unavailable"){ try { await new Promise(r=>setTimeout(r,1200)); const prep = await prepFile(file); const res = await S.assets.upload(prep.blob, {type:prep.type}); target.list.push(prep.wrapped ? {id:res.id,name:prep.name,type:prep.origType,size:prep.origSize,wrapped:true} : {id:res.id,name:prep.name,type:res.contentType||prep.type,size:res.sizeBytes||prep.blob.size}); target.fresh.push(res.id); target.render(); continue; } catch(e2){ e = e2; } }
+      toast(uploadErr(e, file.name));
+    }
+  }
+  if (status) status.textContent = "";
+}
+function filesEditorHtml(list, prefix){
+  return list.map((f,i) => `<div class="fthumb">${isImg(f)
+      ? `<img src="${blobUrl(f.id)}" alt="${esc(f.name)}" data-view-img="${esc(f.id)}" loading="lazy">`
+      : `<button type="button" class="fdoc" data-open-file="${esc(f.id)}"><b>${esc(docIcon(f))}</b>${esc(f.name.length>22?f.name.slice(0,20)+"…":f.name)}</button>`}
+      <button type="button" class="x" data-${prefix}-rm="${i}" aria-label="წაშლა: ${esc(f.name)}">×</button></div>`).join("")
+    + (S.assets ? `<button type="button" class="fadd" data-pick="${prefix}"><span>+</span>ფოტო / ფაილი</button>` : `<span class="hint">ფაილების ატვირთვა ამ ხედში მიუწვდომელია.</span>`);
+}
+function deleteAssets(ids){ if (!S.assets) return; for (const id of ids) S.assets.delete(id).catch(()=>{}); }
+function openLightbox(id){
+  const f = all().flatMap(filesOf).concat(modalTask ? modalTask.files||[] : [], outState ? outState.files||[] : []).find(x => x.id === id);
+  const root = document.createElement("div"); root.className = "lightbox"; root.id = "lightbox";
+  root.innerHTML = `<div class="bar"><a href="${blobUrl(id)}" target="_blank" rel="noopener">სრულად გახსნა</a><button type="button" id="lb-close">დახურვა ✕</button></div><img src="${blobUrl(id)}" alt="${esc(f ? f.name : "")}">`;
+  document.body.appendChild(root);
+}
+function closeLightbox(){ const lb = $("#lightbox"); if (lb) lb.remove(); }
+const findFile = id => all().flatMap(filesOf).concat(modalTask ? modalTask.files||[] : [], outState ? outState.files||[] : []).find(x => x.id === id);
+async function fileBytes(f){
+  const r = await fetch(blobUrl(f.id)); if (!r.ok) throw new Error("fetch " + r.status);
+  if (!f.wrapped) return new Uint8Array(await r.arrayBuffer());
+  const b64 = (await r.text()).trim(), bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+async function saveOriginal(f){
+  if (!S.downloads){ toast("ჩამოტვირთვა ამ ხედში მიუწვდომელია."); return; }
+  try { const bytes = await fileBytes(f); await S.downloads.save({ filename: f.name, data: bytes }); }
+  catch(e){ if (!(e && e.code === "declined")) toast(e && e.code === "rejected_extension" ? "ამ ტიპის ფაილის ჩამოტვირთვა არ არის დაშვებული." : "ფაილის ჩამოტვირთვა ვერ მოხერხდა."); }
+}
+let sheetCache = null;
+async function openDoc(id){
+  const f = findFile(id); if (!f) return;
+  const ext = extOf(f.name);
+  if (!f.wrapped && !["csv"].includes(ext)){            // PDF, video, text: the browser shows them
+    const a = document.createElement("a"); a.href = blobUrl(f.id); a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); return;
+  }
+  if (!["xlsx","csv"].includes(ext)){ return saveOriginal(f); }   // Word, PowerPoint, ZIP: download
+  const root = document.createElement("div"); root.className = "lightbox"; root.id = "lightbox";
+  root.innerHTML = `<div class="sheetview"><header><h3>${esc(f.name)}</h3><div class="r" style="display:flex;gap:8px">
+      ${S.downloads ? `<button class="btn primary" id="sv-dl">ჩამოტვირთვა (${esc(ext)})</button>` : ""}<button class="btn" id="lb-close">დახურვა ✕</button></div></header>
+    <div class="sheettabs" id="sv-tabs"></div><div class="sheetbody" id="sv-body"><p class="hint" style="padding:14px">იტვირთება…</p></div></div>`;
+  document.body.appendChild(root);
+  const dl = $("#sv-dl"); if (dl) dl.onclick = () => saveOriginal(f);
+  try {
+    const X = await loadXlsx(), bytes = await fileBytes(f);
+    const wb = X.read(bytes, { type:"array", cellDates:true });
+    sheetCache = { X, wb };
+    $("#sv-tabs").innerHTML = wb.SheetNames.length > 1 ? wb.SheetNames.map((n,i)=>`<button class="chipbtn" data-sheet="${i}" aria-pressed="${i===0}">${esc(n)}</button>`).join("") : "";
+    showSheet(0);
+  } catch(e){ const b = $("#sv-body"); if (b) b.innerHTML = `<p class="hint" style="padding:14px">ცხრილის ჩვენება ვერ მოხერხდა — ჩამოტვირთეთ და გახსენით Excel-ში.</p>`; }
+}
+function showSheet(i){
+  if (!sheetCache) return; const { X, wb } = sheetCache, ws = wb.Sheets[wb.SheetNames[i]];
+  const rows = X.utils.sheet_to_json(ws, { header:1, raw:false, defval:"" });
+  const LIM = 300, cols = Math.min(40, Math.max(0, ...rows.slice(0, LIM).map(r => r.length)));
+  const colName = n => { let s = ""; n++; while (n){ const m = (n-1) % 26; s = String.fromCharCode(65+m) + s; n = Math.floor((n-1)/26); } return s; };
+  const body = rows.slice(0, LIM).map((r,ri) => `<tr><th>${ri+1}</th>${Array.from({length:cols}, (_,c) => { const v = r[c] ?? ""; const num = v !== "" && !isNaN(String(v).replace(/[\s,]/g,"")); return `<td${num?' class="n"':""}>${esc(v)}</td>`; }).join("")}</tr>`).join("");
+  $("#sv-body").innerHTML = rows.length ? `<table><thead><tr><th></th>${Array.from({length:cols},(_,c)=>`<th>${colName(c)}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>${rows.length>LIM?`<p class="hint" style="padding:8px 14px">ნაჩვენებია პირველი ${LIM} სტრიქონი ${rows.length}-დან — სრულად ნახეთ Excel-ში.</p>`:""}` : `<p class="hint" style="padding:14px">ფურცელი ცარიელია.</p>`;
+  document.querySelectorAll("[data-sheet]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.sheet === i)));
+}
+
+/* ---------- alarms (while the app is open) ---------- */
+const ALARM = { on: true, unlocked: false, ctx: null, fired: new Set(), snooze: new Map(), current: null, titleTimer: null };
+try { const v = localStorage.getItem("tm.alarm"); if (v === "off") ALARM.on = false; ALARM.fired = new Set(JSON.parse(localStorage.getItem("tm.fired") || "[]")); } catch(e){}
+const alarmKey = t => `${t.id}|${t.due}|${t.time}`;
+function unlockAudio(){
+  if (ALARM.unlocked) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    ALARM.ctx = ALARM.ctx || new AC();
+    ALARM.ctx.resume().then(() => { ALARM.unlocked = ALARM.ctx.state === "running"; renderBell(); }).catch(()=>{});
+    const o = ALARM.ctx.createOscillator(), g = ALARM.ctx.createGain(); g.gain.value = 0.0001; o.connect(g); g.connect(ALARM.ctx.destination); o.start(); o.stop(ALARM.ctx.currentTime + 0.02);
+  } catch(e){}
+}
+function beep(){
+  const c = ALARM.ctx; if (!c || c.state !== "running") return;
+  const t0 = c.currentTime;
+  for (let r = 0; r < 3; r++) for (let i = 0; i < 3; i++){
+    const st = t0 + r*1.1 + i*0.22, o = c.createOscillator(), g = c.createGain();
+    o.type = "sine"; o.frequency.value = i === 2 ? 1046 : 880;
+    g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.35, st + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, st + 0.18);
+    o.connect(g); g.connect(c.destination); o.start(st); o.stop(st + 0.2);
+  }
+}
+function renderBell(){
+  const b = $("#bell"); if (!b) return;
+  b.textContent = !ALARM.on ? "🔕 სიგნალი გამორთულია" : ALARM.unlocked ? "🔔 სიგნალი ჩართულია" : "🔔 შეეხეთ ხმის ჩასართავად";
+  b.title = "საათიანი დავალებებისთვის ხმოვანი სიგნალი (მუშაობს, როცა პროგრამა ღიაა)";
+}
+function saveFired(){ try { localStorage.setItem("tm.fired", JSON.stringify([...ALARM.fired].slice(-300))); } catch(e){} }
+function checkAlarms(){
+  if (!ALARM.on || ALARM.current) return;
+  const today = todayStr(), now = nowHM(), nowMs = Date.now();
+  const due = all().filter(t => t.time && t.due === today && t.status !== "done" && t.status !== "postponed" && !ALARM.fired.has(alarmKey(t)));
+  for (const t of due.sort((a,b) => a.time.localeCompare(b.time))){
+    const sn = ALARM.snooze.get(t.id);
+    if (sn ? nowMs < sn : t.time > now) continue;
+    // skip alarms more than 2 hours old (e.g. the app was opened late)
+    const [h, m] = t.time.split(":").map(Number), dt = new Date(); dt.setHours(h, m, 0, 0);
+    if (!sn && nowMs - dt.getTime() > 2*3600e3){ ALARM.fired.add(alarmKey(t)); saveFired(); continue; }
+    return showAlarm(t);
+  }
+}
+function showAlarm(t){
+  ALARM.current = t.id;
+  const box = document.createElement("div"); box.className = "alarm"; box.id = "alarm"; box.setAttribute("role", "alertdialog"); box.setAttribute("aria-labelledby", "al-t");
+  box.innerHTML = `<h3>⏰ ${esc(t.time)} · ახლა</h3><div class="t" id="al-t">${esc(t.title)}</div>
+    <div class="m">${[t.obj, t.note].filter(Boolean).map(esc).join(" · ")}</div>
+    <div class="row"><button class="btn primary" id="al-done">შედეგის ჩაწერა</button><button class="btn" id="al-snooze">10 წუთით გადადება</button><button class="btn ghost" id="al-close">დახურვა</button></div>`;
+  document.body.appendChild(box);
+  beep();
+  const base = document.title; let flip = false;
+  clearInterval(ALARM.titleTimer);
+  ALARM.titleTimer = setInterval(() => { document.title = (flip = !flip) ? `⏰ ${t.time} ${t.title}` : base; }, 1000);
+  ALARM.baseTitle = base;
+}
+function closeAlarm(mode){
+  const id = ALARM.current; if (!id) return;
+  const t = S.tasks.get(id);
+  if (mode === "snooze"){ ALARM.snooze.set(id, Date.now() + 10*60e3); }
+  else if (t){ ALARM.fired.add(alarmKey(t)); ALARM.snooze.delete(id); saveFired(); }
+  ALARM.current = null;
+  const a = $("#alarm"); if (a) a.remove();
+  clearInterval(ALARM.titleTimer); if (ALARM.baseTitle) document.title = ALARM.baseTitle;
+  if (mode === "done" && t) openOutcome(t);
+  if (mode === "snooze") toast("შეგახსენებთ 10 წუთში");
+}
+
+/* ---------- Google Calendar link ---------- */
+function gcalUrl(t){
+  if (!t || !t.due) return "";
+  const d = t.due.replace(/-/g, "");
+  let dates;
+  if (t.time){
+    const [h, m] = t.time.split(":").map(Number), endMin = h*60 + m + 30;
+    const endDay = endMin >= 1440 ? addDays(t.due, 1).replace(/-/g, "") : d, em = endMin % 1440;
+    dates = `${d}T${pad(h)}${pad(m)}00/${endDay}T${pad(Math.floor(em/60))}${pad(em%60)}00`;
+  } else dates = `${d}/${addDays(t.due, 1).replace(/-/g, "")}`;
+  const details = [t.obj && `ობიექტი: ${t.obj}`, t.note, ...subsOf(t).map(x => `${x.d?"☑":"☐"} ${x.t}`)].filter(Boolean).join("\n");
+  const q = new URLSearchParams({ action:"TEMPLATE", text:t.title, dates, ctz:"Asia/Tbilisi", details });
+  return "https://calendar.google.com/calendar/render?" + q.toString().replace(/dates=[^&]*/, m => m.replace(/%2F/g, "/"));
+}
+
+/* ---------- outcome: comment, done or reschedule ---------- */
+const logOf = t => Array.isArray(t.log) ? t.log : [];
+const nowStamp = () => { const n = new Date(); return `${todayStr()} ${pad(n.getHours())}:${pad(n.getMinutes())}`; };
+const stampShort = st => { const [d, tm] = String(st).split(" "); return `${d ? d.slice(8,10)+"."+d.slice(5,7) : ""} ${tm||""}`.trim(); };
+const LOG_KIND = { done:"შესრულდა", moved:"გადაიწია", note:"კომენტარი" };
+let outState = null;
+function openOutcome(t){
+  closeModal();
+  outState = { id: t.id, manual: false };
+  const chips = ["ვესაუბრე, შევთანხმდით", "არ უპასუხა", "გადაიწია ხვალ", "გადაიწია ხვალ 11:00-ზე", "ელოდება პასუხს"];
+  $("#modal-root").innerHTML = `<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="o-h">
+    <h2 id="o-h">${esc(t.title)}</h2>
+    <form class="form" id="o-form">
+      <label class="full">რა მოხდა? (არასავალდებულო)<textarea class="inp" id="o-text" rows="3" placeholder="მაგ: ვესაუბრე ქრისტინეს, შევთანხმდით — ან: გადაიწია ხვალ 11:00-ზე"></textarea></label>
+      <div class="full oc-chips">${chips.map(c=>`<button type="button" class="chipbtn" data-chip="${esc(c)}">${esc(c)}</button>`).join("")}</div>
+      <div class="full oc-move">
+        <label>გადატანა თარიღზე<input class="inp" type="date" id="o-date" value=""></label>
+        <label>საათი<input class="inp" type="time" id="o-time" value=""></label>
+      </div>
+      <p class="hint full" id="o-parse"></p>
+      <div class="full subs-ed"><span class="lbl">ფოტო / ფაილი (არასავალდებულო) <span class="upl" id="o-upl"></span></span><div class="files" id="o-files"></div></div>
+    </form>
+    <div class="oc-btns">
+      <button class="btn done" id="o-done">✓ შესრულდა</button>
+      <button class="btn move" id="o-move" disabled>↷ გადატანა</button>
+      <button class="btn" id="o-note">მხოლოდ კომენტარი</button>
+      <a class="btn" id="o-gcal" href="#" target="_blank" rel="noopener" hidden style="grid-column:1/-1;text-decoration:none;text-align:center">📅 გადატანა + Google Calendar</a>
+    </div>
+    <div class="mfoot"><span class="hint">Ctrl+Enter — მთავარი ღილაკი</span><div class="r"><button class="btn" id="m-cancel">გაუქმება</button></div></div>
+  </div></div>`;
+  outState.files = []; outState.fresh = [];
+  renderOutFiles();
+  updateOutcome();
+  setTimeout(() => $("#o-text").focus(), 0);
+}
+function renderOutFiles(){ const b = $("#o-files"); if (b && outState) b.innerHTML = filesEditorHtml(outState.files, "o");
+}
+function updateOutcome(){
+  if (!outState) return;
+  const text = $("#o-text").value, p = text.trim() ? parseQuick(text) : {};
+  if (!outState.manual){ $("#o-date").value = p.due || ""; $("#o-time").value = p.time || ""; }
+  const d = $("#o-date").value, tm = $("#o-time").value, mv = $("#o-move");
+  mv.disabled = !d;
+  mv.classList.toggle("primary", !!d);
+  $("#o-done").classList.toggle("done", !d);
+  mv.textContent = d ? `↷ გადატანა: ${diff(d)===0?"დღეს":diff(d)===1?"ხვალ":fmtShort(d)}${tm?` ${tm}`:""}` : "↷ გადატანა";
+  const gc = $("#o-gcal"), tk = S.tasks.get(outState.id);
+  if (gc && tk){ gc.hidden = !d; if (d){ const note = [text.trim() && `💬 ${text.trim()}`, tk.note].filter(Boolean).join("\n");
+    gc.href = gcalUrl({ title: tk.title, due: d, time: tm || tk.time || "", obj: tk.obj, note, subs: subsOf(tk) });
+    gc.textContent = `📅 გადატანა + Google Calendar (${diff(d)===0?"დღეს":diff(d)===1?"ხვალ":fmtShort(d)}${(tm||tk.time)?` ${tm||tk.time}`:""})`; } }
+  $("#o-parse").textContent = d ? "ტექსტში თარიღი ვიპოვე — დააჭირეთ „გადატანას“ ან შეცვალეთ თარიღი ხელით." : "თარიღის ან საათის მითითებისას (მაგ. „ხვალ 11:00“) დავალება ავტომატურად გადაიტანება.";
+}
+function applyOutcome(kind){
+  if (!outState) return;
+  const t = S.tasks.get(outState.id); if (!t) return closeModal();
+  const text = $("#o-text").value.trim(), d = $("#o-date").value, tm = $("#o-time").value;
+  const prev = {...t};
+  if (kind === "note" && !text && !outState.files.length){ $("#o-text").focus(); toast("ჩაწერეთ კომენტარი ან მიამაგრეთ ფოტო"); return; }
+  const added = outState.files.slice();
+  if (kind === "note" && added.length && !text){ /* a photo alone is a valid note */ }
+  const entry = { at: nowStamp(), kind, text };
+  if (added.length) entry.files = added.map(f => f.id);
+  if (kind === "moved"){ entry.from = t.due ? `${t.due}${t.time?" "+t.time:""}` : ""; entry.to = `${d}${tm?" "+tm:""}`; }
+  const log = [...logOf(t), entry];
+  const files = [...filesOf(t), ...added];
+  closeModal();
+  if (kind === "done"){ setStatus({...t, log, files}, "done"); return; }
+  if (kind === "moved"){
+    const upd = {...t, log, files, due: d, time: tm || t.time || "", status: t.status === "postponed" || t.status === "done" ? "todo" : t.status, updated: Date.now()};
+    if (upd.start && upd.start > d) upd.start = d;
+    saveTask(upd);
+    toast(`გადაიწია: ${diff(d)===0?"დღეს":diff(d)===1?"ხვალ":fmtShort(d)}${upd.time?` ${upd.time}`:""}`, () => saveTask(prev));
+    return;
+  }
+  saveTask({...t, log, files, updated: Date.now()});
+  toast(added.length && !text ? "ფაილი მიმაგრდა" : "კომენტარი შენახულია", () => saveTask(prev));
+}
+
+/* ---------- messaging (WhatsApp / Viber) ---------- */
+function normPhone(p){
+  let d = String(p||"").replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 9 && d[0] === "5") d = "995" + d;          // Georgian mobile without country code
+  if (d.length === 10 && d.startsWith("05")) d = "995" + d.slice(1);
+  return d;
+}
+const prettyPhone = p => { const d = normPhone(p); return d.startsWith("995") && d.length===12 ? `+995 ${d.slice(3,6)} ${d.slice(6,8)} ${d.slice(8,10)} ${d.slice(10)}` : (d ? "+"+d : ""); };
+const contactById = id => S.contacts.find(c => c.id === id);
+function taskText(t){
+  const L = [`📋 ${t.title}`];
+  if (t.obj) L.push(`ობიექტი: ${t.obj}`);
+  if (t.due) L.push(`ვადა: ${fmt(t.due)}${t.time?` ${t.time}`:""}`);
+  L.push(`სტატუსი: ${STATUS[t.status]}`);
+  if (t.note) L.push(`შენიშვნა: ${t.note}`);
+  if (subsOf(t).length) L.push(...subsOf(t).map(x => `${x.d?"☑":"☐"} ${x.t}`));
+  const last = logOf(t).filter(x => x.text).slice(-1)[0]; if (last) L.push(`💬 ${last.text}`);
+  if (filesOf(t).length) L.push(`📎 მიმაგრებული ფაილები: ${filesOf(t).length}`);
+  return L.join("\n");
+}
+function dayText(){
+  const L = all(), today = todayStr();
+  const items = L.filter(t => ["overdue","today"].includes(dueState(t)) || (t.status==="doing")).sort(cmpPriDue);
+  const head = `📅 დღის დავალებები — ${fmt(today)}`;
+  if (!items.length) return head + "\nდღეისთვის დავალება არ არის.";
+  return head + "\n" + items.map((t,i) => `${i+1}. ${dueState(t)==="overdue"?"⚠️ ":""}${t.title}${t.obj?` (${t.obj})`:""}${t.due?` — ${fmt(t.due)}`:""}${t.time?` ${t.time}`:""}`).join("\n");
+}
+function sendLinks(phone, text){
+  const d = normPhone(phone), q = encodeURIComponent(text);
+  return {
+    wa: d ? `https://wa.me/${d}?text=${q}` : `https://wa.me/?text=${q}`,
+    vb: d ? `viber://chat?number=%2B${d}&draft=${q}` : `viber://forward?text=${q}`,
+  };
+}
+let sendState = null;
+function openSend(text, contactId){
+  closeModal();
+  sendState = { text };
+  const c = contactById(contactId);
+  const optsHtml = opt("", "— აირჩიეთ აბონენტი —") + S.contacts.map(x => opt(x.id, `${x.name}${x.obj?` · ${x.obj}`:""}`, x.id===contactId)).join("") + opt("__other", "სხვა ნომერი…", false);
+  $("#modal-root").innerHTML = `<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="s-h">
+    <h2 id="s-h">გაგზავნა WhatsApp-ით ან Viber-ით</h2>
+    <form class="form" id="s-form">
+      <label>აბონენტი<select class="sel" id="s-who">${optsHtml}</select></label>
+      <label>ტელეფონის ნომერი<input class="inp" id="s-phone" inputmode="tel" placeholder="5XX XX XX XX" value="${esc(c?c.phone:"")}"></label>
+      <label class="full">შეტყობინება<textarea class="inp" id="s-text" rows="7">${esc(text)}</textarea></label>
+    </form>
+    <div class="sendbtns">
+      <a class="b-wa" id="s-wa" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="b-vb" id="s-vb" href="#" target="_blank" rel="noopener">Viber</a>
+      <button class="b-cp" id="s-copy" type="button">ტექსტის კოპირება</button>
+    </div>
+    <p class="hint" id="s-hint" style="margin-top:10px"></p>
+    <div class="mfoot"><span></span><div class="r"><button class="btn" id="m-cancel">დახურვა</button></div></div>
+  </div></div>`;
+  updateSendLinks();
+}
+function updateSendLinks(){
+  if (!sendState) return;
+  const phone = $("#s-phone").value, text = $("#s-text").value, d = normPhone(phone);
+  const l = sendLinks(phone, text);
+  $("#s-wa").href = l.wa; $("#s-vb").href = l.vb;
+  $("#s-hint").textContent = d
+    ? `ნომერი: +${d}. ღილაკი გახსნის ჩატს ამ ნომერთან, ტექსტით — გაგზავნას იქ დაადასტურებთ. თუ Viber არ გაიხსნა, დააკოპირეთ ტექსტი და ჩასვით Viber-ში.`
+    : "ნომრის გარეშე WhatsApp/Viber თვითონ შემოგთავაზებთ ადრესატის არჩევას.";
+}
+async function copyText(text, el){
+  try { await navigator.clipboard.writeText(text); toast("ტექსტი დაკოპირდა"); }
+  catch(e){ const ta = $("#s-text"); if (ta){ ta.focus(); ta.select(); } toast("მონიშნულია — დააჭირეთ Ctrl+C / კოპირებას"); }
+}
+
+/* ---------- persistence: local copy + outbox, then the server ---------- */
+const LS = { tasks:"tm.tasks.v2", lists:"tm.lists.v2", outbox:"tm.outbox.v2", contacts:"tm.contacts.v2" };
+const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v ?? d; } catch(e){ return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } };
+// outbox: { [docKey]: {op:"set", body} | {op:"del"} }  — changes not yet confirmed by the server
+let outbox = lsGet(LS.outbox, {});
+const sync = { state:"local", err:"" };
+function cacheLocal(){
+  lsSet(LS.tasks, [...S.tasks.values()]);
+  lsSet(LS.lists, S.lists);
+  lsSet(LS.contacts, S.contacts);
+  lsSet(LS.outbox, outbox);
+}
+function setSync(state, err=""){
+  sync.state = state; sync.err = err;
+  const el = $("#sync"); if (!el) return;
+  const pending = Object.keys(outbox).length;
+  el.style.color = state==="error" ? "var(--red)" : "";
+  el.textContent = state==="saved" ? (pending ? "ინახება…" : "✓ შენახულია")
+    : state==="saving" ? "ინახება…"
+    : state==="error" ? `შენახვის შეცდომა${err?` (${err})`:""} · ${pending} ცვლილება ელოდება`
+    : "შენახულია ამ მოწყობილობაზე";
+}
+function errText(e){
+  if (e && e.code==="quota_exceeded") return "მეხსიერება სავსეა — წაშალეთ ძველი დავალებები.";
+  if (e && e.code==="invalid_argument") return "სერვერმა ცვლილება არ მიიღო — შენახულია ამ მოწყობილობაზე.";
+  return "სერვერთან კავშირი ვერ მოხერხდა — ცვლილება შენახულია ამ მოწყობილობაზე და მოგვიანებით გაიგზავნება.";
+}
+let flushing = false, flushAgain = false, retryTimer = null;
+async function flush(){
+  if (!S.db) { setSync("local"); return; }
+  if (flushing){ flushAgain = true; return; }
+  flushing = true; setSync("saving");
+  let failed = null;
+  for (const key of Object.keys(outbox)){
+    const entry = outbox[key];
+    try {
+      const ref = key === "config" ? S.db.doc("config/lists") : key === "contacts" ? S.db.doc("config/contacts") : S.db.collection("tasks").doc(key);
+      if (entry.op === "del") await ref.delete(); else await ref.set(entry.body);
+      if (outbox[key] === entry) delete outbox[key];      // keep it if it changed meanwhile
+    } catch(e){ failed = e; break; }
+  }
+  lsSet(LS.outbox, outbox);
+  flushing = false;
+  if (failed){
+    setSync("error", failed.code || "");
+    toast(errText(failed));
+    clearTimeout(retryTimer);
+    if (failed.code !== "invalid_argument" && failed.code !== "quota_exceeded") retryTimer = setTimeout(flush, 15000);
+    return;
+  }
+  if (flushAgain){ flushAgain = false; return flush(); }
+  setSync("saved");
+}
+function saveTask(t){
+  const body = {...t}; delete body.id;
+  S.tasks.set(t.id, {...t});
+  outbox[t.id] = { op:"set", body };
+  cacheLocal(); render(); return flush();
+}
+function removeTask(id){
+  S.tasks.delete(id);
+  outbox[id] = { op:"del" };
+  cacheLocal(); render(); return flush();
+}
+function saveContacts(){
+  outbox.contacts = { op:"set", body:{ list: S.contacts.map(c => ({...c})) } };
+  cacheLocal(); render(); flush();
+}
+function saveLists(){
+  outbox.config = { op:"set", body:{ categories:[...S.lists.categories], objects:[...S.lists.objects] } };
+  cacheLocal(); render(); flush();
+}
+// server snapshot + changes still waiting in the outbox = what the person should see
+function overlay(serverMap){
+  for (const [key, e] of Object.entries(outbox)){
+    if (key === "config" || key === "contacts") continue;
+    if (e.op === "del") serverMap.delete(key); else serverMap.set(key, {...e.body, id:key});
+  }
+  return serverMap;
+}
+
+/* ---------- task actions ---------- */
+function setStatus(t, status, opts={}){
+  const prev = {...t};
+  const upd = {...t, status, updated: Date.now()};
+  let spawned = null;
+  if (status==="done"){
+    upd.doneAt = todayStr(); upd.progress = 1;
+    if (t.recur && !t.spawned){
+      const n = nextOccurrence(t);
+      if (n){ spawned = { ...t, id:newId(), status:"todo", progress:0, start:n, due:n, doneAt:"", spawned:false, subs: subsOf(t).map(x=>({...x, d:false})), created:Date.now(), updated:Date.now() };
+        upd.spawned = true; }
+    }
+  } else {
+    upd.doneAt = "";
+    if (status==="doing" && !(+t.progress)) upd.progress = 0.1;
+  }
+  saveTask(upd);
+  if (spawned) saveTask(spawned);
+  if (!opts.silent){
+    const msg = status==="done" ? (spawned ? `შესრულდა · შემდეგი: ${fmtShort(spawned.due)}` : "შესრულებულია") : `სტატუსი: ${STATUS[status]}`;
+    toast(msg, () => { saveTask(prev); if (spawned) removeTask(spawned.id); });
+  }
+}
+
+/* ---------- KPIs + tabs ---------- */
+function renderTop(){
+  const t = todayStr(), d = new Date(ms(t));
+  $("#today").innerHTML = `<b>${WD[d.getUTCDay()]}</b>, ${+t.slice(8,10)} ${MONTHS_FULL[+t.slice(5,7)-1]} ${t.slice(0,4)}`;
+  const s = stats(all());
+  const k = [
+    ["სულ დავალება", s.total, "all-any"],
+    ["შესრულებული", s.done, "done", s.done ? "var(--green)" : ""],
+    ["შესასრულებელი", s.todo, "all-todo"],
+    ["მიმდინარე", s.doing, "all-doing"],
+    ["ვადაგადაცილებული", s.overdue, "all-overdue", s.overdue ? "var(--red)" : ""],
+    ["დღეს იწურება", s.today, "today", s.today ? "var(--amber)" : ""],
+  ];
+  $("#kpis").innerHTML = k.map(([l,v,go,c]) =>
+    `<button class="kpi click" data-go="${go}"><span>${l}</span><strong style="${c?`color:${c}`:""}">${v}</strong></button>`).join("")
+    + `<div class="kpi wide"><span>საერთო პროგრესი</span><strong>${Math.round(s.prog*100)}%</strong><div class="bar"><i style="width:${Math.round(s.prog*100)}%"></i></div></div>`;
+  const todayCount = all().filter(x => ["overdue","today"].includes(dueState(x))).length;
+  $("#tabs").innerHTML = VIEWS.map(([k2,l]) => {
+    const c = k2==="today" && todayCount ? `<span class="c${s.overdue?" hot":""}">${todayCount}</span>` : "";
+    return `<button class="tab" role="tab" aria-selected="${S.view===k2}" data-view="${k2}">${l}${c}</button>`; }).join("");
+}
+
+/* ---------- card ---------- */
+function card(t, opts={}){
+  const st = dueState(t);
+  const pv = Math.round(progressOf(t)*100), subs = subsOf(t);
+  const prog = t.status!=="done" && pv>0 ? `<span class="pbar" title="${pv}%"><i style="width:${pv}%"></i></span><span class="num">${pv}%</span>` : "";
+  const subChip = (subs.length ? `<span class="num">☑ ${subs.filter(x=>x.d).length}/${subs.length}</span>` : "")
+    + (filesOf(t).length ? `<span class="num">📎 ${filesOf(t).length}</span>` : "");
+  const imgs = filesOf(t).filter(isImg).slice(-4);
+  const docs = filesOf(t).filter(f => !isImg(f));
+  const fileRow = (imgs.length || docs.length) && !opts.compact ? `<div class="cardfiles">${imgs.map(f=>`<div class="fthumb"><img src="${blobUrl(f.id)}" alt="${esc(f.name)}" data-view-img="${esc(f.id)}" loading="lazy"></div>`).join("")}${docs.map(f=>`<button class="docchip" data-open-file="${esc(f.id)}" title="${esc(f.name)}"><b>${esc(docIcon(f))}</b><span>${esc(f.name)}</span></button>`).join("")}</div>` : "";
+  const subList = subs.length && !opts.compact && t.status!=="done"
+    ? `<ul class="subs">${subs.map((x,i)=>`<li class="${x.d?"d":""}"><button class="sbox${x.d?" on":""}" data-sub="${i}" aria-label="${x.d?"მოხსნა":"მონიშვნა"}: ${esc(x.t)}">${ICON_CHECK}</button><span>${esc(x.t)}</span></li>`).join("")}</ul>` : "";
+  const acts = opts.noActs ? "" : (t.status==="todo" ? `<button class="mini" data-act="doing">დაწყება</button>` : t.status==="postponed" ? `<button class="mini" data-act="todo">აღდგენა</button>` : "")
+    + `<button class="mini" data-act="send" title="გაგზავნა WhatsApp / Viber">გაგზავნა</button>`
+    + (t.due && t.status !== "done" ? `<a class="mini" href="${esc(gcalUrl(t))}" target="_blank" rel="noopener" title="Google Calendar-ში დამატება — ტელეფონი შეგახსენებთ">📅</a>` : "");
+  const who = t.contact && contactById(t.contact);
+  return `<article class="card p-${t.pri||"med"}${t.status==="done" && !opts.archive?" is-done":""}" data-id="${t.id}" ${opts.drag?'draggable="true"':""}>
+    <button class="chk${t.status==="done"?" on":""}" data-act="toggle" aria-label="${t.status==="done"?"დაბრუნება":"შესრულება"}">${ICON_CHECK}</button>
+    <div class="body" data-act="edit">
+      <div class="ttl">${esc(t.title)}</div>
+      <div class="meta">
+        ${t.obj?`<span class="tag t-obj">${esc(t.obj)}</span>`:""}
+        ${who?`<span class="tag t-who">${esc(who.name)}</span>`:""}
+        <span class="tag s-${st}">${dueLabel(t)}</span>
+        ${opts.showStatus && t.status!=="done" ? `<span class="tag st-${t.status}">${STATUS[t.status]}</span>`:""}
+        ${t.cat?`<span>${esc(t.cat)}</span>`:""}
+        ${t.recur?`<span class="recur" title="${RECUR[t.recur]}">${ICON_RECUR}${RECUR[t.recur].split(" ")[0]}</span>`:""}
+        ${subChip}${prog}
+      </div>
+      ${t.note && !opts.compact ? `<div class="note">${esc(t.note)}</div>`:""}
+      ${subList}
+      ${fileRow}
+      ${(() => { const last = logOf(t).filter(x => x.text).slice(-1)[0]; return last ? `<div class="lastlog">💬 ${esc(last.text)}<span class="when">${esc(stampShort(last.at))}</span></div>` : ""; })()}
+    </div>
+    ${acts?`<div class="acts">${acts}</div>`:""}
+  </article>`;
+}
+const section = (title, list, opts={}) => `<section class="sec"><h2 class="${opts.cls||""}">${title} <span class="n">${list.length}</span></h2>
+  <div class="list">${list.length ? list.map(t=>card(t,opts)).join("") : `<div class="empty">${opts.empty||"ცარიელია"}</div>`}</div></section>`;
+
+/* ---------- views ---------- */
+function vToday(){
+  const L = all(), today = todayStr();
+  const overdue = L.filter(t => dueState(t)==="overdue").sort(cmpPriDue);
+  const due = L.filter(t => dueState(t)==="today").sort(cmpPriDue);
+  const soon = L.filter(t => dueState(t)==="soon").sort(cmpDuePri);
+  const shown = new Set([...overdue,...due,...soon].map(t=>t.id));
+  const doing = L.filter(t => t.status==="doing" && !shown.has(t.id)).sort(cmpPriDue);
+  const done = L.filter(t => t.status==="done" && t.doneAt===today);
+  if (!S.loaded) return `<div class="empty">იტვირთება…</div>`;
+  if (!L.length) return `<div class="empty">ჯერ დავალება არ გაქვთ. ჩაწერეთ პირველი ზემოთ ველში და დააჭირეთ Enter-ს.</div>`;
+  return `<div class="daybar"><button class="btn" id="send-day">დღის სიის გაგზავნა</button></div>`
+    + (overdue.length ? section("ვადაგადაცილებული", overdue, {cls:"red"}) : "")
+    + section("დღეს", due, {empty:"დღეისთვის ვადა არაფერს უწერია."})
+    + section("მომდევნო 2 დღე", soon, {empty:"ახლო ვადები არ არის."})
+    + (doing.length ? section("მიმდინარე", doing) : "")
+    + (done.length ? section("დღეს შესრულებული", done, {compact:true}) : "");
+}
+function vWeek(){
+  const today = todayStr(), L = all().filter(t => t.status!=="done" && t.status!=="postponed");
+  const earlier = L.filter(t => t.due && t.due < today).sort(cmpPriDue);
+  let html = `<div class="week">`;
+  if (earlier.length) html += `<div class="col day past"><h3>ვადაგადაცილებული <span class="d">${earlier.length}</span></h3>${earlier.map(t=>card(t,{compact:true,noActs:true})).join("")}</div>`;
+  const days = earlier.length ? 6 : 7;
+  for (let i=0;i<days;i++){
+    const d = addDays(today,i), items = L.filter(t => t.due===d).sort(cmpPriDue);
+    const lbl = i===0 ? "დღეს" : i===1 ? "ხვალ" : WD[wday(d)];
+    html += `<div class="col day${i===0?" today":""}" data-date="${d}"><h3>${lbl} <span class="d">${WD_S[wday(d)]} ${fmtShort(d)}</span></h3>
+      ${items.length ? items.map(t=>card(t,{compact:true,noActs:true,drag:true})).join("") : `<div class="hint">—</div>`}</div>`;
+  }
+  const noDue = L.filter(t => !t.due);
+  return html + `</div>` + (noDue.length ? `<div style="margin-top:22px">${section("ვადის გარეშე", noDue.sort(cmpPriDue), {compact:true})}</div>` : "")
+    + `<p class="hint" style="margin-top:12px">გადაათრიეთ დავალება სხვა დღეზე, ვადა ავტომატურად შეიცვლება.</p>`;
+}
+function vBoard(){
+  const L = all();
+  return `<div class="cols">` + STATUS_ORDER.map(s => {
+    let items = L.filter(t => t.status===s);
+    items = s==="done" ? items.sort((a,b)=>(b.doneAt||"").localeCompare(a.doneAt||"")).slice(0,30) : items.sort(cmpPriDue);
+    return `<div class="col" data-status="${s}"><h3><span class="tag st-${s}">${STATUS[s]}</span><span class="num hint">${L.filter(t=>t.status===s).length}</span></h3>
+      ${items.map(t=>card(t,{compact:true,drag:true,noActs:true})).join("") || `<div class="hint">აქ გადმოათრიეთ</div>`}</div>`;
+  }).join("") + `</div><p class="hint" style="margin-top:12px">გადაათრიეთ ბარათი სვეტებს შორის სტატუსის შესაცვლელად; ტელეფონზე შეეხეთ ბარათს და შეცვალეთ სტატუსი.</p>`;
+}
+function filtered(){
+  const f = S.f, q = f.q.trim().toLowerCase();
+  let L = all().filter(t => {
+    if (f.status==="active" && t.status==="done") return false;
+    if (f.status==="overdue" && dueState(t)!=="overdue") return false;
+    if (STATUS[f.status] && t.status!==f.status) return false;
+    if (f.obj && t.obj!==f.obj) return false;
+    if (f.cat && t.cat!==f.cat) return false;
+    if (f.pri && t.pri!==f.pri) return false;
+    if (q && !(`${t.title} ${t.note} ${t.obj} ${t.cat}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const sorters = { due:cmpDuePri, pri:cmpPriDue, obj:(a,b)=>(a.obj||"").localeCompare(b.obj||"","ka")||cmpDuePri(a,b),
+    status:(a,b)=>STATUS_ORDER.indexOf(a.status)-STATUS_ORDER.indexOf(b.status)||cmpDuePri(a,b), title:(a,b)=>a.title.localeCompare(b.title,"ka") };
+  return L.sort(sorters[f.sort]||cmpDuePri);
+}
+function vAll(){
+  const f = S.f, L = filtered();
+  const stOpts = [["active","აქტიური (შეუსრულებელი)"],["any","ყველა სტატუსი"],["overdue","ვადაგადაცილებული"],...STATUS_ORDER.map(k=>[k,STATUS[k]])];
+  const cols = [[null,""],["title","დავალება"],["obj","ობიექტი"],[null,"კატეგორია"],["pri","პრიორიტეტი"],[null,"დაწყება"],["due","ვადა"],[null,"გაფრთხილება"],["status","სტატუსი"],[null,"პროგრესი"],[null,"შენიშვნა"]];
+  return `<div class="filters">
+      <input class="inp" id="f-q" type="search" placeholder="ძებნა დასახელებით ან შენიშვნით…" value="${esc(f.q)}">
+      <select class="sel" id="f-status">${stOpts.map(([v,l])=>opt(v,l,f.status===v)).join("")}</select>
+      <select class="sel" id="f-obj">${opt("","ყველა ობიექტი")}${S.lists.objects.map(o=>opt(o,o,f.obj===o)).join("")}</select>
+      <select class="sel" id="f-cat">${opt("","ყველა კატეგორია")}${S.lists.categories.map(o=>opt(o,o,f.cat===o)).join("")}</select>
+      <select class="sel" id="f-pri">${opt("","ყველა პრიორიტეტი")}${Object.entries(PRI).map(([k,v])=>opt(k,v,f.pri===k)).join("")}</select>
+      <span class="hint num">${L.length} დავალება</span>
+    </div>
+    <div class="tblwrap"><table><thead><tr>${cols.map(([k,l])=>`<th${k?` data-sort="${k}"${f.sort===k?' class="sorted"':""}`:""}>${l}</th>`).join("")}</tr></thead><tbody>
+    ${L.length ? L.map(t => { const st = dueState(t); return `<tr class="row r-${st}" data-id="${t.id}">
+      <td style="width:44px"><button class="chk${t.status==="done"?" on":""}" data-act="toggle" aria-label="${t.status==="done"?"დაბრუნება":"შესრულება"}: ${esc(t.title)}">${ICON_CHECK}</button></td>
+      <td class="tname">${esc(t.title)}${t.recur?` <span class="recur hint" title="${RECUR[t.recur]}">${ICON_RECUR}</span>`:""}</td>
+      <td>${esc(t.obj)}</td><td>${esc(t.cat)}</td>
+      <td><span class="tag" style="color:var(--${t.pri==="high"?"red":t.pri==="low"?"green":"amber"})">● ${PRI[t.pri]||""}</span></td>
+      <td class="num">${fmt(t.start)}</td><td class="num">${fmt(t.due)}</td>
+      <td><span class="tag s-${st}">${dueLabel(t)}</span></td>
+      <td><span class="tag st-${t.status}">${STATUS[t.status]}</span></td>
+      <td class="num">${Math.round(progressOf(t)*100)}%</td>
+      <td class="hint">${esc(t.note)}</td></tr>`; }).join("") : `<tr><td colspan="11" class="hint" style="padding:18px">ამ ფილტრით დავალება ვერ მოიძებნა.</td></tr>`}
+    </tbody></table></div>`;
+}
+function stackRow(label, list){
+  const s = stats(list), w = k => s.total ? (s[k]/s.total*100) : 0;
+  return `<div class="brow"><div class="lbl" title="${esc(label)}">${esc(label)}</div>
+    <div class="stack" title="შესასრულებელი ${s.todo} · მიმდინარე ${s.doing} · შესრულებული ${s.done} · გადავადებული ${s.postponed}">
+      ${STATUS_ORDER.map(k=>`<i class="c-${k}" style="width:${w(k)}%"></i>`).join("")}</div>
+    <div class="num" style="text-align:right">${s.total}${s.overdue?` <span class="od" title="ვადაგადაცილებული">!${s.overdue}</span>`:""}</div></div>`;
+}
+function vDone(){
+  const d = S.d, today = todayStr(), q = d.q.trim().toLowerCase();
+  const from = d.period === "all" ? "" : addDays(today, -(+d.period - 1));
+  const doneAll = all().filter(t => t.status === "done");
+  const L = doneAll.filter(t => {
+    if (from && (t.doneAt || "") < from) return false;
+    if (d.obj && t.obj !== d.obj) return false;
+    if (q && !(`${t.title} ${t.note} ${t.obj} ${logOf(t).map(x=>x.text).join(" ")}`.toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a,b) => (b.doneAt||"").localeCompare(a.doneAt||"") || (b.updated||0)-(a.updated||0));
+  const groups = new Map();
+  for (const t of L){ const k = t.doneAt || ""; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); }
+  const label = k => { if (!k) return "თარიღის გარეშე"; const n = -diff(k); return n===0 ? "დღეს" : n===1 ? "გუშინ" : `${WD[wday(k)]}, ${fmtShort(k)}`; };
+  const week = doneAll.filter(t => (t.doneAt||"") >= addDays(today,-6)).length;
+  const periods = [["7","7 დღე"],["30","30 დღე"],["90","3 თვე"],["all","ყველა"]];
+  const objs = [...new Set([...S.lists.objects, ...doneAll.map(t=>t.obj).filter(Boolean)])];
+  return `<div class="filters">
+      <input class="inp" id="d-q" type="search" placeholder="ძებნა დასახელებით, შენიშვნით ან კომენტარით…" value="${esc(d.q)}">
+      <select class="sel" id="d-obj">${opt("","ყველა ობიექტი")}${objs.map(o=>opt(o,o,d.obj===o)).join("")}</select>
+      <div class="chips">${periods.map(([v,l])=>`<button class="chipbtn" data-dperiod="${v}" aria-pressed="${d.period===v}">${l}</button>`).join("")}</div>
+    </div>
+    <p class="hint" style="margin:-4px 0 16px">ამ კვირაში შესრულდა: <span class="num">${week}</span> · ნაჩვენებია: <span class="num">${L.length}</span></p>
+    ${L.length ? [...groups.entries()].map(([k, list]) => `<section class="sec"><h2>${label(k)} <span class="n">${list.length}</span></h2>
+      <div class="list">${list.map(t => card(t, {archive:true, noActs:false})).join("")}</div></section>`).join("")
+      : `<div class="empty">${doneAll.length ? "ამ ფილტრით შესრულებული დავალება ვერ მოიძებნა." : "ჯერ არცერთი დავალება არ შესრულებულა. წრეზე დაჭერით დავალება აქ გადმოვა."}</div>`}`;
+}
+function vStats(){
+  const L = all(), s = stats(L), today = todayStr();
+  const legend = `<div class="legend">${STATUS_ORDER.map(k=>`<span><i class="c-${k}"></i>${STATUS[k]}</span>`).join("")}<span class="od">!N — ვადაგადაცილებული</span></div>`;
+  const objs = [...new Set([...S.lists.objects, ...L.map(t=>t.obj).filter(Boolean)])].map(o => [o, L.filter(t=>t.obj===o)]).filter(x=>x[1].length);
+  const cats = [...new Set([...S.lists.categories, ...L.map(t=>t.cat).filter(Boolean)])].map(o => [o, L.filter(t=>t.cat===o)]).filter(x=>x[1].length);
+  // done per day, last 14 days
+  const days = Array.from({length:14}, (_,i) => addDays(today, i-13));
+  const counts = days.map(d => L.filter(t => t.doneAt===d).length);
+  const max = Math.max(1, ...counts), W = 420, H = 130, bw = W/14;
+  const spark = `<svg class="spark" viewBox="0 0 ${W} ${H+18}" width="100%" role="img" aria-label="შესრულებული დავალებები ბოლო 14 დღეში">
+    <line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="var(--line)"/>
+    ${counts.map((c,i)=>{ const h = c/max*(H-16); return `<rect x="${i*bw+4}" y="${H-h}" width="${bw-8}" height="${h}" rx="2" fill="${i===13?"var(--green)":"var(--accent-2)"}" opacity="${i===13?1:.55}"><title>${fmtShort(days[i])}: ${c}</title></rect>${c?`<text x="${i*bw+bw/2}" y="${H-h-4}" text-anchor="middle">${c}</text>`:""}`; }).join("")}
+    ${days.map((d,i)=> i%2===1 ? `<text x="${i*bw+bw/2}" y="${H+14}" text-anchor="middle">${+d.slice(8,10)}</text>` : "").join("")}
+  </svg>`;
+  const act = L.filter(active);
+  const priRows = Object.entries(PRI).map(([k,l]) => { const n = act.filter(t=>t.pri===k).length; return `<div class="brow"><div class="lbl">${l}</div><div class="stack"><i style="width:${act.length?n/act.length*100:0}%;background:var(--${k==="high"?"red":k==="low"?"green":"amber"})"></i></div><div class="num" style="text-align:right">${n}</div></div>`; }).join("");
+  if (!L.length) return `<div class="empty">ანალიტიკა გამოჩნდება პირველი დავალებების დამატების შემდეგ.</div>`;
+  return `<div class="agrid">
+    <div class="panel"><h3>ობიექტების მიხედვით</h3>${objs.map(([o,l])=>stackRow(o,l)).join("")}${legend}</div>
+    <div class="panel"><h3>კატეგორიების მიხედვით</h3>${cats.map(([o,l])=>stackRow(o,l)).join("")}${legend}</div>
+    <div class="panel"><h3>შესრულებული ბოლო 14 დღეში</h3>${spark}<p class="hint">სულ: <span class="num">${counts.reduce((a,b)=>a+b,0)}</span> · შესრულების მაჩვენებელი: <span class="num">${Math.round(s.rate*100)}%</span></p></div>
+    <div class="panel"><h3>აქტიური დავალებები პრიორიტეტით</h3>${priRows}
+      <p class="hint" style="margin-top:12px">გადავადებული: <span class="num">${s.postponed}</span> · მომდევნო 2 დღეში ვადა: <span class="num">${s.soon}</span></p></div>
+  </div>`;
+}
+function vSettings(){
+  const block = (key, title) => `<div class="panel"><h3>${title}</h3>
+    <div class="pills">${S.lists[key].map((x,i)=>`<span class="pill">${esc(x)}<button data-del="${key}:${i}" aria-label="წაშლა: ${esc(x)}">×</button></span>`).join("")}</div>
+    <form class="addrow" data-add="${key}"><input class="inp" id="add-${key}" placeholder="ახალი…" aria-label="${title} — დამატება"><button class="btn" type="submit">დამატება</button></form></div>`;
+  const contacts = `<div class="panel" style="margin-bottom:14px"><h3>აბონენტები (WhatsApp / Viber)</h3>
+    <div class="contacts">${S.contacts.length ? S.contacts.map(c => `<div class="crow"><strong>${esc(c.name)}</strong><span class="ph">${esc(prettyPhone(c.phone))}</span><span class="hint">${esc(c.obj||"—")}</span><button data-delc="${esc(c.id)}" aria-label="წაშლა: ${esc(c.name)}">×</button></div>`).join("") : `<div class="hint">ჯერ არცერთი აბონენტი. დაამატეთ სახელი და ნომერი — მერე დავალებიდან პირდაპირ მისწერთ.</div>`}</div>
+    <form class="cadd" id="c-add"><input class="inp" id="c-name" placeholder="სახელი (მაგ. გიორგი — აგენტი)" aria-label="სახელი"><input class="inp" id="c-phone" inputmode="tel" placeholder="5XX XX XX XX" aria-label="ტელეფონი"><select class="sel" id="c-obj" aria-label="ობიექტი">${opt("","ობიექტი —")}${S.lists.objects.map(o=>opt(o,o)).join("")}</select><button class="btn primary" type="submit">დამატება</button></form>
+    <p class="hint" style="margin-top:8px">ნომერი შეგიძლიათ ჩაწეროთ +995-ით ან მის გარეშე — 5XX XX XX XX.</p></div>`;
+  return contacts + `<div class="lists">${block("objects","ობიექტები / ქვეკატეგორიები")}${block("categories","კატეგორიები")}</div>
+    <div class="panel" style="margin-top:14px"><h3>ფაილების საცავი</h3>
+      <p class="hint" id="usage">${S.assets ? "იტვირთება…" : "ფაილების ატვირთვა ამ ხედში მიუწვდომელია."}</p>
+      <p class="hint">მიიღება: ფოტო (JPG, PNG, WebP, GIF; iPhone-ის ფოტო ავტომატურად გარდაიქმნება), PDF, ვიდეო (MP4, WebM), CSV/TXT — თითო 20 MB-მდე; Excel (.xlsx), Word (.docx), PowerPoint (.pptx), ZIP — 14 MB-მდე. Excel-ის ცხრილის ნახვა შეიძლება პირდაპირ პროგრამაში, ორიგინალი კი ჩამოიტვირთება უცვლელად. ძველი .xls/.doc ჯერ შეინახეთ .xlsx/.docx ფორმატში.</p></div>
+    <div class="panel" style="margin-top:14px"><h3>Excel-ში ექსპორტი</h3>
+      <p class="hint">ყველა დავალება ერთ .xlsx ფაილად, იმავე სვეტებით, რაც ძველ ცხრილში იყო.</p>
+      <button class="btn primary" id="export" ${S.downloads?"":"disabled"}>ჩამოტვირთვა (.xlsx)</button>
+      ${S.downloads?"":`<p class="hint">ჩამოტვირთვა ამ ხედში მიუწვდომელია.</p>`}</div>
+    <div class="panel" style="margin-top:14px"><h3>მოკლე ინსტრუქცია</h3>
+      <p class="hint">• დავალების დამატება — ზედა ველი, Enter. „დეტალურად“ ხსნის სრულ ფორმას (თარიღები, საათი, ქვედავალებები, განმეორება, შენიშვნა).<br>
+      • სწრაფი ჩაწერის სიტყვები: <b>დღეს / ხვალ / ზეგ / ორშაბათს … / 5 დღეში / კვირაში / 28.10</b> — ვადა; <b>11:00</b> ან <b>11 საათზე</b> — საათი; <b>@მაგნიტი</b> — ობიექტი; <b>#პირადი</b> — კატეგორია; <b>!!</b> — მაღალი, <b>!დაბალი</b> — დაბალი პრიორიტეტი; <b>ყოველდღე / სამუშაო დღეებში / ყოველ კვირა / ყოველ თვე</b> — განმეორება.<br>
+      • ქვედავალებების მონიშვნა შეგიძლიათ პირდაპირ ბარათზე — პროგრესი თავისით ითვლება.<br>
+      • საათიანი დავალება: დანიშნულ დროს პროგრამა ხმით გაგაფრთხილებთ (როცა ღიაა; ზედა კუთხეში 🔔 — ჩართვა/გამორთვა). ტელეფონზე საიმედო შეხსენებისთვის დააჭირეთ 📅 — დავალება Google Calendar-ში დაემატება.<br>
+      • ფოტოს/ფაილის მიმაგრება — დავალების რედაქტირებაში ან „რა მოხდა?“ ფანჯარაში (+ ფოტო / ფაილი). ტელეფონზე შეგიძლიათ პირდაპირ კამერით გადაიღოთ.<br>
+      • წრეზე დაჭერა ხსნის ფანჯარას „რა მოხდა?“ — ჩაწერეთ კომენტარი და აირჩიეთ: შესრულდა, გადატანა ან მხოლოდ კომენტარი. თუ ტექსტში თარიღი/საათი წერია („გადაიწია ხვალ 11:00-ზე“), დავალება თავისით გადაიტანება. დასახელებაზე დაჭერა — რედაქტირება და კომენტარების ისტორია.<br>
+      • განმეორებადი დავალების შესრულებისას შემდეგი ავტომატურად ჩნდება მომდევნო თარიღზე.<br>
+      • ობიექტის წაშლა სიიდან არსებულ დავალებებს არ ცვლის.<br>
+      • კლავიშები: <span class="num">N</span> — ახალი დავალება, <span class="num">Esc</span> — ფანჯრის დახურვა.</p></div>`;
+}
+
+let usageTimer = null;
+function refreshUsage(){
+  if (!S.assets || S.view !== "settings") return;
+  clearTimeout(usageTimer);
+  usageTimer = setTimeout(async () => {
+    try { const r = await S.assets.list(); const u = r.usage, el = $("#usage");
+      if (el) el.textContent = `გამოყენებულია ${fmtSize(u.bytes)} / ${fmtSize(u.maxBytes)} · ${u.files} ფაილი (მაქს. ${u.maxFiles})`;
+    } catch(e){ const el = $("#usage"); if (el) el.textContent = "საცავის მონაცემები ვერ ჩაიტვირთა."; }
+  }, 300);
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderTop();
+  const qaObj = $("#qa-obj"), qaCat = $("#qa-cat");
+  const keepO = qaObj.value, keepC = qaCat.value;
+  qaObj.innerHTML = opt("","ობიექტი —") + S.lists.objects.map(o=>opt(o,o,o===keepO)).join("");
+  qaCat.innerHTML = S.lists.categories.map(o=>opt(o,o, keepC ? o===keepC : o==="სამუშაო")).join("");
+  const dues = [[0,"დღეს"],[1,"ხვალ"],[2,"ზეგ"],[7,"კვირაში"],[-1,"ვადის გარეშე"]];
+  $("#qa-due").innerHTML = dues.map(([v,l])=>`<button type="button" class="chipbtn" data-due="${v}" aria-pressed="${S.quickDue===v}">${l}</button>`).join("");
+  $("#qa").hidden = S.view==="settings" || S.view==="stats" || S.view==="done";
+  const v = { today:vToday, week:vWeek, board:vBoard, all:vAll, done:vDone, stats:vStats, settings:vSettings }[S.view];
+  const focusId = document.activeElement && ["f-q","d-q"].includes(document.activeElement.id) ? document.activeElement.id : "";
+  const focus = !!focusId;
+  const caret = focus ? document.activeElement.selectionStart : 0;
+  $("#view").innerHTML = v();
+  if (S.view === "settings") refreshUsage();
+  if (focus){ const q = $("#" + focusId); if (q){ q.focus(); try{ q.setSelectionRange(caret,caret);}catch(e){} } }
+}
+
+/* ---------- modal editor ---------- */
+let modalTask = null;
+function openEditor(t){
+  const isNew = !t;
+  const base = t || { id:newId(), title:$("#qa-title").value.trim(), cat:$("#qa-cat").value, obj:$("#qa-obj").value, pri:$("#qa-pri").value,
+    start:todayStr(), due:S.quickDue<0?"":addDays(todayStr(),S.quickDue), status:"todo", progress:0, note:"", recur:"", created:Date.now() };
+  modalTask = {...base};
+  const objs = [...new Set([...S.lists.objects, base.obj].filter(Boolean))], cats = [...new Set([...S.lists.categories, base.cat].filter(Boolean))];
+  $("#modal-root").innerHTML = `<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-h">
+    <h2 id="m-h">${isNew?"ახალი დავალება":"დავალების რედაქტირება"}</h2>
+    <form class="form" id="m-form">
+      <label class="full">დასახელება<input class="inp" id="m-title" required value="${esc(base.title)}"></label>
+      <label>ობიექტი / ქვეკატეგორია<select class="sel" id="m-obj">${opt("","—")}${objs.map(o=>opt(o,o,o===base.obj)).join("")}</select></label>
+      <label>კატეგორია<select class="sel" id="m-cat">${cats.map(o=>opt(o,o,o===base.cat)).join("")}</select></label>
+      <label>პრიორიტეტი<select class="sel" id="m-pri">${Object.entries(PRI).map(([k,l])=>opt(k,l,k===base.pri)).join("")}</select></label>
+      <label>სტატუსი<select class="sel" id="m-status">${STATUS_ORDER.map(k=>opt(k,STATUS[k],k===base.status)).join("")}</select></label>
+      <label>დაწყების თარიღი<input class="inp" type="date" id="m-start" value="${esc(base.start||"")}"></label>
+      <label>შესრულების ვადა<input class="inp" type="date" id="m-due" value="${esc(base.due||"")}"></label>
+      <label>საათი (არასავალდებულო)<input class="inp" type="time" id="m-time" value="${esc(base.time||"")}"></label>
+      <label>აბონენტი (ვის ეხება)<select class="sel" id="m-contact">${opt("","—")}${S.contacts.map(c=>opt(c.id,`${c.name}${c.obj?` · ${c.obj}`:""}`,c.id===base.contact)).join("")}</select></label>
+      <label>განმეორება<select class="sel" id="m-recur">${Object.entries(RECUR).map(([k,l])=>opt(k,l,k===(base.recur||""))).join("")}</select></label>
+      <label>პროგრესი<span class="rng"><input type="range" id="m-prog" min="0" max="100" step="10" value="${Math.round((+base.progress||0)*100)}"><span class="num" id="m-prog-v">${Math.round((+base.progress||0)*100)}%</span></span></label>
+      <div class="full subs-ed"><span class="lbl">ფოტოები და ფაილები <span class="upl" id="m-upl"></span></span><div class="files" id="m-files"></div></div>
+      <div class="full subs-ed"><span class="lbl">ქვედავალებები (პროგრესი ავტომატურად ითვლება)</span><div id="m-subs"></div>
+        <div class="srow"><input class="inp" id="m-sub-new" placeholder="ახალი პუნქტი… (Enter)"><button type="button" class="btn" id="m-sub-add">დამატება</button></div></div>
+      <label class="full">შენიშვნა<textarea class="inp" id="m-note" rows="3">${esc(base.note)}</textarea></label>
+      ${logOf(base).length ? `<div class="full subs-ed"><span class="lbl">ისტორია / კომენტარები</span><div class="loglist">${[...logOf(base)].reverse().map(x => `<div><b class="k-${x.kind}">${LOG_KIND[x.kind]||""}</b><span class="hint num">${esc(stampShort(x.at))}</span>${x.kind==="moved"&&x.to?` <span class="hint">→ ${esc(fmt(x.to.slice(0,10)))}${x.to.length>10?" "+esc(x.to.slice(11)):""}</span>`:""}${x.text?`<br>${esc(x.text)}`:""}</div>`).join("")}</div></div>` : ""}
+      <p class="hint full" id="m-err" hidden style="color:var(--red)"></p>
+    </form>
+    <div class="mfoot">
+      <div class="r">${isNew?"":`<button class="btn danger" id="m-del">წაშლა</button><button class="btn" id="m-send">შენახვა და გაგზავნა</button>`}<a class="btn" id="m-gcal" href="#" target="_blank" rel="noopener" style="text-decoration:none">📅 Google Calendar</a></div>
+      <div class="r"><button class="btn" id="m-cancel">გაუქმება</button><button class="btn primary" id="m-save">შენახვა</button></div>
+    </div></div></div>`;
+  modalTask._new = isNew;
+  modalTask.subs = subsOf(base).map(x => ({...x}));
+  modalTask.files = filesOf(base).map(x => ({...x})); modalTask.fresh = []; modalTask.removed = [];
+  renderEdFiles();
+  renderSubsEd();
+  updateGcal();
+  setTimeout(()=>$("#m-title").focus(), 0);
+}
+function updateGcal(){
+  const a = $("#m-gcal"); if (!a) return;
+  const url = gcalUrl({ title: $("#m-title").value.trim() || "დავალება", due: $("#m-due").value, time: $("#m-time").value, obj: $("#m-obj").value, note: $("#m-note").value.trim(), subs: modalTask ? modalTask.subs : [] });
+  a.href = url || "#"; a.hidden = !url;
+}
+function renderEdFiles(){ const b = $("#m-files"); if (b && modalTask) b.innerHTML = filesEditorHtml(modalTask.files, "m"); }
+function readSubsEd(){
+  if (!modalTask) return;
+  document.querySelectorAll("[data-subtxt]").forEach(inp => { const i = +inp.dataset.subtxt; if (modalTask.subs[i]) modalTask.subs[i].t = inp.value; });
+}
+function renderSubsEd(){
+  const box = $("#m-subs"); if (!box || !modalTask) return;
+  box.innerHTML = modalTask.subs.map((x,i)=>`<div class="srow"><button type="button" class="sbox${x.d?" on":""}" data-subed="${i}" aria-label="მონიშვნა">${ICON_CHECK}</button><input class="inp" data-subtxt="${i}" value="${esc(x.t)}" aria-label="ქვედავალება ${i+1}"><button type="button" class="x" data-subdel="${i}" aria-label="წაშლა">×</button></div>`).join("");
+  const r = modalTask.subs.length ? modalTask.subs.filter(x=>x.d).length / modalTask.subs.length : null;
+  const sl = $("#m-prog"); if (sl){ sl.disabled = r !== null; if (r !== null){ sl.value = Math.round(r*100); $("#m-prog-v").textContent = Math.round(r*100) + "%"; } }
+}
+function discardModal(){
+  const fresh = (modalTask && modalTask.fresh) || (outState && outState.fresh) || [];
+  deleteAssets(fresh); closeModal();
+}
+function closeModal(){ $("#modal-root").innerHTML = ""; modalTask = null; sendState = null; outState = null; }
+function submitModal(){
+  const title = $("#m-title").value.trim(), start = $("#m-start").value, due = $("#m-due").value;
+  const err = $("#m-err");
+  if (!title){ err.textContent = "ჩაწერეთ დავალების დასახელება."; err.hidden = false; return; }
+  if (start && due && due < start){ err.textContent = "ვადა დაწყების თარიღზე ადრეა — შეასწორეთ ერთ-ერთი."; err.hidden = false; return; }
+  const isNew = modalTask._new, prevStatus = isNew ? null : S.tasks.get(modalTask.id)?.status;
+  const t = {...modalTask, title, obj:$("#m-obj").value, cat:$("#m-cat").value, pri:$("#m-pri").value, start, due,
+    recur:$("#m-recur").value, contact:$("#m-contact").value, progress:+$("#m-prog").value/100, note:$("#m-note").value.trim(), updated:Date.now(),
+    time: due ? $("#m-time").value : "" };
+  readSubsEd(); const pendingSub = $("#m-sub-new").value.trim(); if (pendingSub) modalTask.subs.push({t:pendingSub, d:false});
+  t.subs = modalTask.subs.map(x => ({t:String(x.t||"").trim(), d:!!x.d})).filter(x => x.t);
+  t.files = modalTask.files.map(x => ({...x})); delete t.fresh; delete t.removed;
+  deleteAssets(modalTask.removed);
+  if (t.subs.length) t.progress = t.subs.filter(x=>x.d).length / t.subs.length;
+  delete t._new;
+  const status = $("#m-status").value;
+  closeModal();
+  if (isNew){ t.status = status; if (status==="done"){ t.doneAt = todayStr(); t.progress = 1; } saveTask(t); $("#qa-title").value = ""; toast("დავალება დაემატა"); }
+  else if (status !== prevStatus){ t.status = prevStatus; S.tasks.set(t.id, t); setStatus(t, status); }
+  else { if (status==="done") t.progress = 1; saveTask(t); toast("შენახულია"); }
+}
+
+function addSubFromInput(){
+  const inp = $("#m-sub-new"); const v = inp.value.trim(); if (!v || !modalTask) return;
+  readSubsEd(); modalTask.subs.push({t:v, d:false}); inp.value = ""; renderSubsEd(); inp.focus();
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg, undo, label){
+  clearTimeout(toastTimer);
+  $("#toast-root").innerHTML = `<div class="toast" role="status"><span>${esc(msg)}</span>${undo?`<button id="t-undo">${esc(label||"დაბრუნება")}</button>`:""}</div>`;
+  if (undo) $("#t-undo").onclick = () => { undo(); $("#toast-root").innerHTML = ""; };
+  toastTimer = setTimeout(()=>{ $("#toast-root").innerHTML = ""; }, undo ? 6000 : 2500);
+}
+
+/* ---------- events ---------- */
+function setView(v){ S.view = v; try{ localStorage.setItem("tm.view", v); }catch(e){} render(); window.scrollTo({top:0}); }
+function saveF(){ try{ localStorage.setItem("tm.f", JSON.stringify({...S.f, q:""})); }catch(e){} }
+
+document.addEventListener("pointerdown", unlockAudio, { capture:true });
+document.addEventListener("keydown", unlockAudio, { capture:true });
+document.addEventListener("click", e => {
+  if (e.target.closest("#al-done")) return closeAlarm("done");
+  if (e.target.closest("#al-snooze")) return closeAlarm("snooze");
+  if (e.target.closest("#al-close")) return closeAlarm("close");
+  if (e.target.closest("#bell")){
+    if (!ALARM.unlocked && ALARM.on){ unlockAudio(); setTimeout(() => { beep(); renderBell(); }, 120); toast("ხმა ჩართულია — ასე გაისმის სიგნალი"); return; }
+    ALARM.on = !ALARM.on; try { localStorage.setItem("tm.alarm", ALARM.on ? "on" : "off"); } catch(x){}
+    renderBell(); toast(ALARM.on ? "სიგნალი ჩართულია" : "სიგნალი გამორთულია"); return;
+  }
+  const el = e.target.closest("[data-view],[data-go],[data-act],[data-due],[data-del],[data-delc],[data-sort],tr.row,#qa-more,#export,#scrim,#m-cancel,#m-save,#m-del,#m-send,#send-day,#s-copy,#s-wa,#s-vb,[data-sub],[data-subed],[data-subdel],#m-sub-add,#o-done,#o-move,#o-note,#o-gcal,[data-chip],[data-pick],[data-m-rm],[data-o-rm],[data-view-img],[data-open-file],[data-sheet],[data-dperiod],#lb-close,#lightbox");
+  if (!el) return;
+  if (el.id==="scrim"){ if (e.target===el) discardModal(); return; }
+  if (el.id==="m-cancel") return discardModal();
+  if (el.id==="m-save") return submitModal();
+  if (el.id==="m-del"){
+    if (el.dataset.armed){ const id = modalTask.id, prev = S.tasks.get(id); closeModal(); removeTask(id); toast("დავალება წაიშალა", () => saveTask(prev)); }
+    else { el.dataset.armed = "1"; el.textContent = "დაადასტურეთ წაშლა"; }
+    return;
+  }
+  if (el.id==="qa-more") return openEditor(null);
+  if (el.id==="m-sub-add"){ addSubFromInput(); return; }
+  if (el.id==="lb-close" || (el.id==="lightbox" && e.target===el)) return closeLightbox();
+  if (el.dataset.sheet !== undefined) return showSheet(+el.dataset.sheet);
+  if (el.dataset.dperiod){ S.d.period = el.dataset.dperiod; render(); return; }
+  if (el.id==="lightbox") return;
+  if (el.dataset.openFile){ e.stopPropagation(); return openDoc(el.dataset.openFile); }
+  if (el.dataset.viewImg){ e.stopPropagation(); return openLightbox(el.dataset.viewImg); }
+  if (el.dataset.pick === "m" && modalTask){ readSubsEd(); return pickFiles({ list: modalTask.files, fresh: modalTask.fresh, render: renderEdFiles, statusSel:"#m-upl" }); }
+  if (el.dataset.pick === "o" && outState) return pickFiles({ list: outState.files, fresh: outState.fresh, render: renderOutFiles, statusSel:"#o-upl" });
+  if (el.dataset.mRm !== undefined && modalTask){ const f = modalTask.files.splice(+el.dataset.mRm, 1)[0];
+    if (f){ if (modalTask.fresh.includes(f.id)) deleteAssets([f.id]); else modalTask.removed.push(f.id); } renderEdFiles(); return; }
+  if (el.dataset.oRm !== undefined && outState){ const f = outState.files.splice(+el.dataset.oRm, 1)[0]; if (f) deleteAssets([f.id]); renderOutFiles(); return; }
+  if (el.id==="o-done") return applyOutcome("done");
+  if (el.id==="o-move") return applyOutcome("moved");
+  if (el.id==="o-gcal"){ setTimeout(() => applyOutcome("moved"), 0); return; }   // the link opens Google Calendar; then the task moves
+  if (el.id==="o-note") return applyOutcome("note");
+  if (el.dataset.chip){ const ta = $("#o-text"); ta.value = (ta.value.trim() ? ta.value.trim() + ". " : "") + el.dataset.chip; outState && (outState.manual = false); updateOutcome(); ta.focus(); return; }
+  if (el.dataset.subed !== undefined){ readSubsEd(); const x = modalTask.subs[+el.dataset.subed]; if (x){ x.d = !x.d; renderSubsEd(); } return; }
+  if (el.dataset.subdel !== undefined){ readSubsEd(); modalTask.subs.splice(+el.dataset.subdel, 1); renderSubsEd(); return; }
+  if (el.dataset.sub !== undefined){
+    const c = el.closest("[data-id]"); const t = c && S.tasks.get(c.dataset.id); if (!t) return;
+    const subs = subsOf(t).map(x=>({...x})); const x = subs[+el.dataset.sub]; if (!x) return; x.d = !x.d;
+    const ratio = subs.filter(y=>y.d).length / subs.length;
+    const upd = {...t, subs, progress: ratio, status: t.status==="todo" && ratio>0 ? "doing" : t.status, updated: Date.now()};
+    saveTask(upd);
+    if (ratio === 1) toast("ყველა პუნქტი მონიშნულია", () => setStatus(S.tasks.get(t.id), "done"), "შესრულებულად მონიშვნა");
+    return;
+  }
+  if (el.id==="send-day") return openSend(dayText(), "");
+  if (el.id==="s-copy") return copyText($("#s-text").value);
+  if (el.id==="s-wa" || el.id==="s-vb"){ if (!normPhone($("#s-phone").value) && el.id==="s-vb") toast("Viber-ში აირჩიეთ ადრესატი"); return; }  // the link itself opens the app
+  if (el.id==="m-send"){ const id = modalTask && modalTask.id; submitModal(); if (!modalTask && id){ const t = S.tasks.get(id); if (t) openSend(taskText(t), t.contact || (S.contacts.find(c=>c.obj && c.obj===t.obj)||{}).id || ""); } return; }
+  if (el.dataset.delc){ const i = S.contacts.findIndex(c=>c.id===el.dataset.delc); if (i<0) return; const removed = S.contacts[i];
+    S.contacts = S.contacts.filter((_,j)=>j!==i); saveContacts(); toast(`წაიშალა: ${removed.name}`, () => { S.contacts.splice(i,0,removed); saveContacts(); }); return; }
+  if (el.id==="export") return exportXlsx();
+  if (el.dataset.view) return setView(el.dataset.view);
+  if (el.dataset.go){
+    const g = el.dataset.go; if (g==="today") return setView("today"); if (g==="done") return setView("done");
+    S.f = {...S.f, q:"", obj:"", cat:"", pri:"", status: g==="all-any" ? "any" : g.slice(4)}; saveF(); return setView("all");
+  }
+  if (el.dataset.due !== undefined){ S.quickDue = +el.dataset.due; render(); return; }
+  if (el.dataset.sort){ S.f.sort = el.dataset.sort; saveF(); render(); return; }
+  if (el.dataset.del){
+    const [key, i] = el.dataset.del.split(":"); const removed = S.lists[key][+i];
+    S.lists[key] = S.lists[key].filter((_,j)=>j!==+i); saveLists();
+    toast(`წაიშალა: ${removed}`, () => { S.lists[key].splice(+i,0,removed); saveLists(); }); return;
+  }
+  if (el.matches("tr.row")) return openEditor(S.tasks.get(el.dataset.id));
+  const c = el.closest("[data-id]"); const t = c && S.tasks.get(c.dataset.id); if (!t) return;
+  const act = el.dataset.act;
+  if (act==="toggle"){ if (t.status==="done") setStatus(t, "todo"); else openOutcome(t); }
+  else if (act==="edit") openEditor(t);
+  else if (act==="doing" || act==="todo") setStatus(t, act);
+  else if (act==="send") openSend(taskText(t), t.contact || (S.contacts.find(c=>c.obj && c.obj===t.obj)||{}).id || "");
+});
+
+document.addEventListener("input", e => {
+  const id = e.target.id;
+  if (id==="m-prog") $("#m-prog-v").textContent = e.target.value + "%";
+  if (id==="s-phone" || id==="s-text") updateSendLinks();
+  if (id==="qa-title") renderParse();
+  if (id==="o-text") updateOutcome();
+  if (["m-title","m-due","m-time","m-note"].includes(id)) updateGcal();
+  if ((id==="o-date" || id==="o-time") && outState){ outState.manual = true; updateOutcome(); }
+  if (id==="f-q"){ S.f.q = e.target.value; render(); }
+  if (id==="d-q"){ S.d.q = e.target.value; render(); }
+});
+document.addEventListener("change", e => {
+  if (["m-due","m-time","m-obj"].includes(e.target.id)) updateGcal();
+  if (e.target.id==="d-obj"){ S.d.obj = e.target.value; render(); return; }
+  if (e.target.id==="file-input"){ uploadPicked([...e.target.files]); return; }
+  const m = { "f-status":"status", "f-obj":"obj", "f-cat":"cat", "f-pri":"pri" }[e.target.id];
+  if (m){ S.f[m] = e.target.value; saveF(); render(); }
+  if (e.target.id==="s-who"){ const c = contactById(e.target.value); const ph = $("#s-phone");
+    if (c) ph.value = c.phone; else { ph.value = ""; if (e.target.value==="__other") ph.focus(); } updateSendLinks(); }
+  if (e.target.id==="m-status" && e.target.value==="done"){ $("#m-prog").value = 100; $("#m-prog-v").textContent = "100%"; }
+});
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  if (e.target.id==="qa"){
+    const raw = $("#qa-title").value.trim(); if (!raw){ $("#qa-title").focus(); return; }
+    if (!S.loaded){ toast("მონაცემები ჯერ იტვირთება — სცადეთ წამში."); return; }
+    const p = parseQuick(raw), title = p.title || raw;
+    const due = p.due !== undefined ? p.due : (S.quickDue<0 ? "" : addDays(todayStr(), S.quickDue));
+    const t = { id:newId(), title, obj: p.obj ?? $("#qa-obj").value, cat: p.cat ?? $("#qa-cat").value, pri: p.pri ?? $("#qa-pri").value,
+      start: due && due < todayStr() ? due : todayStr(), due, time: p.time || "", status:"todo", progress:0, note:"", recur: p.recur || "", subs:[],
+      created:Date.now(), updated:Date.now() };
+    saveTask(t); $("#qa-title").value = ""; renderParse();
+    toast(`დაემატა: ${title}${due?` · ${diff(due)===0?"დღეს":fmtShort(due)}`:""}${t.time?` ${t.time}`:""}`); return;
+  }
+  if (e.target.id==="m-form") return submitModal();
+  if (e.target.id==="s-form" || e.target.id==="o-form") return;
+  if (e.target.id==="c-add"){
+    const name = $("#c-name").value.trim(), phone = $("#c-phone").value.trim(), obj = $("#c-obj").value;
+    if (!name){ toast("ჩაწერეთ სახელი"); $("#c-name").focus(); return; }
+    const d = normPhone(phone);
+    if (d.length < 9){ toast("ნომერი არასრულია — მაგ. 599 12 34 56"); $("#c-phone").focus(); return; }
+    S.contacts = [...S.contacts, { id: "c" + Date.now().toString(36), name, phone: "+" + d, obj }];
+    saveContacts(); toast(`დაემატა: ${name}`);
+    setTimeout(()=>{ const n = $("#c-name"); if (n) n.focus(); }, 0); return;
+  }
+  const key = e.target.dataset.add;
+  if (key){ const inp = $(`#add-${key}`), v = inp.value.trim();
+    if (v && !S.lists[key].includes(v)){ S.lists[key] = [...S.lists[key], v]; saveLists(); toast(`დაემატა: ${v}`); }
+    else if (v) toast("ეს უკვე სიაშია");
+    setTimeout(()=>{ const i = $(`#add-${key}`); if (i){ i.value=""; i.focus(); } },0);
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key==="Escape" && $("#lightbox")) return closeLightbox();
+  if (e.key==="Escape" && $("#scrim")) return discardModal();
+  if (outState && e.key==="Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); return applyOutcome($("#o-date").value ? "moved" : "done"); }
+  if (e.key==="Enter" && modalTask && e.target.id==="m-sub-new"){ e.preventDefault(); return addSubFromInput(); }
+  if (e.key==="Enter" && modalTask && e.target.dataset && e.target.dataset.subtxt !== undefined){ e.preventDefault(); $("#m-sub-new").focus(); return; }
+  if (e.key==="Enter" && modalTask && e.target.tagName==="INPUT"){ e.preventDefault(); return submitModal(); }
+  const typing = /INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
+  if (!typing && !modalTask && (e.key==="n" || e.key==="N" || e.key==="ნ")){ e.preventDefault(); if ($("#qa").hidden) setView("today"); $("#qa-title").focus(); }
+});
+
+/* drag & drop (board: status, week: due date) */
+let dragId = null;
+document.addEventListener("dragstart", e => { const c = e.target.closest?.(".card[draggable]"); if (!c) return; dragId = c.dataset.id; c.classList.add("drag"); try{ e.dataTransfer.setData("text/plain", dragId); e.dataTransfer.effectAllowed="move"; }catch(x){} });
+document.addEventListener("dragend", e => { dragId = null; document.querySelectorAll(".drag,.over").forEach(x=>x.classList.remove("drag","over")); });
+document.addEventListener("dragover", e => { const col = e.target.closest?.("[data-status],[data-date]"); if (!col || !dragId) return; e.preventDefault(); document.querySelectorAll(".over").forEach(x=>x!==col&&x.classList.remove("over")); col.classList.add("over"); });
+document.addEventListener("drop", e => {
+  const col = e.target.closest?.("[data-status],[data-date]"); if (!col || !dragId) return; e.preventDefault();
+  const t = S.tasks.get(dragId); dragId = null; if (!t) return;
+  if (col.dataset.status && col.dataset.status !== t.status) setStatus(t, col.dataset.status);
+  if (col.dataset.date && col.dataset.date !== t.due){ const prev = {...t}; const start = t.start && t.start > col.dataset.date ? col.dataset.date : t.start;
+    saveTask({...t, due:col.dataset.date, start, updated:Date.now()}); toast(`ვადა: ${fmtShort(col.dataset.date)}`, ()=>saveTask(prev)); }
+});
+
+/* ---------- export ---------- */
+function loadXlsx(){
+  return new Promise((res, rej) => { if (window.XLSX) return res(window.XLSX);
+    const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = () => res(window.XLSX); s.onerror = rej; document.head.appendChild(s); });
+}
+async function exportXlsx(){
+  if (!S.downloads) return;
+  const btn = $("#export"); btn.disabled = true; btn.textContent = "მზადდება…";
+  try{
+    const X = await loadXlsx();
+    const head = ["ID","დავალების დასახელება","კატეგორია","ობიექტი / ქვეკატეგორია","პრიორიტეტი","დაწყების თარიღი","შესრულების ვადა (Deadline)","დარჩენილი დღეები","სტატუსი","შეხსენება / გაფრთხილება","პროგრესი (%)","განმეორება","შენიშვნა","საათი","ქვედავალებები","კომენტარები","ფაილები"];
+    const toDate = s => s ? new Date(ms(s)) : "";
+    const rows = all().sort((a,b)=>(a.created||0)-(b.created||0)).map((t,i) => [i+1, t.title, t.cat, t.obj, PRI[t.pri]||"", toDate(t.start), toDate(t.due),
+      t.due && t.status!=="done" ? diff(t.due) : "", STATUS[t.status], dueLabel(t), progressOf(t), RECUR[t.recur||""], t.note, t.time||"", subsOf(t).map(x=>`${x.d?"☑":"☐"} ${x.t}`).join("; "), logOf(t).map(x=>`${stampShort(x.at)} ${LOG_KIND[x.kind]||""}${x.to?` → ${x.to}`:""}${x.text?`: ${x.text}`:""}`).join(" | "), filesOf(t).map(f=>f.name).join("; ")]);
+    const ws = X.utils.aoa_to_sheet([head, ...rows], {cellDates:true, dateNF:"dd.mm.yyyy"});
+    ws["!cols"] = [6,34,14,20,12,14,16,12,16,26,12,18,34,8,40,50,30].map(w=>({wch:w}));
+    ws["!autofilter"] = { ref: `A1:Q${rows.length+1}` };
+    for (let r=1;r<=rows.length;r++){ for (const c of ["F","G"]){ const cell = ws[`${c}${r+1}`]; if (cell && cell.t==="d") cell.z = "dd.mm.yyyy"; }
+      const p = ws[`K${r+1}`]; if (p) p.z = "0%"; }
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "დავალებები");
+    const data = X.write(wb, {bookType:"xlsx", type:"array", cellDates:true});
+    await S.downloads.save({ filename:`დავალებები_${todayStr()}.xlsx`, data: new Uint8Array(data) });
+  } catch(e){
+    if (!(e && e.code==="declined")) toast(e && e.code==="rate_limited" ? "ჩამოტვირთვა უკვე მიმდინარეობს — სცადეთ ცოტა ხანში." : "ექსპორტი ვერ მოხერხდა.");
+  } finally { const b = $("#export"); if (b){ b.disabled = false; b.textContent = "ჩამოტვირთვა (.xlsx)"; } }
+}
+
+/* ---------- boot ---------- */
+// 1) show the local copy straight away
+{
+  const cached = lsGet(LS.tasks, null), lists = lsGet(LS.lists, null);
+  if (Array.isArray(cached)){ S.tasks = new Map(cached.filter(t=>t && t.id && t.title).map(t=>[t.id, t])); S.loaded = true; }
+  if (lists && Array.isArray(lists.objects) && Array.isArray(lists.categories)) S.lists = lists;
+  const cts = lsGet(LS.contacts, null); if (Array.isArray(cts)) S.contacts = cts;
+}
+render(); setSync("local");
+setInterval(() => { if (!modalTask) render(); }, 60_000);
+setInterval(checkAlarms, 15_000); setTimeout(checkAlarms, 3000);
+renderBell();   // roll over at midnight, refresh due labels
+window.addEventListener("online", () => flush());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flush(); });
+
+// 2) connect to the server store, then send anything waiting
+(async () => {
+  const use = name => { try { return Promise.resolve(window.claude?.use?.(name) ?? null).catch(() => null); } catch(e){ return Promise.resolve(null); } };
+  const [db, dl, as] = await Promise.all([use("db"), use("downloads"), use("assets")]);
+  S.downloads = dl; S.assets = as;
+  if (!db){
+    S.loaded = true; setSync("local");
+    const b = $("#banner"); b.hidden = false;
+    b.textContent = "სერვერთან კავშირი ამ ხედში ვერ დამყარდა. დავალებები შენახულია მხოლოდ ამ მოწყობილობაზე/ბრაუზერში — სხვა მოწყობილობაზე არ გამოჩნდება. შეამოწმეთ ინტერნეტი და მენეჯერის PIN, მერე განაახლეთ გვერდი.";
+    render(); return;
+  }
+  S.db = db;
+  db.doc("config/lists").onSnapshot(snap => {
+    if (outbox.config) return;                       // our own unsent list change wins
+    if (snap.exists){ const d = snap.data();
+      S.lists = { categories: Array.isArray(d.categories)?[...d.categories]:[...DEFAULT_LISTS.categories], objects: Array.isArray(d.objects)?[...d.objects]:[...DEFAULT_LISTS.objects] };
+      lsSet(LS.lists, S.lists); render(); }
+  }, () => {});
+  db.doc("config/contacts").onSnapshot(snap => {
+    if (outbox.contacts) return;
+    if (snap.exists){ const d = snap.data(); if (Array.isArray(d.list)){ S.contacts = d.list.map(c => ({...c})); lsSet(LS.contacts, S.contacts); render(); } }
+  }, () => {});
+  db.collection("tasks").limit(1000).onSnapshot(snap => {
+    const m = new Map();
+    for (const d of snap.docs){ const v = d.data(); if (v && v.title) m.set(d.id, {...v, id:d.id, status: STATUS[v.status] ? v.status : "todo"}); }
+    S.tasks = overlay(m); S.loaded = true;
+    lsSet(LS.tasks, [...S.tasks.values()]);
+    if (!flushing && sync.state !== "error") setSync("saved");
+    render();
+  }, err => {
+    S.loaded = true; setSync("error", err.code || "");
+    const b = $("#banner"); b.hidden = false;
+    b.textContent = "სერვერიდან განახლება შეწყდა — თქვენი ცვლილებები ინახება ამ მოწყობილობაზე. განაახლეთ გვერდი.";
+    render();
+  });
+  flush();
+})();
+})();
+</script>
+
+</body></html>
