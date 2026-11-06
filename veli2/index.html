@@ -424,6 +424,45 @@ label.btn.disabled{opacity:.6;pointer-events:none}
 .tmframe{display:block;width:100%;height:calc(100vh - 96px);min-height:520px;border:1px solid var(--line);border-radius:var(--radius);background:#f3f5fa}
 @media(max-width:999px){.tmframe{height:calc(100vh - 80px)}}
 
+/* ჩემი ქსელები (გვერდითა მენიუ) */
+.nn0 .chev2,.nn1 .chev2{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;margin-left:auto;transform:rotate(-90deg);transition:transform .18s;flex:none}
+.chev2.op{transform:none}
+.nnl{margin:2px 0 6px 18px;border-left:1px solid rgba(255,255,255,.08);padding-left:6px}
+.nn1,.nn2{display:flex;align-items:center;width:100%;border:0;background:none;color:var(--side-ink);font:inherit;text-align:left;cursor:pointer;border-radius:8px}
+.nn1{font-size:13.5px;padding:7px 10px;font-weight:500}.nn1 span{flex:1}
+.nn1:hover,.nn2:hover{background:rgba(255,255,255,.05)}
+.nn1.cur{color:#fff}
+.nn2l{margin:0 0 4px 12px}
+.nn2{font-size:13px;padding:6px 10px;color:var(--side-mute)}
+.nn2.on{background:rgba(18,163,131,.18);color:#fff}
+/* ფაილები */
+.kfiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.kfile{border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kfile img{width:100%;height:110px;object-fit:cover;border-radius:6px;display:block}
+.kfi{display:grid;place-items:center;height:110px;border-radius:6px;background:var(--sunk);text-decoration:none;color:var(--accent);font-size:15px}
+.kfn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn.sm{padding:3px 8px;font-size:12px}
+/* Claude ასისტენტი */
+.aifab{position:fixed;right:20px;bottom:20px;z-index:60;border:0;border-radius:999px;padding:12px 18px;background:linear-gradient(135deg,#0e7c66,#12a383);color:#fff;font:inherit;font-weight:700;font-size:14.5px;box-shadow:0 10px 30px rgba(14,124,102,.35);cursor:pointer;display:flex;gap:8px;align-items:center}
+.aifab span{font-size:17px}
+.aibox{position:fixed;right:20px;bottom:20px;z-index:60;width:min(440px,calc(100vw - 24px));height:min(640px,calc(100vh - 40px));background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 70px rgba(15,27,45,.28);display:flex;flex-direction:column;overflow:hidden}
+.aihead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#0c1f1b,#0e7c66);color:#fff}
+.aihead .muted{color:#cfe3dd!important}.aihead .ib{background:rgba(255,255,255,.12);color:#fff;border:0}
+.aibody{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#f6f8fb}
+.aim{max-width:92%;padding:10px 12px;border-radius:14px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.aim.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.aim.assistant{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.aim .kt{font-size:12.5px;margin:6px 0}.aim .kt th{position:static}
+.aibusy{color:var(--muted);font-style:italic}
+.aitools{margin-top:6px;font-size:11px;color:var(--muted)}
+.aihello{color:var(--ink2);font-size:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}
+.aiwarn{background:var(--warn-soft);color:#7a4a05;border-radius:12px;padding:12px;font-size:13.5px;line-height:1.55}
+.aiwarn code{background:#fff;padding:1px 5px;border-radius:5px}
+.aiin{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:#fff}
+.aiin textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:12px;padding:9px 11px;font:inherit;font-size:14px}
+.aiin .btn{border-radius:12px;padding:0 16px;font-size:16px}
+@media(max-width:520px){.aibox{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0}.aifab{right:14px;bottom:14px}}
+
 </style>
 </head>
 <body>
@@ -826,7 +865,7 @@ pin:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circ
 up:'<path d="M12 16V4M6 10l6-6 6 6M4 20h16"/>'};
 const svg=k=>`<svg class="i" viewBox="0 0 24 24">${IC[k]||""}</svg>`;
 let NGO=null;try{NGO=JSON.parse(localStorage.getItem("mg.ngo")||"null")}catch(e){}
-function ngOpen(g,items){if(NGO&&g in NGO)return NGO[g];return items.some(x=>x[0]===S.tab)}
+function ngOpen(g,items){if(NGO&&g in NGO)return NGO[g];return items.some(x=>x[0]===S.tab)||(g.includes("KAM")&&String(S.tab).startsWith("n|"))}
 function ngToggle(g,open){NGO=NGO||{};NGO[g]=!open;try{localStorage.setItem("mg.ngo",JSON.stringify(NGO))}catch(e){}}
 function mView(){
   const T=D.tasks,tot=T.length,done=T.filter(t=>t.status==="დადასტურებული").length,rev=T.filter(t=>t.status==="შესრულებული").length,
@@ -840,9 +879,9 @@ function mView(){
     ["","ქსელების მართვა (KAM)",[["k-sales","გაყიდვები",0,"",IC.chart],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]]];
   const TT={my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა"};
   let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">JDE vs MEGAKO</div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
-  <nav class="navs">${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0);return `<button class="ng ${op?"op":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}"><span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}"><svg class="i" viewBox="0 0 24 24">${ic}</svg>${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+`</div>`:"")}).join("")}</nav>
+  <nav class="navs">${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0);return `<button class="ng ${op?"op":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}"><span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}"><svg class="i" viewBox="0 0 24 24">${ic}</svg>${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+(g.includes("KAM")?kNetNav():"")+`</div>`:"")}).join("")}</nav>
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
-  <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button><div class="tt">${TT[S.tab]||"JDE vs MEGAKO"}<small>${todayLine()}</small></div><button class="ib" data-a="refresh" title="განახლება">${svg("refresh")}</button></header>
+  <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button><div class="tt">${TT[S.tab]||kTitle()||"JDE vs MEGAKO"}<small>${todayLine()}</small></div><button class="ib" data-a="refresh" title="განახლება">${svg("refresh")}</button></header>
   ${["today","rev","all"].includes(S.tab)?`<div class="kpis">
     <div class="kpi"><div class="muted">სულ დავალება</div><div class="v">${tot}</div></div>
     <div class="kpi"><div class="muted">შესასრულებელი</div><div class="v">${open}</div></div>
@@ -853,6 +892,7 @@ function mView(){
     <div class="kpi"><div class="muted">შესრულება</div><div class="v">${pct}%</div><div class="progress"><div style="width:${pct}%"></div></div></div>
   </div>`:""}`;
   if(S.tab==="my")return h+`<iframe class="tmframe" src="../tasks/" title="ჩემი დავალებები"></iframe>`;
+  if(String(S.tab).startsWith("n|"))return h+kNetView();
   if(String(S.tab).startsWith("k-"))return h+kamView();
   if(S.tab==="team")return h+teamView();
   if(S.tab==="rep")return h+repView();
@@ -1681,7 +1721,7 @@ Object.assign(A, {
   kan(v) { K.an = v; render(); },
   kost(v) { K.of.st = v; K.of.n = 100; render(); },
   kmore() { K.of.n += 200; render(); },
-  kobj(v) { K.code = v; S.tab = "k-objects"; render(); scrollTo(0, 0); },
+  kobj(v) { K.code = v; if (!String(S.tab).startsWith("n|")) S.tab = "k-objects"; render(); scrollTo(0, 0); },
   kback() { K.code = null; render(); },
   kgaptask() { const o = K.obj; if (!o) return; const ag = kAgent((o.agents || [])[0].ag); const dir = (o.objects || [])[0] || {};
     const sold3 = {}; (o.products || []).forEach(p => { if (+p.m3 > 0) sold3[String(p.k).trim()] = 1; });
@@ -1697,7 +1737,172 @@ document.addEventListener("change", e => { const el = e.target;
   else if (k === "onet") { K.of.net = v; K.of.n = 100; } else if (k === "oag") { K.of.ag = v; K.of.n = 100; } else if (k === "osort") K.of.sort = v;
   render(); });
 document.addEventListener("input", e => { const el = e.target; if (el.dataset.kin === "oq") { K.of.q = el.value; K.of.n = 100; clearTimeout(K.oqt); K.oqt = setTimeout(render, 300); } });
-{ const _tab = A.tab; A.tab = (v, el) => { if (v === "k-objects") K.code = null; return _tab(v, el); }; }
+{ const _tab = A.tab; A.tab = (v, el) => { if (v === "k-objects" || (String(v).startsWith("n|") && v !== S.tab)) K.code = null; return _tab(v, el); }; }
+
+/* ჩემი ქსელები: ქსელი → ასორტიმენტი, ობიექტები, შეთანხმებული აქციები, ანაზღაურება, პლანოგრამა */
+const MYNETS = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
+const NSUB = [["assort", "ასორტიმენტი"], ["objects", "ობიექტები"], ["promos", "შეთანხმებული აქციები"], ["comp", "ანაზღაურება"], ["plano", "პლანოგრამა"]];
+const NSALES = { "მადაგონი": "მადაგონი 2" };
+let NNAV = { open: false, nets: {} };
+try { const v = JSON.parse(localStorage.getItem("mg.nnav") || "null"); if (v) NNAV = Object.assign(NNAV, v); } catch (e) {}
+const nnSave = () => { try { localStorage.setItem("mg.nnav", JSON.stringify(NNAV)); } catch (e) {} };
+const nRoute = () => { const p = String(S.tab).split("|"); return p[0] === "n" ? { net: p[1], sub: p[2] } : null; };
+function kTitle() { const r = nRoute(); if (!r) return ""; const s = NSUB.find(x => x[0] === r.sub); return r.net + (s ? " · " + s[1] : ""); }
+function kNetNav() {
+  const r = nRoute();
+  const open = NNAV.open || !!r;
+  const chev = o => `<svg class="chev2 ${o ? "op" : ""}" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>`;
+  let h = `<button class="ni nn0" data-a="nntog" data-v=""><svg class="i" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>ჩემი ქსელები${chev(open)}</button>`;
+  if (!open) return h;
+  h += `<div class="nnl">` + MYNETS.map(n => {
+    const o = NNAV.nets[n] || (r && r.net === n);
+    return `<button class="nn1 ${r && r.net === n ? "cur" : ""}" data-a="nntog" data-v="${esc(n)}"><span>${esc(n)}</span>${chev(o)}</button>` +
+      (o ? `<div class="nn2l">` + NSUB.map(([k, l]) => `<button class="nn2 ${r && r.net === n && r.sub === k ? "on" : ""}" data-a="tab" data-v="${esc("n|" + n + "|" + k)}">${l}</button>`).join("") + `</div>` : "");
+  }).join("") + `</div>`;
+  return h;
+}
+function kNetView() {
+  const r = nRoute(); if (!r) return "";
+  const tabs = `<div class="chips" style="margin:2px 0 14px">${NSUB.map(([k, l]) => `<button class="chip ${r.sub === k ? "on" : ""}" data-a="tab" data-v="${esc("n|" + r.net + "|" + k)}">${l}</button>`).join("")}</div>`;
+  if (r.sub === "promos") return tabs + kNetPromos(r.net);
+  if (r.sub === "comp" || r.sub === "plano") return tabs + kNetDocs(r.net, r.sub);
+  if (!K.info && !K.loading.info) { K.loading.info = true; kcall("info").then(x => { K.info = x; K.loading.info = false; kBuildAg(x.agents || []); kInitF(); render(); }).catch(e => { K.loading.info = false; K.info = { rows: 0, err: errMsg(e) }; render(); }); }
+  if (!K.info) return tabs + `<div class="empty"><b>იტვირთება…</b></div>`;
+  if (r.sub === "assort") {
+    if (K.an !== r.net) { K.an = r.net; }
+    return tabs + kAssort().replace(/<div class="kbar"><div class="chips">[\s\S]*?<\/div>/, '<div class="kbar">');
+  }
+  if (r.sub === "objects") {
+    if (!K.info.rows) return tabs + `<div class="empty"><b>გაყიდვების მონაცემი ჯერ არ არის ატვირთული</b>გადადი „მონაცემების ატვირთვა“-ზე.</div>`;
+    const sn = NSALES[r.net] || r.net;
+    if (K.of.net !== sn) { K.of.net = sn; K.of.n = 100; }
+    return tabs + (K.code ? kObj() : kObjects());
+  }
+  return tabs;
+}
+/* შეთანხმებული აქციები (აპის „აქციები“ ცხრილიდან) */
+function kNetPromos(net) {
+  const td = D.today || "";
+  const L = (D.promos || []).filter(p => norm(p.network) === norm(net) || norm(p.network).startsWith(norm(net)));
+  const st = p => (p.to && p.to < td) ? 2 : (p.from && p.from > td) ? 1 : 0;
+  const nm = ["მიმდინარე", "მომავალი", "დასრულებული"], cls = ["good", "warn", ""];
+  L.sort((a, b) => st(a) - st(b) || String(a.from || "").localeCompare(String(b.from || "")));
+  const cnt = [0, 0, 0]; L.forEach(p => cnt[st(p)]++);
+  let h = `<div class="kpis"><div class="kpi good"><div class="muted">მიმდინარე</div><div class="v">${cnt[0]}</div></div><div class="kpi warn"><div class="muted">მომავალი</div><div class="v">${cnt[1]}</div></div><div class="kpi"><div class="muted">ბოლო 7 დღეში დასრულდა</div><div class="v">${cnt[2]}</div></div></div>`;
+  if (!L.length) return h + `<div class="empty"><b>${esc(net)}-ზე აქციები არ არის</b>აქციებს „ქსელები → აქციები“ გვერდიდან ამატებ.</div>`;
+  h += `<div class="kcard"><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>შტრიხკოდი</th><th>რეგ. ფასი</th><th>აქციის ფასი</th><th>%</th><th>პერიოდი</th><th>შენიშვნა</th></tr></thead><tbody>${L.map(p => `<tr class="${st(p) === 2 ? "kdim" : ""}"><td><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span></td><td class="kw">${esc(p.product)}</td><td class="mono small">${esc(p.barcode)}</td><td>${esc(p.regular)}</td><td><b>${esc(p.price)}</b></td><td>${esc(p.pct)}</td><td class="small">${fmtDate(p.from)} — ${fmtDate(p.to)}</td><td class="small kw">${esc(p.note || "")}</td></tr>`).join("")}</tbody></table></div></div>`;
+  return h + `<div class="small muted">აქციების დამატება და რედაქტირება: „ქსელები → აქციები“.</div>`;
+}
+/* ანაზღაურება / პლანოგრამა: ფაილები + შენიშვნა თითო ქსელზე */
+const KD = { docs: null, loading: false, busy: false, note: {}, prev: null };
+function kdLoad(force) {
+  if ((KD.docs && !force) || KD.loading) return;
+  KD.loading = true;
+  kcall("docs").then(rows => { KD.docs = {}; rows.filter(x => x.path.startsWith("net/")).forEach(x => KD.docs[x.path] = x.data); KD.loading = false; render(); })
+    .catch(e => { KD.loading = false; KD.docs = KD.docs || {}; toast(errMsg(e)); render(); });
+}
+const kdPath = (net, sub) => "net/" + net.replace(/[^\wა-ჰ]+/g, "_") + "/" + sub;
+function kNetDocs(net, sub) {
+  kdLoad();
+  if (!KD.docs) return `<div class="empty"><b>იტვირთება…</b></div>`;
+  const path = kdPath(net, sub), d = KD.docs[path] || { note: "", files: [] };
+  const title = sub === "comp" ? "ანაზღაურება" : "პლანოგრამა";
+  const hint = sub === "comp" ? "აქ შეინახე ქსელის ანაზღაურების/ბონუსის ფაილები (Excel, PDF) და შეთანხმების პირობები." : "აქ შეინახე ქსელის პლანოგრამის ფოტოები და ფაილები — აგენტებსაც შეგიძლია გაუგზავნო „ფაილების“ გვერდიდან.";
+  const isImg = f => /^image\//.test(f.type || "");
+  const isX = f => /\.(xlsx|xls|csv)$/i.test(f.name || "");
+  let h = `<div class="kcard"><div class="kh"><b>${title} · ${esc(net)}</b><label class="btn primary ${KD.busy ? "disabled" : ""}"><input type="file" multiple hidden data-kdfile="${esc(path)}">${KD.busy ? "იტვირთება…" : "+ ფაილის დამატება"}</label></div>
+    <div class="small muted" style="margin-bottom:10px">${hint}</div>
+    <div class="kfiles">${(d.files || []).length ? d.files.map((f, i) => `<div class="kfile">${isImg(f) ? `<a href="${esc(f.id)}" target="_blank" rel="noopener"><img src="${esc(f.id)}" alt="${esc(f.name)}" loading="lazy"></a>` : `<a class="kfi" href="${esc(f.id)}" target="_blank" rel="noopener"><b>${esc((f.name.split(".").pop() || "").toUpperCase())}</b></a>`}
+      <div class="kfn" title="${esc(f.name)}">${esc(f.name)}</div><div class="small muted">${esc(f.at || "")}</div>
+      <div class="row" style="gap:4px">${isX(f) ? `<button class="btn ghost sm" data-a="kdprev" data-v="${esc(path + "#" + i)}">ნახვა</button>` : ""}<button class="btn ghost sm" data-a="kddel" data-v="${esc(path + "#" + i)}">წაშლა</button></div></div>`).join("") : `<div class="muted small">ფაილები ჯერ არ არის.</div>`}</div></div>`;
+  h += `<div class="kcard"><div class="kh"><b>შენიშვნა / პირობები</b><button class="btn" data-a="kdnote" data-v="${esc(path)}">შენახვა</button></div><textarea id="kdn" rows="6" style="width:100%" placeholder="მაგ: ანაზღაურების პირობები, ვადები, საკონტაქტო პირი…">${esc(KD.note[path] !== undefined ? KD.note[path] : d.note || "")}</textarea></div>`;
+  if (KD.prev && KD.prev.path === path) h += `<div class="kcard"><div class="kh"><b>${esc(KD.prev.name)}</b><button class="btn ghost" data-a="kdprevx">დახურვა</button></div><div class="ktw">${KD.prev.html}</div></div>`;
+  return h;
+}
+async function kdSave(path, d) { await kcall("docSet", { path, data: d }); KD.docs[path] = d; }
+const kdB64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(f); });
+async function kdUpload(path, files) {
+  KD.busy = true; render();
+  try {
+    const d = JSON.parse(JSON.stringify(KD.docs[path] || { note: "", files: [] })); d.files = d.files || [];
+    for (const f of files) {
+      if (f.size > 15e6) { toast(f.name + " — ძალიან დიდია (მაქს. 15 MB)"); continue; }
+      const r = await kcall("fileUp", { b64: await kdB64(f), type: f.type || "" });
+      d.files.push({ id: r.id, name: f.name, type: f.type || "", size: f.size, at: new Date().toLocaleDateString("ka-GE") });
+    }
+    await kdSave(path, d); toast("ფაილი შენახულია");
+  } catch (e) { toast("ვერ აიტვირთა: " + errMsg(e)); }
+  KD.busy = false; render();
+}
+Object.assign(A, {
+  nntog(v) { if (!v) NNAV.open = !(NNAV.open || !!nRoute()); else NNAV.nets[v] = !(NNAV.nets[v] || (nRoute() && nRoute().net === v)); if (v && nRoute() && nRoute().net === v && !NNAV.nets[v]) { /* ღია ქსელის დაკეცვა */ } nnSave(); render(); },
+  async kdnote(path) { const t = ($("#kdn") || {}).value || ""; const d = Object.assign({ files: [] }, KD.docs[path] || {}, { note: t }); try { await kdSave(path, d); delete KD.note[path]; toast("შენახულია"); } catch (e) { toast(errMsg(e)); } render(); },
+  async kddel(v) { const [path, i] = v.split("#"); const d = JSON.parse(JSON.stringify(KD.docs[path] || { files: [] })); const f = d.files.splice(+i, 1)[0]; if (!f || !confirm("წავშალო „" + f.name + "“?")) return; try { await kdSave(path, d); kcall("fileDel", { id: f.id }).catch(() => {}); } catch (e) { toast(errMsg(e)); } render(); },
+  async kdprev(v) { const [path, i] = v.split("#"); const f = (KD.docs[path] || { files: [] }).files[+i]; if (!f) return; try { await loadXLSX(); const buf = await fetch(f.id).then(r => r.arrayBuffer()); const wb = XLSX.read(buf, { type: "array" }); const ws = wb.Sheets[wb.SheetNames[0]]; let html = XLSX.utils.sheet_to_html(ws, { header: "", footer: "" }); html = html.replace(/<table/, '<table class="kt"'); KD.prev = { path, name: f.name + " · " + wb.SheetNames[0], html }; } catch (e) { toast("ვერ გაიხსნა: " + errMsg(e)); } render(); },
+  kdprevx() { KD.prev = null; render(); },
+});
+document.addEventListener("change", e => { const el = e.target; if (el.dataset && el.dataset.kdfile) { const fs = [...el.files]; el.value = ""; if (fs.length) kdUpload(el.dataset.kdfile, fs); } });
+document.addEventListener("input", e => { if (e.target.id === "kdn") { const r = nRoute(); if (r) KD.note[kdPath(r.net, r.sub)] = e.target.value; } });
+
+/* Claude ასისტენტი — მენეჯერის ჩატი */
+const AI_API = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/ai";
+const AI = { open: false, msgs: [], busy: false, ready: null, text: "" };
+try { const h = JSON.parse(sessionStorage.getItem("mg.ai") || "null"); if (Array.isArray(h)) AI.msgs = h.slice(-30); } catch (e) {}
+const aiSave = () => { try { sessionStorage.setItem("mg.ai", JSON.stringify(AI.msgs.slice(-30))); } catch (e) {} };
+async function aiCall(body) {
+  let r; try { r = await fetch(AI_API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign({ pin: S.pin }, body)) }); }
+  catch (e) { throw new Error("NetworkError: კავშირი ვერ შედგა"); }
+  const j = await r.json().catch(() => null);
+  if (!j || !j.ok) throw new Error((j && j.error) || "შეცდომა");
+  return j.r;
+}
+function aiMd(t) {
+  let s = esc(t);
+  const lines = s.split("\n"); const out = []; let tbl = [];
+  const flush = () => { if (!tbl.length) return; const rows = tbl.filter(l => !/^\s*\|?\s*:?-{2,}/.test(l)).map(l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim()));
+    out.push(`<div class="ktw"><table class="kt">${rows.map((r, i) => `<tr>${r.map(c => i ? `<td>${c}</td>` : `<th>${c}</th>`).join("")}</tr>`).join("")}</table></div>`); tbl = []; };
+  for (const l of lines) { if (/^\s*\|.*\|\s*$/.test(l)) { tbl.push(l); continue; } flush(); out.push(l); }
+  flush();
+  s = out.join("\n").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/^#{1,4}\s*(.+)$/gm, "<b>$1</b>").replace(/^\s*[-•]\s+/gm, "• ");
+  return s.replace(/\n/g, "<br>").replace(/<br>(<div class="ktw">)/g, "$1").replace(/(<\/table><\/div>)<br>/g, "$1");
+}
+function aiView() {
+  if (S.who !== "__m") return "";
+  if (!AI.open) return `<button class="aifab" data-a="aiopen" title="Claude ასისტენტი"><span>✦</span> Claude</button>`;
+  if (AI.ready === null) { AI.ready = "…"; aiCall({ op: "status" }).then(r => { AI.ready = r.ready; render(); }).catch(() => { AI.ready = false; render(); }); }
+  const sug = ["როგორ ვართ ამ წელს შარშანდელთან შედარებით?", "რომელ ობიექტებს სჭირდება ყურადღება მაგნიტში?", "ჩემი დღევანდელი დავალებები", "აგენტების დავალებების მდგომარეობა"];
+  const body = AI.ready === false ? `<div class="aiwarn"><b>Claude ჯერ არ არის ჩართული.</b><br>საჭიროა Anthropic API-ს გასაღები (claude.com/platform → API Keys). გასაღები ჩასვი Supabase-ში: Edge Functions → Secrets → სახელი <code>ANTHROPIC_API_KEY</code>. ამის შემდეგ ასისტენტი ავტომატურად იმუშავებს.</div>`
+    : (AI.msgs.length ? AI.msgs.map(m => `<div class="aim ${m.role}">${m.role === "assistant" ? aiMd(m.text) : esc(m.text).replace(/\n/g, "<br>")}${m.tools && m.tools.length ? `<div class="aitools">მონაცემები: ${esc([...new Set(m.tools)].join(", "))}</div>` : ""}</div>`).join("")
+      : `<div class="aihello">გამარჯობა! მკითხე გაყიდვებზე, ქსელებზე, ობიექტებზე, აქციებზე, აგენტებზე ან შენს დავალებებზე — პასუხს ბაზის რეალური მონაცემებით გაგცემ.<div class="chips" style="margin-top:10px">${sug.map(s => `<button class="chip" data-a="aisug" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)
+      + (AI.busy ? `<div class="aim assistant aibusy">ვფიქრობ და მონაცემებს ვამოწმებ…</div>` : "");
+  return `<div class="aibox"><div class="aihead"><b>✦ Claude</b><span class="small muted">JDE vs MEGAKO ასისტენტი</span><span style="flex:1"></span>${AI.msgs.length ? `<button class="ib" data-a="aiclear" title="ახალი საუბარი">↺</button>` : ""}<button class="ib" data-a="aiclose" title="დახურვა">✕</button></div>
+    <div class="aibody" id="aibody">${body}</div>
+    <div class="aiin"><textarea id="aitx" rows="2" placeholder="დაწერე შეკითხვა… (Enter — გაგზავნა)" ${AI.busy || AI.ready === false ? "disabled" : ""}>${esc(AI.text)}</textarea><button class="btn primary" data-a="aisend" ${AI.busy || AI.ready === false ? "disabled" : ""}>➤</button></div></div>`;
+}
+function aiMount() {
+  let el = document.getElementById("aiwrap");
+  if (!el) { el = document.createElement("div"); el.id = "aiwrap"; document.body.appendChild(el); }
+  const had = document.activeElement && document.activeElement.id === "aitx";
+  el.innerHTML = aiView();
+  const b = document.getElementById("aibody"); if (b) b.scrollTop = b.scrollHeight;
+  if (had || (AI.open && !AI.busy)) { const t = document.getElementById("aitx"); if (t && !t.disabled) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }
+}
+async function aiSend(text) {
+  text = String(text || "").trim(); if (!text || AI.busy) return;
+  AI.msgs.push({ role: "user", text }); AI.text = ""; AI.busy = true; aiSave(); aiMount();
+  try { const r = await aiCall({ messages: AI.msgs.map(m => ({ role: m.role, text: m.text })) }); AI.msgs.push({ role: "assistant", text: r.text || "—", tools: r.tools || [] }); }
+  catch (e) { const m = errMsg(e); if (m === "NOKEY") AI.ready = false; else AI.msgs.push({ role: "assistant", text: "⚠ " + m }); }
+  AI.busy = false; aiSave(); aiMount();
+}
+Object.assign(A, {
+  aiopen() { AI.open = true; aiMount(); }, aiclose() { AI.open = false; aiMount(); },
+  aiclear() { AI.msgs = []; aiSave(); aiMount(); },
+  aisend() { const t = document.getElementById("aitx"); aiSend(t ? t.value : AI.text); },
+  aisug(v) { aiSend(v); },
+});
+document.addEventListener("input", e => { if (e.target.id === "aitx") AI.text = e.target.value; });
+document.addEventListener("keydown", e => { if (e.target.id === "aitx" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); aiSend(e.target.value); } });
+{ const _render = render; render = function () { _render.apply(this, arguments); aiMount(); }; }
 
 </script>
 </body>
