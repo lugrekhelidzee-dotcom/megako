@@ -499,6 +499,10 @@ label.btn.disabled{opacity:.6;pointer-events:none}
 .msell{max-height:280px;overflow:auto;display:flex;flex-direction:column;gap:2px}
 .msell label{display:flex;gap:8px;align-items:center;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:14px}
 .msell label:hover{background:rgba(31,111,92,.08)}
+.prt td.prbo .prin{border-color:#e08a1e;background:#fff4e6}
+.prt td.prmarg.mgood .prin{color:#1f9d55;font-weight:700}.prt td.prmarg.mwarn .prin{color:#b7791f;font-weight:700}.prt td.prmarg.mbad .prin{color:#c0392b;font-weight:700}
+.prt td.prnet .prin{font-weight:700}
+.prt .prin{width:78px}
 
 </style>
 </head>
@@ -2026,10 +2030,10 @@ const PR = { net: "", docs: {}, loaded: false, loading: false, as: {}, asLoading
 const PRNET = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
 const prKey = r => String(r.mg_barcode || r.net_barcode || r.mg_name || r.net_name || "").trim();
 const prF = v => v == null || v === "" || isNaN(+v) ? null : +v;
-const prPctIn = v => { v = String(v ?? "").replace(",", ".").replace("%", "").trim(); if (v === "") return null; const n = +v; return isFinite(n) ? (Math.abs(n) > 1 ? n / 100 : n) : null; };
+const prPctIn = v => { v = String(v ?? "").replace(",", ".").replace("%", "").trim(); if (v === "" || v === "-") return null; const n = +v; return isFinite(n) ? n / 100 : null; };
 const prP = v => v == null ? "" : (+v * 100).toFixed(1).replace(/\.0$/, "");
 const prM = v => v == null || !isFinite(v) ? "—" : (+v).toFixed(2);
-function prPlan(net) { const k = "promo/" + net; if (!PR.docs[k]) PR.docs[k] = { name: "", from: "", to: "", items: {} }; if (!PR.docs[k].items) PR.docs[k].items = {}; return PR.docs[k]; }
+function prPlan(net) { const k = "promo/" + net; if (!PR.docs[k]) PR.docs[k] = { name: "", from: "", to: "", items: {}, buy: {} }; if (!PR.docs[k].items) PR.docs[k].items = {}; if (!PR.docs[k].buy) PR.docs[k].buy = {}; return PR.docs[k]; }
 function prLoad() {
   if (PR.loaded || PR.loading) return; PR.loading = true;
   kcall("docs").then(rows => { rows.filter(x => x.path.startsWith("promo/")).forEach(x => PR.docs[x.path] = x.data || {}); PR.loaded = true; PR.loading = false; render(); })
@@ -2050,14 +2054,15 @@ function prAssort(net) {
   return PR.as[net];
 }
 /* ერთი ხაზის გამოთვლა */
-function prCalc(r, it) {
-  const B = prF(r.buy_price), P = prF(r.price_list);
+function prBuy(net, key) { const p = prPlan(net); return p.buy && p.buy[key] != null ? p.buy[key] : null; }
+function prCalc(r, it, bo) {
+  const B0 = prF(r.buy_price), B = bo != null ? bo : B0, P = prF(r.price_list);
   const retro = it.retro != null ? it.retro : prF(r.retro) ?? 0;
   const bonus = it.bonus != null ? it.bonus : 0;
   const net = B != null ? B * (1 - (retro || 0) - (bonus || 0)) : null;
   const shelf = it.shelf != null ? it.shelf : null;
   const marg = shelf && net != null ? (shelf - net) / shelf : null;
-  return { P, B, inv: prF(r.inv_disc), retro, bonus, net, retroGel: B != null ? B * (retro || 0) : null, bonusGel: B != null ? B * (bonus || 0) : null, shelf, marg, margGel: shelf && net != null ? shelf - net : null };
+  return { P, B, B0, bo: bo != null, inv: prF(r.inv_disc), retro, bonus, net, retroGel: B != null ? B * (retro || 0) : null, bonusGel: B != null ? B * (bonus || 0) : null, shelf, marg, margGel: shelf && net != null ? shelf - net : null };
 }
 function prRows(net) {
   const a = PR.as[net]; if (!a) return null;
@@ -2065,7 +2070,7 @@ function prRows(net) {
   const act = (a.rows || []).map(r => ({ r, key: prKey(r), dl: false }));
   const used = {}; (a.rows || []).forEach(r => used[String(r.mg_name).trim()] = 1);
   const dl = (a.stats && a.stats.products || []).filter(p => !used[String(p.k).trim()] && p.a > 0).map(p => ({ r: { net, net_name: "", mg_name: p.k, category: "", sold: p.a }, key: String(p.k).trim(), dl: true }));
-  return act.concat(dl).map(x => ({ ...x, it: plan.items[x.key] || {} }));
+  return act.concat(dl).map(x => ({ ...x, it: plan.items[x.key] || {}, bo: plan.buy && plan.buy[x.key] != null ? plan.buy[x.key] : null }));
 }
 function kPromo() {
   prLoad();
@@ -2083,7 +2088,7 @@ function kPromo() {
   const vis = rows.filter(x => (PR.dl ? true : !x.dl) && (!PR.cat || (x.r.category || "სხვა") === PR.cat) && (!q || norm([x.r.net_name, x.r.mg_name, x.r.net_barcode, x.r.mg_barcode, x.r.lvl1, x.r.lvl2].join(" ")).includes(q))
     && (!PR.st || (PR.st === "ok" ? x.it.ok : PR.st === "no" ? !x.it.ok : PR.st === "file" ? x.it.src === "file" : PR.st === "edit" ? (x.it.bonus != null || x.it.shelf != null || x.it.retro != null) : true)));
   const act = rows.filter(x => !x.dl), dln = rows.length - act.length, okL = act.filter(x => x.it.ok);
-  const avgM = okL.length ? okL.map(x => prCalc(x.r, x.it).marg).filter(v => v != null) : [];
+  const avgM = okL.length ? okL.map(x => prCalc(x.r, x.it, x.bo).marg).filter(v => v != null) : [];
   h += `<div class="kpis"><div class="kpi"><div class="muted">აქტიური ასორტიმენტი</div><div class="v">${act.length}</div></div>
     <div class="kpi good"><div class="muted">დადასტურებული</div><div class="v">${okL.length}</div></div>
     <div class="kpi"><div class="muted">საშ. მარჟა (დადასტ.)</div><div class="v">${avgM.length ? (avgM.reduce((s, v) => s + v, 0) / avgM.length * 100).toFixed(1) + "%" : "—"}</div></div>
@@ -2099,7 +2104,12 @@ function kPromo() {
     <button class="btn" data-a="prxl" data-v="allnets">⬇ ყველა ქსელის დადასტურებულები</button>
     <label class="btn">⬆ ქსელის აქციის ფაილი<input type="file" accept=".xlsx,.xls,.csv" data-prfile="1" hidden></label>
     <button class="btn ghost" data-a="prtpl">⬇ შაბლონი</button>
-    <button class="btn ghost danger" data-a="prclr">გასუფთავება</button></div></div>`;
+    <button class="btn ghost danger" data-a="prclr">გასუფთავება</button></div>
+    <div class="row prbulk" style="gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center"><b class="small">შესასყიდი ფასები:</b>
+    <input type="text" inputmode="decimal" id="prbulkp" placeholder="±%" style="width:80px"><button class="btn" data-a="prbulk">ყველას შეცვლა %-ით${PR.cat ? " (" + esc(PR.cat) + ")" : ""}</button>
+    <label class="btn">⬆ ახალი შესასყიდი ფასები (Excel)<input type="file" accept=".xlsx,.xls,.csv" data-prfile="buy" hidden></label>
+    <button class="btn ghost" data-a="prbuyrst">ფაილის ფასებზე დაბრუნება</button>
+    <span class="small muted">${Object.keys(plan.buy || {}).length ? Object.keys(plan.buy).length + " ფასი შეცვლილია" + (plan.buyAt ? " · " + esc(String(plan.buyAt).slice(0, 10)) : "") : ""}</span></div></div>`;
   if (PR.imp && PR.imp.net === net) h += prImpView();
   h += `<div class="kbar"><div class="row" style="gap:8px;flex-wrap:wrap"><input type="search" data-prq="1" value="${esc(PR.q)}" placeholder="ძებნა: სახელი, შტრიხკოდი, დონე…" style="max-width:320px">
     <select data-prs="st"><option value="">ყველა</option>${[["ok", "დადასტურებული"], ["no", "დაუდასტურებელი"], ["edit", "შეცვლილი"], ["file", "ქსელის ფაილიდან"]].map(([v, l]) => `<option value="${v}" ${PR.st === v ? "selected" : ""}>${l}</option>`).join("")}</select>
@@ -2107,51 +2117,65 @@ function kPromo() {
     <span class="small muted">${vis.length} / ${rows.length}</span></div>
     <div class="chips"><span class="klab">კატეგორია</span><button class="chip ${!PR.cat ? "on" : ""}" data-a="prcat" data-v="">ყველა</button>${cats.map(c => `<button class="chip ${PR.cat === c ? "on" : ""}" data-a="prcat" data-v="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>`;
   const inp = (key, f, v, ph) => `<input class="prin" type="text" inputmode="decimal" data-pri="${esc(key)}" data-prf="${f}" value="${v == null ? "" : esc(v)}" placeholder="${ph}">`;
-  h += `<div class="kcard"><div class="ktw"><table class="kt prt"><thead><tr><th>პროდუქტი</th><th>კატეგორია</th><th>შტრიხკოდი</th><th>საპრაისო</th><th>შესასყიდი</th><th>რეტრო %</th><th>სააქციო ბონუსი %</th><th>ნეტ ფასი</th><th>სარეკომ. ფასი</th><th>მარჟა</th><th></th></tr></thead><tbody>${vis.map(x => {
-    if (x.dl) return `<tr class="prdl"><td><b>${esc(x.r.mg_name)}</b> <span class="pill w-late">დელისტი</span><div class="small muted">ბოლო 3 თვეში გაიყიდა ${kmoney(x.r.sold)}, ასორტიმენტის ფაილში არ არის</div></td><td colspan="10"></td></tr>`;
-    const c = prCalc(x.r, x.it), k = x.key;
-    return `<tr class="${x.it.ok ? "prok" : ""}" data-prrow="${esc(k)}"><td><b>${esc(x.r.net_name || x.r.mg_name)}</b><div class="small muted">${esc(x.r.mg_name)}</div>${x.it.src === "file" ? `<span class="pill">ქსელის ფაილიდან</span>` : ""}</td>
-      <td class="small">${esc([x.r.category, x.r.lvl1, x.r.lvl2].filter(Boolean).join(" · "))}</td><td class="mono small">${esc(x.r.net_barcode || x.r.mg_barcode || "")}</td>
-      <td>${prM(c.P)}</td><td>${prM(c.B)}${c.inv ? `<div class="small muted">ინვ. −${prP(c.inv)}%</div>` : ""}</td>
+  h += `<div class="kcard"><div class="ktw"><table class="kt prt"><thead><tr><th>პროდუქტი</th><th>საპრაისო</th><th>შესასყიდი ₾</th><th>რეტრო %</th><th>სააქციო ბონუსი %</th><th>ნეტ ფასი ₾</th><th>სარეკომ. ფასი ₾</th><th>მარჟა %</th><th></th></tr></thead><tbody>${vis.map(x => {
+    if (x.dl) return `<tr class="prdl"><td><b>${esc(x.r.mg_name)}</b> <span class="pill w-late">დელისტი</span><div class="small muted">ბოლო 3 თვეში გაიყიდა ${kmoney(x.r.sold)}, ასორტიმენტის ფაილში არ არის</div></td><td colspan="8"></td></tr>`;
+    const c = prCalc(x.r, x.it, x.bo), k = x.key;
+    return `<tr class="${x.it.ok ? "prok" : ""}" data-prrow="${esc(k)}"><td><b>${esc(x.r.net_name || x.r.mg_name)}</b><div class="small muted">${esc(x.r.mg_name)}</div><div class="small muted">${esc([x.r.category, x.r.lvl1, x.r.lvl2].filter(Boolean).join(" · "))} · <span class="mono">${esc(x.r.net_barcode || x.r.mg_barcode || "")}</span></div>${x.it.src === "file" ? `<span class="pill">ქსელის ფაილიდან</span>` : ""}</td>
+      <td>${prM(c.P)}</td><td class="${c.bo ? "prbo" : ""}">${inp(k, "buy", c.B != null ? (+c.B).toFixed(2) : null, "₾")}<div class="small muted prb0">${c.bo ? "ფაილში " + prM(c.B0) : c.inv ? "ინვ. −" + prP(c.inv) + "%" : ""}</div></td>
       <td>${inp(k, "retro", x.it.retro != null ? prP(x.it.retro) : null, prP(prF(x.r.retro)) || "0")}</td>
       <td>${inp(k, "bonus", x.it.bonus != null ? prP(x.it.bonus) : null, "0")}</td>
-      <td class="prnet"><b>${prM(c.net)}</b><div class="small muted">${c.retroGel ? "რეტრო " + prM(c.retroGel) : ""}${c.bonusGel ? " · ბონ. " + prM(c.bonusGel) : ""}</div></td>
+      <td class="prnet">${inp(k, "net", c.net != null ? (+c.net).toFixed(2) : null, "₾")}<div class="small muted prgel">${prGel(c)}</div></td>
       <td>${inp(k, "shelf", x.it.shelf, "₾")}</td>
-      <td class="prmarg">${c.marg != null ? `<b class="${c.marg < 0.1 ? "bad" : c.marg < 0.2 ? "warn" : "good"}">${(c.marg * 100).toFixed(1)}%</b><div class="small muted">${prM(c.margGel)} ₾</div>` : "—"}</td>
+      <td class="prmarg ${prMc(c.marg)}">${inp(k, "marg", c.marg != null ? (c.marg * 100).toFixed(1) : null, "%")}<div class="small muted prmg">${c.margGel != null ? prM(c.margGel) + " ₾" : ""}</div></td>
       <td><button class="btn ${x.it.ok ? "okb" : ""}" data-a="prok" data-v="${esc(k)}" title="დადასტურება">${x.it.ok ? "✓" : "✓?"}</button></td></tr>`;
   }).join("")}</tbody></table></div></div>
-  <div class="small muted">ნეტ ფასი = შესასყიდი × (1 − რეტრო − სააქციო ბონუსი). მარჟა = (სარეკომენდაციო − ნეტ) ÷ სარეკომენდაციო. ცარიელი რეტრო = ასორტიმენტის ფაილის რეტრო. ყველაფერი ავტომატურად ინახება.</div>`;
+  <div class="small muted">ნებისმიერი ველი იწერება და დანარჩენი თვითონ ითვლება: რეტრო + ბონუსი → ნეტ ფასი; რეტრო + ნეტ ფასი → ბონუსი; სარეკომენდაციო → მარჟა; მარჟა → სარეკომენდაციო. ნეტ = შესასყიდი × (1 − რეტრო − ბონუსი); მარჟა = (სარეკომ. − ნეტ) ÷ სარეკომ. ცარიელი რეტრო = ფაილის რეტრო. შეცვლილი შესასყიდი ნარინჯისფრადაა. ყველაფერი ავტომატურად ინახება.</div>`;
   return h;
 }
 /* ხაზის ცვლილება ხელახალი render-ის გარეშე */
-function prUpdRow(key) {
+const prMc = m => m == null ? "" : m < 0.1 ? "mbad" : m < 0.2 ? "mwarn" : "mgood";
+const prGel = c => [c.retroGel ? "რეტრო " + prM(c.retroGel) : "", c.bonusGel ? "ბონ. " + prM(c.bonusGel) : ""].filter(Boolean).join(" · ");
+function prUpdRow(key, skip) {
   const net = PR.net, sn = NSALES[net] || net, a = PR.as[sn]; if (!a) return;
   const r = (a.rows || []).find(z => prKey(z) === key); if (!r) return;
-  const it = prPlan(net).items[key] || {}; const c = prCalc(r, it);
+  const it = prPlan(net).items[key] || {}; const c = prCalc(r, it, prBuy(net, key));
   const tr = document.querySelector(`tr[data-prrow="${CSS.escape(key)}"]`); if (!tr) return;
-  tr.querySelector(".prnet").innerHTML = `<b>${prM(c.net)}</b><div class="small muted">${c.retroGel ? "რეტრო " + prM(c.retroGel) : ""}${c.bonusGel ? " · ბონ. " + prM(c.bonusGel) : ""}</div>`;
-  tr.querySelector(".prmarg").innerHTML = c.marg != null ? `<b class="${c.marg < 0.1 ? "bad" : c.marg < 0.2 ? "warn" : "good"}">${(c.marg * 100).toFixed(1)}%</b><div class="small muted">${prM(c.margGel)} ₾</div>` : "—";
+  const set = (f, v) => { if (f === skip) return; const i = tr.querySelector(`[data-prf="${f}"]`); if (i && document.activeElement !== i) i.value = v == null ? "" : v; };
+  set("buy", c.B != null ? (+c.B).toFixed(2) : ""); set("bonus", it.bonus != null ? prP(it.bonus) : ""); set("net", c.net != null ? (+c.net).toFixed(2) : "");
+  set("shelf", it.shelf != null ? it.shelf : ""); set("marg", c.marg != null ? (c.marg * 100).toFixed(1) : "");
+  tr.querySelector(".prgel").textContent = prGel(c);
+  tr.querySelector(".prmg").textContent = c.margGel != null ? prM(c.margGel) + " ₾" : "";
+  const td = tr.querySelector(".prmarg"); td.classList.remove("mbad", "mwarn", "mgood"); if (prMc(c.marg)) td.classList.add(prMc(c.marg));
+  const tb = tr.querySelector('[data-prf="buy"]').closest("td"); tb.classList.toggle("prbo", c.bo); tb.querySelector(".prb0").textContent = c.bo ? "ფაილში " + prM(c.B0) : c.inv ? "ინვ. −" + prP(c.inv) + "%" : "";
 }
+const prNum = v => { v = String(v ?? "").replace(",", ".").replace(/[^\d.\-]/g, "").trim(); return v === "" || isNaN(+v) ? null : +v; };
 document.addEventListener("input", e => {
   const el = e.target;
   if (el.dataset.pri) { const net = PR.net, k = el.dataset.pri, f = el.dataset.prf; const p = prPlan(net); const it = p.items[k] = p.items[k] || {};
-    if (f === "shelf") { const v = String(el.value).replace(",", ".").trim(); it.shelf = v === "" || isNaN(+v) ? null : +v; } else it[f] = prPctIn(el.value);
+    const sn = NSALES[net] || net, r = ((PR.as[sn] || {}).rows || []).find(z => prKey(z) === k) || {};
+    const c0 = prCalc(r, it, prBuy(net, k));
+    if (f === "buy") { const v = prNum(el.value); if (v == null || Math.abs(v - (prF(r.buy_price) ?? -1)) < 0.005) delete p.buy[k]; else p.buy[k] = v; p.buyAt = new Date().toISOString(); }
+    else if (f === "retro" || f === "bonus") it[f] = prPctIn(el.value);
+    else if (f === "net") { const v = prNum(el.value); if (v == null) it.bonus = null; else if (c0.B) it.bonus = +(1 - (c0.retro || 0) - v / c0.B).toFixed(6); }
+    else if (f === "shelf") it.shelf = prNum(el.value);
+    else if (f === "marg") { const m = prPctIn(el.value); if (m != null && m < 1 && c0.net != null) it.shelf = +(c0.net / (1 - m)).toFixed(2); else if (m == null) it.shelf = null; }
     if (it.ok) { it.ok = false; const tr = el.closest("tr"); if (tr) tr.classList.remove("prok"); const b = tr && tr.querySelector("[data-a=prok]"); if (b) { b.classList.remove("okb"); b.textContent = "✓?"; } }
-    prUpdRow(k); prSave(net); return; }
+    prUpdRow(k, f); prSave(net); return; }
   if (el.dataset.prh) { prPlan(PR.net)[el.dataset.prh] = el.value; prSave(PR.net); return; }
   if (el.dataset.prq) { PR.q = el.value; clearTimeout(PR.qt); PR.qt = setTimeout(() => { render(); const i = document.querySelector("[data-prq]"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); }
 });
 document.addEventListener("change", e => {
   const el = e.target;
+  if (el.dataset.pri) { setTimeout(() => prUpdRow(el.dataset.pri), 0); return; }
   if (el.dataset.prs === "st") { PR.st = el.value; render(); }
   else if (el.dataset.prs === "dl") { PR.dl = el.checked; render(); }
-  else if (el.dataset.prfile) { const f = el.files[0]; el.value = ""; if (f) prImport(f); }
+  else if (el.dataset.prfile) { const f = el.files[0], mode = el.dataset.prfile; el.value = ""; if (f) prImport(f, mode === "buy" ? "buy" : "promo"); }
   else if (el.dataset.prmap) { PR.imp.map[el.dataset.prmap] = +el.value; render(); }
 });
 /* ექსპორტი */
 function prExportRows(net, onlyOk) {
   const sn = NSALES[net] || net, plan = prPlan(net), rows = (prRows(sn) || []).filter(x => !x.dl && (!onlyOk || x.it.ok));
-  return rows.map(x => { const c = prCalc(x.r, x.it); return [net, plan.name || "", plan.from || "", plan.to || "", x.r.net_name || "", x.r.mg_name || "", x.r.net_barcode || x.r.mg_barcode || "", x.r.category || "", x.r.lvl1 || "", x.r.lvl2 || "", c.P, c.B, c.inv, c.retro, c.retroGel, c.bonus, c.bonusGel, c.net, c.shelf, c.marg, c.margGel, x.it.ok ? "დადასტურებული" : "", x.it.src === "file" ? "ქსელის ფაილი" : ""]; });
+  return rows.map(x => { const c = prCalc(x.r, x.it, x.bo); return [net, plan.name || "", plan.from || "", plan.to || "", x.r.net_name || "", x.r.mg_name || "", x.r.net_barcode || x.r.mg_barcode || "", x.r.category || "", x.r.lvl1 || "", x.r.lvl2 || "", c.P, c.B, c.inv, c.retro, c.retroGel, c.bonus, c.bonusGel, c.net, c.shelf, c.marg, c.margGel, x.it.ok ? "დადასტურებული" : "", x.it.src === "file" ? "ქსელის ფაილი" : ""]; });
 }
 const PRH = ["ქსელი", "აქცია", "-დან", "-მდე", "ქსელის დასახელება", "მეგაკოს დასახელება", "შტრიხკოდი", "კატეგორია", "დონე 1", "დონე 2", "საპრაისო ფასი", "შესასყიდი ფასი", "ინვოისის ფასდაკლება %", "რეტრო %", "რეტრო ₾", "სააქციო ბონუსი %", "სააქციო ბონუსი ₾", "ნეტ ფასი", "სარეკომენდაციო ფასი", "მარჟა %", "მარჟა ₾", "სტატუსი", "წყარო"];
 async function prXl(mode) {
@@ -2179,8 +2203,8 @@ async function prTpl() {
   XLSX.writeFile(wb, `აქციის შაბლონი ${PR.net}.xlsx`);
 }
 /* ქსელის გამოგზავნილი აქციის ფაილის ანალიზი */
-const PRCOL = [["bc", "შტრიხკოდი", /შტრიხ|ბარკოდ|barcode|ean|შ\/კ/i], ["name", "დასახელება", /დასახელ|ნომენკლ|პროდუქ|საქონ|name|product/i], ["shelf", "სააქციო / სარეკომ. ფასი", /სააქციო ფას|აქციის ფას|აქციით|ახალი ფას|promo.*price|სარეკომ|ფასი აქცი/i], ["reg", "რეგულარული ფასი", /რეგულარ|ძველი ფას|თაროს ფას|regular|ჩვეულებრ/i], ["disc", "ფასდაკლება %", /ფასდაკლ|discount|%/i], ["bonus", "სააქციო ბონუსი", /ბონუს|კომპენს|ანაზღაურ|bonus/i], ["retro", "რეტრო", /რეტრო|retro/i]];
-async function prImport(file) {
+const PRCOL = [["bc", "შტრიხკოდი", /შტრიხ|ბარკოდ|barcode|ean|შ\/კ/i], ["name", "დასახელება", /დასახელ|ნომენკლ|პროდუქ|საქონ|name|product/i], ["shelf", "სააქციო / სარეკომ. ფასი", /სააქციო ფას|აქციის ფას|აქციით|ახალი ფას|promo.*price|სარეკომ|ფასი აქცი/i], ["reg", "რეგულარული ფასი", /რეგულარ|ძველი ფას|თაროს ფას|regular|ჩვეულებრ/i], ["disc", "ფასდაკლება %", /ფასდაკლ|discount|%/i], ["bonus", "სააქციო ბონუსი", /ბონუს|კომპენს|ანაზღაურ|bonus/i], ["retro", "რეტრო", /რეტრო|retro/i], ["buy", "შესასყიდი ფასი", /შესასყიდ|შესყიდ|purchase|cost|ახალი შესასყ/i]];
+async function prImport(file, mode) {
   try { await loadXLSX(); } catch (e) { return toast(errMsg(e)); }
   try {
     const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
@@ -2201,7 +2225,8 @@ async function prImport(file) {
       const cnt = best.H.map((_, j) => best.rows.slice(best.hi + 1, best.hi + 60).filter(r => /^\d{8,14}$/.test(String(r[j] || "").trim())).length);
       const m = Math.max(...cnt); if (m > 2) map.bc = cnt.indexOf(m);
     }
-    PR.imp = { net: PR.net, file: file.name, ...best, map };
+    if (mode === "buy" && map.buy < 0) { const pc = best.H.findIndex(h => /ფასი|price/i.test(h)); if (pc >= 0) map.buy = pc; }
+    PR.imp = { net: PR.net, file: file.name, mode: mode || "promo", ...best, map };
     render(); scrollTo(0, 0);
   } catch (e) { toast("ფაილი ვერ წავიკითხე: " + errMsg(e)); }
 }
@@ -2217,7 +2242,7 @@ function prImpMatch() {
     if (!bc && !nm) return;
     const x = (bc && byBc[bc]) || (nm && byName[norm(nm)]);
     const g = k => I.map[k] >= 0 ? num(r[I.map[k]]) : null;
-    const rec = { bc, nm, shelf: g("shelf"), reg: g("reg"), disc: g("disc"), bonus: g("bonus"), retro: g("retro") };
+    const rec = { bc, nm, shelf: g("shelf"), reg: g("reg"), disc: g("disc"), bonus: g("bonus"), retro: g("retro"), buy: g("buy") };
     if (rec.shelf == null && rec.reg != null && rec.disc != null) rec.shelf = +(rec.reg * (1 - (Math.abs(rec.disc) > 1 ? rec.disc / 100 : rec.disc))).toFixed(2);
     if (x) hit.push({ x, rec }); else miss.push(rec);
   });
@@ -2226,14 +2251,14 @@ function prImpMatch() {
 function prImpView() {
   const I = PR.imp, m = prImpMatch();
   const opt = k => `<select data-prmap="${k}"><option value="-1">—</option>${I.H.map((h, j) => `<option value="${j}" ${I.map[k] === j ? "selected" : ""}>${esc(h || "სვეტი " + (j + 1))}</option>`).join("")}</select>`;
-  return `<div class="kcard primp"><div class="kh"><b>ქსელის ფაილი: ${esc(I.file)}</b><span class="small muted">ფურცელი „${esc(I.sheet)}“, სათაურის ხაზი ${I.hi + 1}</span></div>
+  return `<div class="kcard primp"><div class="kh"><b>${I.mode === "buy" ? "ახალი შესასყიდი ფასები" : "ქსელის ფაილი"}: ${esc(I.file)}</b><span class="small muted">ფურცელი „${esc(I.sheet)}“, სათაურის ხაზი ${I.hi + 1}</span></div>
     <div class="small muted" style="margin-bottom:8px">სვეტები ავტომატურად ამოვიცანი — თუ რამე არასწორია, შეცვალე:</div>
     <div class="prmap">${PRCOL.map(([k, l]) => `<label><span>${l}</span>${opt(k)}</label>`).join("")}</div>
     <div class="row" style="gap:10px;margin:10px 0;flex-wrap:wrap"><span class="kd up">ასორტიმენტში ვიპოვე: ${m.hit.length}</span>${m.miss.length ? `<span class="kd down">ვერ ვიპოვე: ${m.miss.length}</span>` : ""}</div>
-    ${m.hit.length ? `<div class="ktw"><table class="kt"><thead><tr><th>პროდუქტი</th><th>შტრიხკოდი</th><th>სააქციო ფასი</th><th>რეგ. ფასი</th><th>ფასდაკლება</th><th>ბონუსი</th><th>რეტრო</th></tr></thead><tbody>${m.hit.slice(0, 200).map(({ x, rec }) => `<tr><td>${esc(x.r.net_name || x.r.mg_name)}</td><td class="mono small">${esc(rec.bc)}</td><td><b>${rec.shelf ?? ""}</b></td><td>${rec.reg ?? ""}</td><td>${rec.disc ?? ""}</td><td>${rec.bonus ?? ""}</td><td>${rec.retro ?? ""}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${m.hit.length ? `<div class="ktw"><table class="kt"><thead><tr><th>პროდუქტი</th><th>შტრიხკოდი</th><th>სააქციო ფასი</th><th>რეგ. ფასი</th><th>ფასდაკლება</th><th>ბონუსი</th><th>რეტრო</th><th>შესასყიდი</th></tr></thead><tbody>${m.hit.slice(0, 200).map(({ x, rec }) => `<tr><td>${esc(x.r.net_name || x.r.mg_name)}</td><td class="mono small">${esc(rec.bc)}</td><td><b>${rec.shelf ?? ""}</b></td><td>${rec.reg ?? ""}</td><td>${rec.disc ?? ""}</td><td>${rec.bonus ?? ""}</td><td>${rec.retro ?? ""}</td><td>${rec.buy != null ? `<b>${rec.buy}</b> <span class="small muted">(იყო ${prM(x.bo ?? x.r.buy_price)})</span>` : ""}</td></tr>`).join("")}</tbody></table></div>` : ""}
     ${m.miss.length ? `<details style="margin-top:8px"><summary class="small">ასორტიმენტში ვერ ვიპოვე (${m.miss.length})</summary><div class="small">${m.miss.slice(0, 100).map(r => esc((r.bc || "") + " " + (r.nm || ""))).join("<br>")}</div></details>` : ""}
     <div class="row" style="gap:8px;margin-top:10px"><button class="btn primary" data-a="prapply" ${m.hit.length ? "" : "disabled"}>გამოყენება (${m.hit.length})</button><button class="btn ghost" data-a="primpx">დახურვა</button></div>
-    <div class="small muted" style="margin-top:6px">„გამოყენება“ ჩაწერს სააქციო ფასს სარეკომენდაციო ფასად, ბონუსს და რეტროს (თუ ფაილშია), და მონიშნავს „ქსელის ფაილიდან“. დადასტურება (✓) შენზეა.</div></div>`;
+    <div class="small muted" style="margin-top:6px">${I.mode === "buy" ? "„გამოყენება“ ჩაწერს მხოლოდ შესასყიდ ფასებს (სხვა ველს არ შეეხება)." : "თუ ფაილში შესასყიდი ფასიცაა, ისიც განახლდება."} „გამოყენება“ ჩაწერს სააქციო ფასს სარეკომენდაციო ფასად, ბონუსს და რეტროს (თუ ფაილშია), და მონიშნავს „ქსელის ფაილიდან“. დადასტურება (✓) შენზეა.</div></div>`;
 }
 Object.assign(A, {
   prnet(v) { PR.net = v; PR.cat = ""; PR.imp = PR.imp && PR.imp.net === v ? PR.imp : null; render(); },
@@ -2243,16 +2268,23 @@ Object.assign(A, {
   prtpl() { prTpl(); },
   primpx() { PR.imp = null; render(); },
   prapply() {
-    const { hit } = prImpMatch(); const p = prPlan(PR.net);
+    const { hit } = prImpMatch(); const p = prPlan(PR.net); const I = PR.imp;
+    if (I.mode === "buy") { let n = 0; hit.forEach(({ x, rec }) => { if (rec.buy != null && rec.buy > 0) { if (Math.abs(rec.buy - (+x.r.buy_price || -1)) < 0.005) delete p.buy[x.key]; else p.buy[x.key] = rec.buy; n++; } }); p.buyAt = new Date().toISOString(); prSave(PR.net, true); toast(n + " შესასყიდი ფასი განახლდა"); PR.imp = null; render(); return; }
     const frac = v => v == null ? null : Math.abs(v) > 1 ? v / 100 : v;
     hit.forEach(({ x, rec }) => { const it = p.items[x.key] = p.items[x.key] || {};
       if (rec.shelf != null) it.shelf = rec.shelf;
       if (rec.bonus != null) { const bh = String(PR.imp.H[PR.imp.map.bonus] || ""); const gel = /₾|ლარ|gel/i.test(bh) && !/%/.test(bh); it.bonus = gel && x.r.buy_price ? rec.bonus / x.r.buy_price : frac(rec.bonus); }
       if (rec.retro != null) it.retro = frac(rec.retro);
+      if (rec.buy != null && rec.buy > 0) { p.buy[x.key] = rec.buy; p.buyAt = new Date().toISOString(); }
       it.src = "file"; it.ok = false; });
     prSave(PR.net, true); toast(`${hit.length} ნომენკლატურა შეივსო ქსელის ფაილიდან`); PR.imp = null; PR.st = "file"; render();
   },
-  prclr() { if (!confirm("გავასუფთავო " + PR.net + "-ის აქციის ყველა ჩანაწერი?")) return; PR.docs["promo/" + PR.net] = { name: "", from: "", to: "", items: {} }; prSave(PR.net, true); render(); },
+  prbulk() { const i = document.getElementById("prbulkp"); const pc = prPctIn(i && i.value); if (pc == null || !pc) return toast("ჩაწერე პროცენტი, მაგ. 5 ან -3");
+    const net = PR.net, sn = NSALES[net] || net, p = prPlan(net); const rows = (prRows(sn) || []).filter(x => !x.dl && (!PR.cat || (x.r.category || "სხვა") === PR.cat));
+    rows.forEach(x => { const b = x.bo != null ? x.bo : prF(x.r.buy_price); if (b != null) p.buy[x.key] = +(b * (1 + pc)).toFixed(2); });
+    p.buyAt = new Date().toISOString(); prSave(net, true); toast(`${rows.length} შესასყიდი ფასი შეიცვალა ${(pc * 100).toFixed(1)}%-ით`); render(); },
+  prbuyrst() { const p = prPlan(PR.net); const n = Object.keys(p.buy || {}).length; if (!n) return toast("შესასყიდი ფასები შეცვლილი არ არის"); p.buy = {}; p.buyAt = ""; prSave(PR.net, true); toast(n + " ფასი დაბრუნდა ფაილის მნიშვნელობაზე"); render(); },
+  prclr() { if (!confirm("გავასუფთავო " + PR.net + "-ის აქციის ყველა ჩანაწერი?")) return; PR.docs["promo/" + PR.net] = { name: "", from: "", to: "", items: {}, buy: prPlan(PR.net).buy, buyAt: prPlan(PR.net).buyAt }; prSave(PR.net, true); render(); },
 });
 
 /* ---------- Excel-ში ექსპორტი: ყველა ცხრილთან „⬇ Excel“ ღილაკი ---------- */
