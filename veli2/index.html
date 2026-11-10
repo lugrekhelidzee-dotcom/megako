@@ -535,6 +535,7 @@ const addBtn=(kind,key,label)=>`<label class="addph">${S.busy[key]?`იტვი
 const opt=(v,l,sel)=>`<option value="${esc(v)}" ${v===sel?"selected":""}>${esc(l)}</option>`;
 
 function agentOf(raw){const n=norm(raw);if(!n)return"";const a=D.agents.find(x=>norm(x.name)===n||(x.aliases||[]).indexOf(n)>=0);return a?a.name:""}
+function tdays(o,who){const T=D.tours||{};if(o.merch&&agentOf(o.merch)===who&&agentOf(o.agent)!==who)return T["მ|"+o.name]||[];return T[o.name]||[]}
 function myObjects(name){return D.objects.filter(o=>agentOf(o.agent)===name||(o.merch&&agentOf(o.merch)===name))}
 const roleOf=name=>{const a=D.agents.find(x=>x.name===name);return a&&a.role==='merch'?'merch':'agent'};
 const roleLabel=r=>r==='merch'?'მერჩენდაიზერი':'აგენტი';
@@ -658,7 +659,7 @@ function homeView(){
   const merch=roleOf(S.who)==="merch";const T=D.tours||{};
   const pm=promosFor(S.who,false).filter(promoNow);const shock=pm.filter(p=>ptypeOf(p)==="shock").length;
   const open=myTasks().filter(active).length,nt=newTasks().length,nf=newFiles().length,fl=myFiles().length;
-  const td=todayDay(),objs=myObjects(S.who),tn=td?objs.filter(o=>(T[o.name]||[]).includes(td)).length:0;
+  const td=todayDay(),objs=myObjects(S.who),tn=td?objs.filter(o=>tdays(o,S.who).includes(td)).length:0;
   const tiles=[["send","📷","ფოტოები","გაგზავნა და გაგზავნილი ფოტოები",0,""]].concat(merch?[]:[["mysales","📈","ჩემი გაყიდვები","ობიექტები, კატეგორიები, ზრდა",0,""]])
     .concat(merch?[]:[["orders","🧾","შეკვეთები",D.orderDates&&D.orderDates[0]?"ბოლო: "+fmtDate(D.orderDates[0]):"ჯერ არ არის",0,""]])
     .concat([["promo","🏷","აქციები",pm.length?pm.length+" მიმდინარე"+(shock?" · "+shock+" შოკი":""):"დღეს აქცია არ არის",shock,"pr"],
@@ -690,15 +691,15 @@ function tasksView(){
 function toursView(){
   if(S.tday==null)S.tday=todayDay();
   const T=D.tours||{},all=myObjects(S.who),d=S.tday;
-  const anyDays=all.some(o=>(T[o.name]||[]).length);
-  let h=`<div class="dtabs">${[1,2,3,4,5,0].map(i=>`<button class="${d===i?"on":""}" data-a="tday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>(T[o.name]||[]).includes(i)).length:all.length}</small></button>`).join("")}</div>`;
+  const anyDays=all.some(o=>tdays(o,S.who).length);
+  let h=`<div class="dtabs">${[1,2,3,4,5,0].map(i=>`<button class="${d===i?"on":""}" data-a="tday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>tdays(o,S.who).includes(i)).length:all.length}</small></button>`).join("")}</div>`;
   if(!anyDays)h+=`<div class="small muted">ტურის დღეები ჯერ არ არის მიწერილი — მენეჯერი ცხრილის „ტურები“ ფურცელში მონიშნავს.</div>`;
   if(!d)h+=`<input type="search" id="tq2" data-in="tq2" value="${esc(S.tq2||"")}" placeholder="მოძებნე ობიექტი…" autocomplete="off">`;
   const q=d?"":norm(S.tq2||"");
-  let list=all.filter(o=>!d||(T[o.name]||[]).includes(d));
+  let list=all.filter(o=>!d||tdays(o,S.who).includes(d));
   if(q)list=list.filter(o=>norm(o.name+" "+o.address+" "+o.network).includes(q));
   const tasks=myTasks().filter(active);
-  const card=o=>{const ts=tasks.filter(t=>t.store===o.name),days=T[o.name]||[];
+  const card=o=>{const ts=tasks.filter(t=>t.store===o.name),days=tdays(o,S.who);
     return `<div class="tcard ${ts.length?"has":""}"><div class="hd"><span><b>${esc(o.name)}</b>${o.address&&o.address!==o.name?`<br><span class="small muted">${esc(o.address)}</span>`:""}</span>${days.length?`<span class="dchips">${days.map(i=>`<span>${DN[i]}</span>`).join("")}</span>`:""}</div>
     ${ts.map(t=>`<div class="tnote"><span>${t.kind==="შეხსენება"?"🔔":"📌"} <b>შემდეგ ვიზიტზე:</b> ${esc(t.title)}</span>${t.kind==="შეხსენება"?`<button class="btn" data-a="tdone" data-v="${esc(t.id)}">✓</button>`:`<button class="btn" data-a="tgo" data-v="${esc(t.id)}">შესრულება ›</button>`}</div>`).join("")}
     ${S.noteFor===o.name?`<textarea id="ntx" data-in="ntx" rows="2" placeholder="მაგ. შემდეგ ვიზიტზე ფასმაჩვენებლები გამოვცვალო">${esc(S.ntx||"")}</textarea><div class="row"><button class="btn primary" data-a="nsave">შენახვა</button><button class="btn ghost" data-a="nx">გაუქმება</button></div>`
@@ -968,13 +969,13 @@ function teamView(){if(!D.agents.length)return `<div class="empty"><b>აგე�
   return `<div class="tbl"><table><thead><tr><th>თანამშრომელი</th><th>ობიექტები</th><th>შესასრულებელი</th><th>ვადაგადაც.</th><th>შესამოწმებელი</th><th>დადასტურებული</th><th>ბოლო ფოტო</th><th>კონტაქტი</th></tr></thead><tbody>${D.agents.map(a=>{const ts=D.tasks.filter(t=>t.agent===a.name);const lr=D.reports.find(r=>r.agent===a.name);
     return `<tr><td><b>${esc(a.name)}</b><br><span class="small muted">${roleLabel(a.role)}${a.zone?" · "+esc(a.zone):""}</span><br><span class="small ${a.hasPin?"muted":""}" style="${a.hasPin?"":"color:var(--warn)"}">${a.hasPin?"PIN დაყენებულია":"PIN ჯერ არ აქვს"}</span>${a.hasPin?(S.del==="pin"+a.name?` <button class="btn danger" data-a="rpinyes" data-v="${esc(a.name)}" style="min-height:30px;padding:2px 8px">განულება?</button>`:` <button class="btn ghost" data-a="rpin" data-v="${esc(a.name)}" style="min-height:30px;padding:2px 8px">განულება</button>`):""}</td><td><button class="chip ${S.teamOpen===a.name?"on":""}" data-a="tobj" data-v="${esc(a.name)}">${myObjects(a.name).length} ობიექტი ${S.teamOpen===a.name?"▴":"▾"}</button></td><td class="mono">${ts.filter(active).length}</td><td class="mono" style="color:${ts.filter(isLate).length?"var(--bad)":"inherit"}">${ts.filter(isLate).length}</td><td class="mono">${ts.filter(t=>t.status==="შესრულებული").length}</td><td class="mono">${ts.filter(t=>t.status==="დადასტურებული").length}</td><td class="small muted">${lr?esc(lr.time):"—"}</td><td>${contact(a.name)}</td></tr>`+(S.teamOpen===a.name?`<tr class="detail"><td colspan="8">${teamObjs(a.name)}</td></tr>`:"")}).join("")}</tbody></table></div><p class="small muted">აგენტის დასამატებლად ან ტელეფონის შესაცვლელად ჩაწერე ცხრილის „აგენტები“ ფურცელში და დააჭირე „განახლებას“. როლს (აგენტი / მერჩენდაიზერი) „აგენტები“ ფურცლის სვეტ „როლი“-ში უთითებ, ობიექტის აგენტს და მერჩენდაიზერს — „ობიექტები“ ფურცელში. თანამშრომელი PIN-ს პირველ შესვლაზე თვითონ იყენებს; თუ დაავიწყდა, დააჭირე „განულებას“ და შემდეგ შესვლაზე ახალს მოიფიქრებს.</p>`}
 function teamObjs(name){const q=cbQuery(S.tq||"");const all=myObjects(name);const T=D.tours||{},td=S.mtday||0;
-  const withD=all.filter(o=>(T[o.name]||[]).length).length;
-  const l=all.filter(o=>cbMatch({l:o.name,sub:o.network+" "+o.address},q)>0&&(!td||(T[o.name]||[]).includes(td)));
-  const dtabs=`<div class="dtabs">${[0,1,2,3,4,5].map(i=>`<button class="${td===i?"on":""}" data-a="mtday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>(T[o.name]||[]).includes(i)).length:all.length}</small></button>`).join("")}</div>
+  const withD=all.filter(o=>tdays(o,name).length).length;
+  const l=all.filter(o=>cbMatch({l:o.name,sub:o.network+" "+o.address},q)>0&&(!td||tdays(o,name).includes(td)));
+  const dtabs=`<div class="dtabs">${[0,1,2,3,4,5].map(i=>`<button class="${td===i?"on":""}" data-a="mtday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>tdays(o,name).includes(i)).length:all.length}</small></button>`).join("")}</div>
   <div class="small muted">ტურის დღეები მიწერილი აქვს ${withD} / ${all.length} ობიექტს${withD<all.length?` — დანარჩენს ცხრილის „ტურები“ ფურცელში მონიშნავ`:""}.</div>`;
   const by={};l.forEach(o=>{(by[o.network||"—"]=by[o.network||"—"]||[]).push(o)});
   return `<div class="box">${dtabs}<div class="row"><input type="text" id="tq" data-in="tq" value="${esc(S.tq||"")}" placeholder="მოძებნე ობიექტი — ნომერი ან სახელი" style="max-width:380px" autocomplete="off"><span class="small muted">${l.length} / ${all.length}</span></div>
-  ${Object.keys(by).sort().map(n=>`<div class="kind" style="margin-top:6px">${esc(n)} (${by[n].length})</div><div class="tbl"><table><tbody>${by[n].map(o=>`<tr><td>${esc(o.name)}</td><td class="small muted">${esc(o.address)}</td><td class="nowrap">${(T[o.name]||[]).length?`<span class="dchips">${(T[o.name]||[]).map(i=>`<span>${DN[i]}</span>`).join("")}</span>`:`<span class="small muted">—</span>`}</td></tr>`).join("")}</tbody></table></div>`).join("")||`<div class="muted">${td?DN[td]+"-ზე ობიექტი არ არის":"ვერ მოიძებნა"}</div>`}
+  ${Object.keys(by).sort().map(n=>`<div class="kind" style="margin-top:6px">${esc(n)} (${by[n].length})</div><div class="tbl"><table><tbody>${by[n].map(o=>`<tr><td>${esc(o.name)}</td><td class="small muted">${esc(o.address)}</td><td class="nowrap">${tdays(o,name).length?`<span class="dchips">${tdays(o,name).map(i=>`<span>${DN[i]}</span>`).join("")}</span>`:`<span class="small muted">—</span>`}</td></tr>`).join("")}</tbody></table></div>`).join("")||`<div class="muted">${td?DN[td]+"-ზე ობიექტი არ არის":"ვერ მოიძებნა"}</div>`}
   <div class="small muted">ობიექტის აგენტის შესაცვლელად შეცვალე სვეტი „აგენტი“ ცხრილის „ობიექტები“ ფურცელში.</div></div>`}
 function objNetMap(){if(S._onm&&S._onm.d===D.objects)return S._onm.m;const m={};D.objects.forEach(o=>{m[norm(o.name)]=o.network||""});S._onm={d:D.objects,m};return m}
 function netOf(store){if(!store)return"";const m=objNetMap();const k=norm(store);if(m[k]!=null)return m[k];
