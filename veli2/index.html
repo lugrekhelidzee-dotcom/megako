@@ -470,6 +470,12 @@ label.btn.disabled{opacity:.6;pointer-events:none}
 .scard span:nth-child(2){flex:1}
 .sic{width:36px;height:36px;border-radius:10px;background:#e7f5f1;display:grid;place-items:center;flex:none}.sic .i{color:var(--accent)}
 .sgo{color:var(--muted);font-size:16px}
+.klab{font-size:11px;font-weight:600;color:var(--muted,#667);text-transform:uppercase;letter-spacing:.03em;align-self:center;min-width:74px}
+.kag{padding:0 2px 24px}
+.kag .kpis{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.kag .kgrid{grid-template-columns:1fr}
+.morng{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.morng label{font-size:12px;color:var(--muted,#667)}
 
 </style>
 </head>
@@ -630,14 +636,14 @@ function objItems(me,mgr){return()=>{const mine=me?myObjects(me):[];const set={}
   const g=[];if(mine.length)g.push({title:mgr?me+" — ობიექტები":"ჩემი ობიექტები",items:mine.map(map)});
   g.push({title:mine.length?"სხვა ობიექტები":"",items:D.objects.filter(o=>!set[o.name]).map(map)});return g}}
 
-const AT={send:"ფოტოები",orders:"შეკვეთები",promo:"აქციები",tours:"ობიექტები და ტურები",tasks:"დავალებები",files:"ფაილები",chat:"ჩატი"};
+const AT={mysales:"ჩემი გაყიდვები",send:"ფოტოები",orders:"შეკვეთები",promo:"აქციები",tours:"ობიექტები და ტურები",tasks:"დავალებები",files:"ფაილები",chat:"ჩატი"};
 const DN=["სულ","ორშ","სამ","ოთხ","ხუთ","პარ"];
 function aView(){
   const v=S.atab;
   const hdr=`<header class="v2top"><div class="lgm">MG</div><div class="tt">${AT[v]&&v!=="home"?AT[v]:"გამარჯობა, "+esc(S.who.split(" ")[0])}<small>${roleLabel(roleOf(S.who))} · ${todayLine()}</small></div><button class="ib" data-a="refresh" title="განახლება">${svg("refresh")}</button><button class="ib" data-a="logout" title="გასვლა">${svg("out")}</button></header>`;
   if(!AT[v]||(v==="orders"&&roleOf(S.who)==="merch"))return hdr+homeView();
   const back=`<div class="back"><button class="btn ghost" data-a="atab" data-v="home">← მთავარი</button><h2>${AT[v]}</h2></div>`;
-  const body=v==="promo"?promoView(S.who):v==="chat"?chatView():v==="orders"?agentOrders():v==="tours"?toursView():v==="tasks"?tasksView():v==="files"?filesView():agentSend(0);
+  const body=v==="mysales"?kMySales():v==="promo"?promoView(S.who):v==="chat"?chatView():v==="orders"?agentOrders():v==="tours"?toursView():v==="tasks"?tasksView():v==="files"?filesView():agentSend(0);
   return hdr+back+body}
 function myTasks(){return D.tasks.filter(t=>t.agent===S.who)}
 function tSeenKey(){return "mg.tseen."+S.who}
@@ -653,7 +659,7 @@ function homeView(){
   const pm=promosFor(S.who,false).filter(promoNow);const shock=pm.filter(p=>ptypeOf(p)==="shock").length;
   const open=myTasks().filter(active).length,nt=newTasks().length,nf=newFiles().length,fl=myFiles().length;
   const td=todayDay(),objs=myObjects(S.who),tn=td?objs.filter(o=>(T[o.name]||[]).includes(td)).length:0;
-  const tiles=[["send","📷","ფოტოები","გაგზავნა და გაგზავნილი ფოტოები",0,""]]
+  const tiles=[["send","📷","ფოტოები","გაგზავნა და გაგზავნილი ფოტოები",0,""]].concat(merch?[]:[["mysales","📈","ჩემი გაყიდვები","ობიექტები, კატეგორიები, ზრდა",0,""]])
     .concat(merch?[]:[["orders","🧾","შეკვეთები",D.orderDates&&D.orderDates[0]?"ბოლო: "+fmtDate(D.orderDates[0]):"ჯერ არ არის",0,""]])
     .concat([["promo","🏷","აქციები",pm.length?pm.length+" მიმდინარე"+(shock?" · "+shock+" შოკი":""):"დღეს აქცია არ არის",shock,"pr"],
       ["tours","🗺","ობიექტები და ტურები",td?(tn?"დღეს "+tn+" ობიექტი":"დღეს ტური არ გაქვს"):objs.length+" ობიექტი",0,""],
@@ -1065,15 +1071,19 @@ function mOrders(){const im=S.imp;const mo=S.mo;
   const dates=D.orderDates;
   if(!dates.length)return h+`<div class="empty"><b>შეკვეთები ჯერ არ არის</b>ატვირთე პირველი ფაილი ზემოთ.</div>`;
   if(!mo.date||!dates.includes(mo.date)){mo.date=dates[0];mo.rows=null}
-  if(mo.rows===null&&!mo.loading){mo.loading=true;run("getOrders",mo.date,"",S.pin).then(r=>{mo.rows=r;mo.loading=false;render()}).catch(e=>{mo.loading=false;mo.rows=[];toast(errMsg(e));render()})}
-  h+=`<h2>შეკვეთები აგენტების მიხედვით</h2>`;
+  if(!mo.date2||!dates.includes(mo.date2)||mo.date2>mo.date){mo.date2=mo.date;mo.rows=null}
+  const rng=dates.filter(d=>d>=mo.date2&&d<=mo.date);
+  if(mo.rows===null&&!mo.loading){mo.loading=true;const key=mo.date2+"|"+mo.date;mo.key=key;
+    (async()=>{const out=[];for(let i=0;i<rng.length;i+=4){const part=await Promise.all(rng.slice(i,i+4).map(d=>run("getOrders",d,"",S.pin).then(r=>(r||[]).map(x=>Object.assign(x,{odate:d})))));part.forEach(a=>out.push(...a))}return out})()
+    .then(r=>{if(mo.key!==key)return;mo.rows=r;mo.loading=false;render()}).catch(e=>{if(mo.key!==key)return;mo.loading=false;mo.rows=[];toast(errMsg(e));render()})}
+  h+=`<h2>შეკვეთები აგენტების მიხედვით${rng.length>1?` <span class="small muted">· ${fmtDate(mo.date2)} — ${fmtDate(mo.date)} (${rng.length} დღე)</span>`:""}</h2>`;
   const OTH="სხვა ობიექტები (არა ჩემი აგენტები)";
   const agKey=r=>r.other?OTH:(r.agent||r.raw||"აგენტის გარეშე");
   const all=mo.rows||[];
   const nets=[...new Set(all.map(r=>r.network).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ka"));
   const agl=[...new Set(all.map(agKey))].sort((a,b)=>a.localeCompare(b,"ka"));
   if(mo.net&&mo.rows&&!nets.includes(mo.net))mo.net="";if(mo.ag&&mo.rows&&!agl.includes(mo.ag))mo.ag="";
-  h+=`<div class="filters"><select id="mod" data-ch="mod">${dates.map(d=>opt(d,fmtDate(d),mo.date)).join("")}</select>
+  h+=`<div class="filters"><span class="morng"><label for="mod2">-დან</label><select id="mod2" data-ch="mod2">${dates.filter(d=>d<=mo.date).map(d=>opt(d,fmtDate(d),mo.date2)).join("")}</select><label for="mod">-მდე</label><select id="mod" data-ch="mod">${dates.map(d=>opt(d,fmtDate(d),mo.date)).join("")}</select>${mo.date2!==mo.date?`<button class="chip" data-a="mo1d">ერთი დღე</button>`:`<button class="chip" data-a="mo7d">ბოლო 7 დღე</button>`}</span>
   <select id="monet" data-ch="mo-net">${opt("","ყველა ქსელი",mo.net)}${nets.map(n=>opt(n,n,mo.net)).join("")}</select>
   <select id="most" data-ch="mo-st">${opt("","ყველა ხაზი",mo.st||"")}${opt("ok","✓ გაწერილი",mo.st||"")}${opt("no","✗ გაუწერელი",mo.st||"")}</select>
   <select id="mosc" data-ch="mo-sc">${opt("","მთლიანი შეკვეთა",mo.sc||"")}${opt("mine","მხოლოდ ჩემი აგენტები",mo.sc||"")}${opt("other","მხოლოდ სხვა ობიექტები",mo.sc||"")}</select>
@@ -1309,6 +1319,8 @@ const A={
   omf(v){S.ord.mf=v;render()},
   osug(v){S.ord.q=v;S.ord.netOpen={};const i=$("#ordq");if(i){i.value=v;i.blur()}ordUpdate(false)},
   motog(v){S.mo.open=S.mo.open===v?null:v;render()},
+  mo1d(){S.mo.date2=S.mo.date;S.mo.rows=null;S.mo.open=null;render()},
+  mo7d(){const ds=D.orderDates||[];const t=Date.parse(S.mo.date)-6*864e5;const f=ds.filter(d=>d<=S.mo.date&&Date.parse(d)>=t);S.mo.date2=f.length?f[f.length-1]:S.mo.date;S.mo.rows=null;S.mo.open=null;render()},
   async mailnow(){S.mailBusy=true;render();const r=await act("checkMailNow",S.pin);S.mailBusy=false;if(r){S.mo.rows=null;toast(r.files?"დამუშავდა "+r.files+" ფაილი":"ახალი შეკვეთის წერილი არ არის")}render()},
   moclr(){S.mo.net="";S.mo.ag="";S.mo.q="";S.mo.sc="";S.mo.st="";S.mo.open=null;render()},
   moview(v){S.mo.view=v;S.mo.open=null;render()},
@@ -1377,7 +1389,7 @@ document.addEventListener("change",async e=>{const el=e.target,k=el.dataset.ch;
   if(el.dataset.file==="nf"){const f=el.files[0];el.value="";if(f&&S.nf){S.nf.file=f;if(!S.nf.title)S.nf.title=f.name.replace(/\.[^.]+$/,"")}render();return}
   if(k){const v=el.value;
     if(k.startsWith("q-"))S.q[k.slice(2)]=v;else if(k.startsWith("fl-"))S.fl[k.slice(3)]=v;else if(k.startsWith("rf-")){S.rf[k.slice(3)]=v;S.rf.n=30}else if(k==="sf-net"){S.sf.net=v;S.sf.n=20}
-    else if(k==="aft")S.af.task=v;else if(k==="ordd"){S.ord.date=v;S.ord.rows=null;S.ord.open={}}else if(k==="mod"){S.mo.date=v;S.mo.rows=null;S.mo.open=null}else if(k==="mo-net"){S.mo.net=v;S.mo.open=null}else if(k==="mo-ag"){S.mo.ag=v;S.mo.open=null}else if(k==="mo-sc"){S.mo.sc=v;S.mo.open=null}else if(k==="mo-st"){S.mo.st=v;S.mo.open=null}
+    else if(k==="aft")S.af.task=v;else if(k==="ordd"){S.ord.date=v;S.ord.rows=null;S.ord.open={}}else if(k==="mod"){S.mo.date=v;if(S.mo.date2>v)S.mo.date2=v;S.mo.rows=null;S.mo.open=null}else if(k==="mod2"){S.mo.date2=v;S.mo.rows=null;S.mo.open=null}else if(k==="mo-net"){S.mo.net=v;S.mo.open=null}else if(k==="mo-ag"){S.mo.ag=v;S.mo.open=null}else if(k==="mo-sc"){S.mo.sc=v;S.mo.open=null}else if(k==="mo-st"){S.mo.st=v;S.mo.open=null}
     else if(k==="imp-date"&&S.imp)S.imp.date=v;
     else if(k==="nf-to"&&S.nf)S.nf.to=v;else if(k.startsWith("pd-")&&S.pd)S.pd[k.slice(3)]=v;
     render();return}
@@ -1400,7 +1412,8 @@ const kmoney = n => { const v = Number(n) || 0; const a = Math.abs(v); return (a
 const knum = n => (Number(n) || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 const kym = ym => ym ? KM[ym % 100 - 1] + " " + Math.floor(ym / 100) : "—";
 const kpct = (c, l) => { c = +c || 0; l = +l || 0; if (!l) return c ? `<span class="kd up">ახალი</span>` : `<span class="kd">—</span>`; const p = (c - l) / Math.abs(l) * 100; return `<span class="kd ${p >= 0 ? "up" : "down"}">${p >= 0 ? "▲" : "▼"} ${Math.abs(p).toFixed(1)}%</span>`; };
-const kpin = () => S.pin;
+const kAg = () => !!S.who && S.who !== "__m";
+const kpin = () => kAg() ? { who: S.who, pin: S.apin } : S.pin;
 const KAPI = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/kam";
 async function kcall(op, a) { let r; try { r = await fetch(KAPI, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ args: [kpin(), op, a || {}] }) }); } catch (e) { throw new Error("NetworkError: კავშირი ვერ შედგა"); } const j = await r.json(); if (!j || !j.ok) throw new Error((j && j.error) || "შეცდომა"); return j.r; }
 
@@ -1463,7 +1476,7 @@ function kamView() {
 }
 function kInitF() {
   if (K.f || !K.info || !K.info.max) return;
-  const mx = K.info.max; K.f = { y: Math.floor(mx / 100), m1: 1, m2: mx % 100, nets: [], agents: [], cats: [], team: false };
+  const mx = K.info.max; K.f = { y: Math.floor(mx / 100), m1: 1, m2: mx % 100, nets: [], agents: [], cats: [], l1: [], l2: [], team: false };
 }
 const kRange = () => ({ from: K.f.y * 100 + K.f.m1, to: K.f.y * 100 + K.f.m2 });
 
@@ -1472,10 +1485,10 @@ function kAgentsSel() { return K.f.team ? (K.info.agents || []).filter(kMine) : 
 function kSales() {
   kInitF(); const f = K.f; const r = kRange();
   const ags = kAgentsSel();
-  const key = JSON.stringify([r, f.nets, ags, f.cats]);
+  const key = JSON.stringify([r, f.nets, ags, f.cats, f.l1, f.l2]);
   if (K.dashKey !== key && !K.loading.dash) {
     K.loading.dash = true; const k0 = key;
-    kcall("dash", { from: r.from, to: r.to, nets: f.nets, agents: ags, cats: f.cats }).then(d => { K.dash = d; K.dashKey = k0; K.loading.dash = false; render(); }).catch(e => { K.loading.dash = false; K.dashKey = k0; toast(errMsg(e)); render(); });
+    kcall("dash", { from: r.from, to: r.to, nets: f.nets, agents: ags, cats: f.cats, l1: f.l1, l2: f.l2 }).then(d => { K.dash = d; K.dashKey = k0; K.loading.dash = false; render(); }).catch(e => { K.loading.dash = false; K.dashKey = k0; toast(errMsg(e)); render(); });
   }
   const years = []; for (let y = Math.floor(K.info.max / 100); y >= Math.floor(K.info.min / 100); y--) years.push(y);
   const mo = (k, v) => KM.map((m, i) => `<option value="${i + 1}" ${v === i + 1 ? "selected" : ""}>${m}</option>`).join("");
@@ -1485,8 +1498,8 @@ function kSales() {
     <select data-kch="y">${years.map(y => `<option ${y === f.y ? "selected" : ""}>${y}</option>`).join("")}</select>
     <select data-kch="m1">${mo("m1", f.m1)}</select><span class="muted">—</span><select data-kch="m2">${mo("m2", f.m2)}</select>
     <span class="small muted">შედარება: ${f.y - 1} წლის იგივე თვეები</span>
-    <select data-kch="ag"><option value="">ყველა აგენტი</option><option value="__team" ${f.team ? "selected" : ""}>მხოლოდ ჩემი გუნდი</option>${(K.info.agents || []).slice().sort((a, b) => kAgent(a).localeCompare(kAgent(b))).map(a => `<option value="${esc(a)}" ${!f.team && f.agents[0] === a ? "selected" : ""}>${esc(kAgent(a))}${kMine(a) ? " ★" : ""}</option>`).join("")}</select>
-    </div><div class="chips">${chips(nets, f.nets, "net")}</div>${(K.info.cats || []).length ? `<div class="chips">${chips((K.info.cats || []).slice().sort(), f.cats, "cat")}</div>` : ""}</div>`;
+    ${kAg() ? "" : `<select data-kch="ag"><option value="">ყველა აგენტი</option><option value="__team" ${f.team ? "selected" : ""}>მხოლოდ ჩემი გუნდი</option>${(K.info.agents || []).slice().sort((a, b) => kAgent(a).localeCompare(kAgent(b))).map(a => `<option value="${esc(a)}" ${!f.team && f.agents[0] === a ? "selected" : ""}>${esc(kAgent(a))}${kMine(a) ? " ★" : ""}</option>`).join("")}</select>`}
+    </div><div class="chips"><span class="klab">ქსელი</span>${chips(nets, f.nets, "net")}</div>${kLevelChips(chips)}</div>`;
   const d = K.dash;
   if (!d || K.loading.dash && !d) return h + `<div class="empty"><b>ითვლება…</b></div>`;
   const t = d.totals;
@@ -1500,11 +1513,25 @@ function kSales() {
   h += `<div class="kcard"><div class="kh"><b>თვეების მიხედვით</b><span class="klg"><i class="c1"></i>${f.y}<i class="c0"></i>${f.y - 1}</span></div>${kMonthChart(d.months, f)}</div>`;
   const tbl = (title, rows, kind, extra) => {
     const tot = rows.reduce((s, x) => s + (+x.cur || 0), 0);
-    return `<div class="kcard"><div class="kh"><b>${title}</b></div><div class="ktw"><table class="kt"><thead><tr><th></th><th>${f.y}</th><th>${f.y - 1}</th><th>Δ</th><th>წილი</th>${extra ? "<th>" + extra + "</th>" : ""}</tr></thead><tbody>${rows.filter(x => x.cur || x.ly).map(x => `<tr ${kind ? `class="kclick" data-a="kchip" data-v="${esc(kind + "|" + x.k)}"` : ""}><td>${esc(kind === "ag" ? kAgent(x.k) || "— აგენტის გარეშე" : x.k || "—")}${kind === "ag" && kMine(x.k) ? ` <span class="kstar">★</span>` : ""}</td><td>${kmoney(x.cur)}</td><td class="muted">${kmoney(x.ly)}</td><td>${kpct(x.cur, x.ly)}</td><td><div class="kbarc"><div style="width:${tot ? Math.max(0, x.cur / tot * 100) : 0}%"></div></div></td>${extra ? `<td>${knum(x.b)}</td>` : ""}</tr>`).join("")}</tbody></table></div></div>`;
+    return `<div class="kcard"><div class="kh"><b>${title}</b></div><div class="ktw"><table class="kt"><thead><tr><th></th><th>${f.y}</th><th>${f.y - 1}</th><th>Δ</th><th>წილი</th>${extra ? "<th>" + extra + "</th>" : ""}</tr></thead><tbody>${rows.filter(x => x.cur || x.ly).map(x => `<tr ${kind ? `class="kclick" data-a="kchip" data-v="${esc(kind + "|" + (x.v != null ? x.v : x.k))}"` : ""}><td>${esc(kind === "ag" ? kAgent(x.k) || "— აგენტის გარეშე" : x.k || "—")}${kind === "ag" && kMine(x.k) ? ` <span class="kstar">★</span>` : ""}</td><td>${kmoney(x.cur)}</td><td class="muted">${kmoney(x.ly)}</td><td>${kpct(x.cur, x.ly)}</td><td><div class="kbarc"><div style="width:${tot ? Math.max(0, x.cur / tot * 100) : 0}%"></div></div></td>${extra ? `<td>${knum(x.b)}</td>` : ""}</tr>`).join("")}</tbody></table></div></div>`;
   };
   h += `<div class="kgrid">${tbl("ქსელები", d.nets, "net")}${tbl("კატეგორიები", d.cats, "cat")}</div>`;
-  h += `<div class="kgrid">${tbl("აგენტები", d.agents, "ag", "ობიექტი")}${tbl("ბრენდი / ხაზი", d.brands, "")}</div>`;
+  h += `<div class="kgrid">${tbl("დონე 1 (კატეგორია › დონე 1)", (d.l1 || []).map(x => ({ ...x, v: x.l1 })), "l1")}${tbl("დონე 2 (დონე 1 › დონე 2)", (d.l2 || []).map(x => ({ ...x, v: x.l2 })), "l2")}</div>`;
+  h += `<div class="kgrid">${kAg() ? "" : tbl("აგენტები", d.agents, "ag", "ობიექტი")}${tbl("ბრენდი / ხაზი", d.brands, "")}</div>`;
   h += `<div class="kcard"><div class="kh"><b>პროდუქტები (TOP 60)</b></div><div class="ktw"><table class="kt"><thead><tr><th>ნომენკლატურა</th><th>კატეგორია</th><th>${f.y}</th><th>${f.y - 1}</th><th>Δ</th><th>ც</th><th>ობიექტი</th></tr></thead><tbody>${(d.products || []).map(x => `<tr><td>${esc(x.k)}</td><td class="muted">${esc(x.cat || "")}</td><td>${kmoney(x.cur)}</td><td class="muted">${kmoney(x.ly)}</td><td>${kpct(x.cur, x.ly)}</td><td>${knum(x.q)}</td><td>${knum(x.b)}</td></tr>`).join("")}</tbody></table></div></div>`;
+  return h;
+}
+function kLevelChips(chips) {
+  const f = K.f, L = K.info.levels || [];
+  const cats = [...new Set(L.map(x => x[0]))].sort((a, b) => a.localeCompare(b, "ka"));
+  let h = cats.length ? `<div class="chips"><span class="klab">კატეგორია</span>${chips(cats, f.cats, "cat")}</div>` : "";
+  const l1 = [...new Set(L.filter(x => !f.cats.length || f.cats.includes(x[0])).map(x => x[1]))].filter(x => x !== "—").sort((a, b) => a.localeCompare(b, "ka"));
+  if (f.cats.length || f.l1.length) h += `<div class="chips"><span class="klab">დონე 1</span>${chips(l1, f.l1, "l1")}</div>`;
+  if (f.l1.length || f.l2.length) {
+    const l2 = [...new Set(L.filter(x => (!f.cats.length || f.cats.includes(x[0])) && f.l1.includes(x[1])).map(x => x[2]))].filter(x => x !== "—").sort((a, b) => a.localeCompare(b, "ka"));
+    h += `<div class="chips"><span class="klab">დონე 2</span>${chips(l2, f.l2, "l2")}</div>`;
+  }
+  if (f.cats.length || f.l1.length || f.l2.length || f.nets.length) h += `<div class="chips"><button class="chip" data-a="kclr">✕ ფილტრის მოხსნა</button></div>`;
   return h;
 }
 function kMonthChart(months, f) {
@@ -1576,7 +1603,7 @@ function kObjects() {
   const stb = (k, l, n) => `<button class="chip ${of.st === k ? "on" : ""}" data-a="kost" data-v="${k}">${l}${n != null ? ` <b>${n}</b>` : ""}</button>`;
   let h = `<div class="kbar"><div class="row"><input type="search" id="koq" data-kin="oq" value="${esc(of.q)}" placeholder="ძებნა: დასახელება, კოდი, მისამართი…" style="max-width:320px">
     <select data-kch="onet"><option value="">ყველა ქსელი</option>${nets.map(n => `<option ${of.net === n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>
-    <select data-kch="oag"><option value="">ყველა აგენტი</option><option value="__team" ${of.ag === "__team" ? "selected" : ""}>მხოლოდ ჩემი გუნდი</option>${ags.map(a => `<option value="${esc(a)}" ${of.ag === a ? "selected" : ""}>${esc(kAgent(a))}${kMine(a) ? " ★" : ""}</option>`).join("")}</select>
+    <select data-kch="oag" ${kAg() ? "hidden" : ""}><option value="">ყველა აგენტი</option><option value="__team" ${of.ag === "__team" ? "selected" : ""}>მხოლოდ ჩემი გუნდი</option>${ags.map(a => `<option value="${esc(a)}" ${of.ag === a ? "selected" : ""}>${esc(kAgent(a))}${kMine(a) ? " ★" : ""}</option>`).join("")}</select>
     <select data-kch="osort"><option value="m3" ${sk === "m3" ? "selected" : ""}>დალაგება: 3 თვის გაყიდვა</option><option value="ytd" ${sk === "ytd" ? "selected" : ""}>წლის გაყიდვა</option><option value="d" ${sk === "d" ? "selected" : ""}>ყველაზე დიდი ვარდნა</option><option value="name" ${sk === "name" ? "selected" : ""}>დასახელება</option></select></div>
     <div class="chips">${stb("", "ყველა", L.length && !of.st ? L.length : null)}${stb("nos", "3 თვე გაყიდვა არ აქვს", cnt.nos)}${stb("down", "ვარდნა >20%", cnt.down)}${stb("nodir", "ცნობარში არ არის", cnt.nodir)}${stb("nolink", "მეგაკოს ობიექტი არ არის მიბმული", cnt.nolink)}</div></div>`;
   h += `<div class="kcard"><div class="ktw"><table class="kt"><thead><tr><th>ქსელი</th><th>კოდი</th><th>ობიექტი</th><th>აგენტი</th><th>რეგიონი</th><th>ბოლო</th><th>3 თვე</th><th>Δ შარშან</th><th>${Math.floor(to / 100)}</th></tr></thead><tbody>${L.slice(0, of.n).map(x => `<tr class="kclick" ${x.bc ? `data-a="kobj" data-v="${esc(x.bc)}"` : ""}><td>${esc(x.net)}</td><td class="mono">${esc(x.code)}</td><td class="kw"><b>${esc(x.name)}</b>${x.mg && x.mg !== x.name ? `<div class="small muted">${esc(x.mg)}</div>` : ""}${!x.dir ? ` <span class="pill w-soon">ცნობარში არ არის</span>` : ""}${x.dir && !x.bc ? ` <span class="pill w-late">არ არის მიბმული</span>` : ""}</td><td>${esc(kAgent(x.ag || x.agf))}${kMine(x.ag || x.agf) ? ` <span class="kstar">★</span>` : ""}</td><td class="small">${esc(x.region)}</td><td class="small ${x.bc && (!x.last || x.last < cut) ? "kred" : ""}">${kym(x.last)}</td><td>${kmoney(x.m3)}</td><td>${kpct(x.m3, x.m3ly)}</td><td>${kmoney(x.ytd)}</td></tr>`).join("")}</tbody></table></div>
@@ -1609,7 +1636,7 @@ function kObj() {
   h += `<div class="kpis"><div class="kpi acc"><div class="muted">${y} (${KM[0]}–${KM[mto - 1]})</div><div class="v">${kmoney(ytd)}</div>${kpct(ytd, ytdly)}</div><div class="kpi"><div class="muted">${y - 1} იგივე პერიოდი</div><div class="v">${kmoney(ytdly)}</div></div><div class="kpi"><div class="muted">ბოლო გაყიდვა</div><div class="v" style="font-size:17px">${kym(last)}</div></div><div class="kpi ${gap.length ? "warn" : "good"}"><div class="muted">ასორტიმენტის ხარვეზი</div><div class="v">${gap.length}</div></div></div>`;
   h += `<div class="kcard"><div class="kh"><b>თვეების მიხედვით</b><span class="klg"><i class="c1"></i>${y}<i class="c0"></i>${y - 1}</span></div>${kMonthChart(o.months, { y, m1: 1, m2: 12 })}</div>`;
   if (gap.length) {
-    h += `<div class="kcard"><div class="kh"><b>ქსელის ასორტიმენტიდან ბოლო 3 თვეში არ შეუძენია (${gap.length})</b>${ag && kMine(ag.ag) ? `<button class="btn primary" data-a="kgaptask">დავალება აგენტს</button>` : ""}</div><div class="ktw"><table class="kt"><thead><tr><th>პროდუქტი</th><th>კატეგორია</th><th>ბოლოს იყიდა</th></tr></thead><tbody>${gap.map(r => { const p = prods.find(x => String(x.k).trim() === String(r.mg_name).trim()); return `<tr><td>${esc(r.net_name || r.mg_name)}<div class="small muted">${esc(r.mg_name)}</div></td><td class="small">${esc([r.category, r.lvl1].filter(Boolean).join(" · "))}</td><td class="small">${p ? kym(p.last) : "არასდროს"}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+    h += `<div class="kcard"><div class="kh"><b>ქსელის ასორტიმენტიდან ბოლო 3 თვეში არ შეუძენია (${gap.length})</b>${ag && kMine(ag.ag) && !kAg() ? `<button class="btn primary" data-a="kgaptask">დავალება აგენტს</button>` : ""}</div><div class="ktw"><table class="kt"><thead><tr><th>პროდუქტი</th><th>კატეგორია</th><th>ბოლოს იყიდა</th></tr></thead><tbody>${gap.map(r => { const p = prods.find(x => String(x.k).trim() === String(r.mg_name).trim()); return `<tr><td>${esc(r.net_name || r.mg_name)}<div class="small muted">${esc(r.mg_name)}</div></td><td class="small">${esc([r.category, r.lvl1].filter(Boolean).join(" · "))}</td><td class="small">${p ? kym(p.last) : "არასდროს"}</td></tr>`; }).join("")}</tbody></table></div></div>`;
   }
   h += `<div class="kcard"><div class="kh"><b>რას ყიდულობს</b></div><div class="ktw"><table class="kt"><thead><tr><th>ნომენკლატურა</th><th>კატეგორია</th><th>3 თვე ₾</th><th>Δ შარშან</th><th>3 თვე ც</th><th>${y}</th><th>ბოლოს</th></tr></thead><tbody>${prods.map(p => `<tr class="${+p.m3 > 0 ? "" : "kdim"}"><td>${esc(p.k)}</td><td class="small muted">${esc(p.cat || "")}</td><td>${kmoney(p.m3)}</td><td>${kpct(p.m3, p.m3ly)}</td><td>${knum(p.q3)}</td><td>${kmoney(p.ytd)}</td><td class="small">${kym(p.last)}</td></tr>`).join("")}</tbody></table></div></div>`;
   return h;
@@ -1726,13 +1753,17 @@ async function kImpSales(rows, file) {
 
 /* ---------- მოქმედებები ---------- */
 Object.assign(A, {
-  kchip(v) { const [k, x] = v.split("|"); const f = K.f; const key = k === "net" ? "nets" : k === "cat" ? "cats" : "agents";
-    if (k === "ag") { f.team = false; f.agents = f.agents[0] === x ? [] : [x]; } else { const a = f[key]; const i = a.indexOf(x); if (i >= 0) a.splice(i, 1); else a.push(x); }
-    if (S.tab !== "k-sales") { S.tab = "k-sales"; } render(); },
+  kchip(v) { const i0 = v.indexOf("|"), k = v.slice(0, i0), x = v.slice(i0 + 1); const f = K.f; const key = { net: "nets", cat: "cats", l1: "l1", l2: "l2" }[k] || "agents";
+    if (k === "ag") { if (kAg()) return; f.team = false; f.agents = f.agents[0] === x ? [] : [x]; } else { const a = f[key]; const i = a.indexOf(x); if (i >= 0) a.splice(i, 1); else a.push(x); }
+    if (k === "cat") { const L = K.info.levels || []; f.l1 = f.l1.filter(l => !f.cats.length || L.some(z => f.cats.includes(z[0]) && z[1] === l)); }
+    if (k === "cat" || k === "l1") { const L = K.info.levels || []; f.l2 = f.l2.filter(l => L.some(z => f.l1.includes(z[1]) && z[2] === l)); }
+    if (kAg()) K.asub = "sales"; else if (S.tab !== "k-sales") { S.tab = "k-sales"; } render(); },
+  kclr() { Object.assign(K.f, { nets: [], cats: [], l1: [], l2: [] }); render(); },
+  kasub(v) { K.asub = v; K.code = null; render(); scrollTo(0, 0); },
   kan(v) { K.an = v; render(); },
   kost(v) { K.of.st = v; K.of.n = 100; render(); },
   kmore() { K.of.n += 200; render(); },
-  kobj(v) { K.code = v; if (!String(S.tab).startsWith("n|")) S.tab = "k-objects"; render(); scrollTo(0, 0); },
+  kobj(v) { K.code = v; if (kAg()) K.asub = "obj"; else if (!String(S.tab).startsWith("n|")) S.tab = "k-objects"; render(); scrollTo(0, 0); },
   kback() { K.code = null; render(); },
   kgaptask() { const o = K.obj; if (!o) return; const ag = kAgent((o.agents || [])[0].ag); const dir = (o.objects || [])[0] || {};
     const sold3 = {}; (o.products || []).forEach(p => { if (+p.m3 > 0) sold3[String(p.k).trim()] = 1; });
@@ -1749,6 +1780,18 @@ document.addEventListener("change", e => { const el = e.target;
   render(); });
 document.addEventListener("input", e => { const el = e.target; if (el.dataset.kin === "oq") { K.of.q = el.value; K.of.n = 100; clearTimeout(K.oqt); K.oqt = setTimeout(render, 300); } });
 { const _tab = A.tab; A.tab = (v, el) => { if (v === "k-objects" || (String(v).startsWith("n|") && v !== S.tab)) K.code = null; return _tab(v, el); }; }
+
+/* ---------- აგენტი: ჩემი გაყიდვები ---------- */
+function kMySales() {
+  if (K.owner !== S.who) { Object.assign(K, { owner: S.who, info: null, f: null, dash: null, dashKey: "", buyers: null, buyersTo: 0, code: null, obj: null, olist: null, asub: "sales", loading: {} }); }
+  if (!K.info && !K.loading.info) { K.loading.info = true; kcall("info").then(r => { K.info = r; K.loading.info = false; (r.agents || []).forEach(a => KAGM[a] = S.who); kInitF(); render(); }).catch(e => { K.loading.info = false; K.info = { rows: 0, err: errMsg(e) }; if (!authFail(e)) render(); }); }
+  if (!K.info) return `<div class="aform"><div class="empty"><b>იტვირთება…</b></div></div>`;
+  if (!K.info.rows || !(K.info.agents || []).length) return `<div class="aform"><div class="empty"><b>გაყიდვების მონაცემი ვერ მოიძებნა</b>${esc(K.info.err || "შენი სახელი მეგაკოს გაყიდვებში ჯერ ვერ დავაკავშირე — მიმართე მენეჯერს.")}</div></div>`;
+  const sub = K.asub || "sales";
+  let h = `<div class="kag"><div class="chips" style="margin-bottom:10px"><button class="chip ${sub === "sales" ? "on" : ""}" data-a="kasub" data-v="sales">📈 გაყიდვები</button><button class="chip ${sub === "obj" ? "on" : ""}" data-a="kasub" data-v="obj">🏬 ჩემი ობიექტები</button></div>`;
+  h += sub === "obj" ? (K.code ? kObj() : kObjects()) : kSales();
+  return h + `</div>`;
+}
 
 /* ჩემი ქსელები: ქსელი → ასორტიმენტი, ობიექტები, შეთანხმებული აქციები, ანაზღაურება, პლანოგრამა */
 const MYNETS = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
