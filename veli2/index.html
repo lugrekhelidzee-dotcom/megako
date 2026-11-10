@@ -554,6 +554,7 @@ h2{font-size:18px}h3{font-size:15.5px}
 .aiph{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--accent-softer);border:1px solid #cfe9e0;font-size:13px;line-height:1.5}
 .kpi .v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:520px){.kcard .kpis{grid-template-columns:repeat(2,1fr)}.kpi .v{font-size:16px}}
+.aiact{margin-top:8px;padding:10px;border:1px solid #cfe9e0;border-radius:10px;background:#f6fbf9;font-size:13px}
 
 </style>
 </head>
@@ -1998,6 +1999,7 @@ const AI_API = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/
 const AI = { open: false, msgs: [], busy: false, ready: null, text: "" };
 try { const h = JSON.parse(sessionStorage.getItem("mg.ai") || "null"); if (Array.isArray(h)) AI.msgs = h.slice(-30); } catch (e) {}
 const aiSave = () => { try { sessionStorage.setItem("mg.ai", JSON.stringify(AI.msgs.slice(-30))); } catch (e) {} };
+
 async function aiCall(body) {
   let r; try { r = await fetch(AI_API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign({ pin: S.pin }, body)) }); }
   catch (e) { throw new Error("NetworkError: კავშირი ვერ შედგა"); }
@@ -2019,10 +2021,10 @@ function aiView() {
   if (S.who !== "__m") return "";
   if (!AI.open) return `<button class="aifab" data-a="aiopen" title="Claude ასისტენტი"><span>✦</span><em>ასისტენტი</em></button>`;
   if (AI.ready === null) { AI.ready = "…"; aiCall({ op: "status" }).then(r => { AI.ready = r.ready; AI.prov = r.provider === "gemini" ? "Google Gemini" : r.provider === "groq" ? "Groq" : r.provider === "claude" ? "Claude" : ""; render(); }).catch(() => { AI.ready = false; render(); }); }
-  const sug = ["როგორ ვართ ამ წელს შარშანდელთან შედარებით?", "რომელ ობიექტებს სჭირდება ყურადღება მაგნიტში?", "ჩემი დღევანდელი დავალებები", "აგენტების დავალებების მდგომარეობა"];
+  const sug = ["როგორ ვართ ამ წელს შარშანდელთან შედარებით?", "რომელ ობიექტებს სჭირდება ყურადღება მაგნიტში?", "ჩემი დღევანდელი დავალებები", "აგენტების დავალებების მდგომარეობა", "ლიკას მიეცი დავალება: ხვალამდე M032-ში ფასმაჩვენებლები გაასწოროს"];
   const body = AI.ready === false ? `<div class="aiwarn"><b>ასისტენტი ჯერ არ არის ჩართული.</b><br>უფასოდ: გახსენი <b>aistudio.google.com</b> → „Get API key“ → „Create API key“ და დააკოპირე. შემდეგ Supabase-ში: პროექტი megako-field-team → Edge Functions → <b>Secrets</b> → „Add new secret“: სახელი <code>GEMINI_API_KEY</code>, მნიშვნელობა — დაკოპირებული გასაღები → Save. ამის შემდეგ ასისტენტი ავტომატურად იმუშავებს.</div>`
-    : (AI.msgs.length ? AI.msgs.map(m => `<div class="aim ${m.role}">${m.role === "assistant" ? aiMd(m.text) : esc(m.text).replace(/\n/g, "<br>")}${m.tools && m.tools.length ? `<div class="aitools">მონაცემები: ${esc([...new Set(m.tools)].join(", "))}</div>` : ""}</div>`).join("")
-      : `<div class="aihello">გამარჯობა! მკითხე გაყიდვებზე, ქსელებზე, ობიექტებზე, აქციებზე, აგენტებზე ან შენს დავალებებზე — პასუხს ბაზის რეალური მონაცემებით გაგცემ.<div class="chips" style="margin-top:10px">${sug.map(s => `<button class="chip" data-a="aisug" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)
+    : (AI.msgs.length ? AI.msgs.map(m => `<div class="aim ${m.role}">${m.role === "assistant" ? aiMd(m.text) : esc(m.text).replace(/\n/g, "<br>")}${m.tools && m.tools.filter(t => !/^propose_/.test(t)).length ? `<div class="aitools">მონაცემები: ${esc([...new Set(m.tools.filter(t => !/^propose_/.test(t)))].join(", "))}</div>` : ""}${(m.actions || []).map((x, j) => aiActCard(AI.msgs.indexOf(m), j, x)).join("")}</div>`).join("")
+      : `<div class="aihello">გამარჯობა! მკითხე გაყიდვებზე, ქსელებზე, ობიექტებზე, აქციებზე, აგენტებზე ან შენს დავალებებზე — პასუხს ბაზის რეალური მონაცემებით გაგცემ. შემიძლია აგენტს დავალება მივცე, შენს სიაში საქმე ჩავწერო ან თვის გეგმა შევავსო — ყოველთვის შენი დადასტურებით.<div class="chips" style="margin-top:10px">${sug.map(s => `<button class="chip" data-a="aisug" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)
       + (AI.busy ? `<div class="aim assistant aibusy">ვფიქრობ და მონაცემებს ვამოწმებ…</div>` : "");
   return `<div class="aibox"><div class="aihead"><b>✦ ასისტენტი</b><span class="small muted">${esc(AI.prov || "")}</span><span style="flex:1"></span>${AI.msgs.length ? `<button class="ib" data-a="aiclear" title="ახალი საუბარი">↺</button>` : ""}<button class="ib" data-a="aiclose" title="დახურვა">✕</button></div>
     <div class="aibody" id="aibody">${body}</div>
@@ -2039,10 +2041,29 @@ function aiMount() {
 async function aiSend(text) {
   text = String(text || "").trim(); if (!text || AI.busy) return;
   AI.msgs.push({ role: "user", text }); AI.text = ""; AI.busy = true; aiSave(); aiMount();
-  try { const r = await aiCall({ messages: AI.msgs.map(m => ({ role: m.role, text: m.text })) }); AI.msgs.push({ role: "assistant", text: r.text || "—", tools: r.tools || [] }); }
+  try { const r = await aiCall({ messages: AI.msgs.map(m => ({ role: m.role, text: m.text })) }); AI.msgs.push({ role: "assistant", text: r.text || "—", tools: r.tools || [], actions: (r.actions || []).map(a => ({ ...a, st: "" })) }); }
   catch (e) { const m = errMsg(e); if (m === "NOKEY") AI.ready = false; else AI.msgs.push({ role: "assistant", text: "⚠ " + m }); }
   AI.busy = false; aiSave(); aiMount();
 }
+function aiActCard(i, j, x) {
+  const d = x.d || {}; let t = "", body = "";
+  if (x.type === "task") { t = "დავალება აგენტს"; body = `<b>${esc(d.title)}</b><br>${esc((d.agents || []).join(", "))}${d.store ? " · " + esc(d.store) : ""} · ${esc(d.kind || "")}${d.due ? " · ვადა " + esc(d.due) : ""}${d.details ? `<br><span class="muted">${esc(d.details).replace(/\n/g, "<br>")}</span>` : ""}`; }
+  else if (x.type === "mytask") { t = "ჩემს დავალებებში"; body = `<b>${esc(d.title)}</b><br>${d.obj ? esc(d.obj) + " · " : ""}${esc(d.due || "")}${d.time ? " " + esc(d.time) : ""}${d.note ? `<br><span class="muted">${esc(d.note)}</span>` : ""}`; }
+  else if (x.type === "plan") { t = "თვის გეგმა · " + (d.ym ? kYm(d.ym) : ""); body = (d.items || []).map(r => `${esc(r.kind === "ag" ? kAgent(r.key) : r.key)}: <b>${kmoney(r.amount)}</b>`).join("<br>"); }
+  const st = x.st === "ok" ? `<span style="color:var(--ok);font-weight:700">✓ შესრულდა</span>` : x.st === "no" ? `<span class="muted">გაუქმდა</span>` : x.st === "busy" ? `<span class="muted">…</span>` : `<button class="btn sm primary" data-a="aiact" data-v="${i}|${j}">✓ შესრულება</button> <button class="btn sm" data-a="aiactno" data-v="${i}|${j}">✕</button>`;
+  return `<div class="aiact"><div class="small muted">${t}</div><div style="margin:4px 0 8px">${body}</div>${st}</div>`;
+}
+async function aiDo(x) {
+  const d = x.d || {};
+  if (x.type === "task") return !!(await act("createTask", S.pin, d));
+  if (x.type === "mytask") { const now = Date.now(), td = new Date().toISOString().slice(0, 10); await kcall("docSet", { path: "tasks/tm" + now.toString(36) + Math.random().toString(36).slice(2, 6), data: { cat: "სამუშაო", title: d.title, obj: d.obj || "", due: d.due || td, time: d.time || "", pri: d.pri || "med", note: d.note || "", start: td, status: "todo", subs: [], files: [], recur: "", log: [], created: now, updated: now } }); return true; }
+  if (x.type === "plan") { const docs = await kcall("docs"); const path = "plan/" + d.ym; const cur = ((docs || []).find(z => z.path === path) || {}).data || { ag: {}, net: {} }; cur.ag = cur.ag || {}; cur.net = cur.net || {}; (d.items || []).forEach(r => { cur[r.kind === "net" ? "net" : "ag"][r.key] = Math.round(+r.amount); }); await kcall("docSet", { path, data: cur }); if (typeof PLN !== "undefined" && PLN.docs) PLN.docs[path] = cur; return true; }
+  return false;
+}
+Object.assign(A, {
+  async aiact(v) { const [i, j] = v.split("|").map(Number); const x = AI.msgs[i] && AI.msgs[i].actions && AI.msgs[i].actions[j]; if (!x || x.st) return; x.st = "busy"; aiMount(); try { x.st = (await aiDo(x)) ? "ok" : ""; if (x.st === "ok") toast("შესრულდა"); } catch (e) { x.st = ""; toast(errMsg(e)); } aiSave(); aiMount(); },
+  aiactno(v) { const [i, j] = v.split("|").map(Number); const x = AI.msgs[i] && AI.msgs[i].actions && AI.msgs[i].actions[j]; if (x) { x.st = "no"; aiSave(); aiMount(); } },
+});
 Object.assign(A, {
   aiopen() { AI.open = true; aiMount(); }, aiclose() { AI.open = false; aiMount(); },
   aiclear() { AI.msgs = []; aiSave(); aiMount(); },
