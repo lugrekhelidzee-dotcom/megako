@@ -1827,19 +1827,21 @@ function kMySales() {
 const MYNETS = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
 const NSUB = [["sales", "გაყიდვები"], ["assort", "ასორტიმენტი"], ["objects", "ობიექტები"], ["promos", "შეთანხმებული აქციები"], ["comp", "ანაზღაურება"], ["plano", "პლანოგრამა"]];
 const NSALES = { "მადაგონი": "მადაგონი 2" };
-let NNAV = { open: false, nets: {} };
-try { const v = JSON.parse(localStorage.getItem("mg.nnav") || "null"); if (v) NNAV = Object.assign(NNAV, v); } catch (e) {}
-const nnSave = () => { try { localStorage.setItem("mg.nnav", JSON.stringify(NNAV)); } catch (e) {} };
+let NNAV = { open: null, nets: {} };
+try { const v = JSON.parse(localStorage.getItem("mg.nnav2") || "null"); if (v) NNAV = Object.assign(NNAV, v); } catch (e) {}
+const nnSave = () => { try { localStorage.setItem("mg.nnav2", JSON.stringify(NNAV)); } catch (e) {} };
 const nRoute = () => { const p = String(S.tab).split("|"); return p[0] === "n" ? { net: p[1], sub: p[2] } : null; };
 function kTitle() { const r = nRoute(); if (!r) return ""; const s = NSUB.find(x => x[0] === r.sub); return r.net + (s ? " · " + s[1] : ""); }
+function nnOpen() { const r = nRoute(); return NNAV.open == null ? !!r : NNAV.open; }
+function nnNet(n) { const r = nRoute(); return NNAV.nets[n] == null ? !!(r && r.net === n) : NNAV.nets[n]; }
 function kNetNav() {
   const r = nRoute();
-  const open = NNAV.open || !!r;
+  const open = nnOpen();
   const chev = o => `<svg class="chev2 ${o ? "op" : ""}" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>`;
   let h = `<button class="ni nn0" data-a="nntog" data-v=""><svg class="i" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>ჩემი ქსელები${chev(open)}</button>`;
   if (!open) return h;
   h += `<div class="nnl">` + MYNETS.map(n => {
-    const o = NNAV.nets[n] || (r && r.net === n);
+    const o = nnNet(n);
     return `<button class="nn1 ${r && r.net === n ? "cur" : ""}" data-a="nntog" data-v="${esc(n)}"><span>${esc(n)}</span>${chev(o)}</button>` +
       (o ? `<div class="nn2l">` + NSUB.map(([k, l]) => `<button class="nn2 ${r && r.net === n && r.sub === k ? "on" : ""}" data-a="tab" data-v="${esc("n|" + n + "|" + k)}">${l}</button>`).join("") + `</div>` : "");
   }).join("") + `</div>`;
@@ -1925,7 +1927,7 @@ async function kdUpload(path, files) {
   KD.busy = false; render();
 }
 Object.assign(A, {
-  nntog(v) { if (!v) NNAV.open = !(NNAV.open || !!nRoute()); else NNAV.nets[v] = !(NNAV.nets[v] || (nRoute() && nRoute().net === v)); if (v && nRoute() && nRoute().net === v && !NNAV.nets[v]) { /* ღია ქსელის დაკეცვა */ } nnSave(); render(); },
+  nntog(v) { if (!v) NNAV.open = !nnOpen(); else NNAV.nets[v] = !nnNet(v); nnSave(); render(); },
   async kdnote(path) { const t = ($("#kdn") || {}).value || ""; const d = Object.assign({ files: [] }, KD.docs[path] || {}, { note: t }); try { await kdSave(path, d); delete KD.note[path]; toast("შენახულია"); } catch (e) { toast(errMsg(e)); } render(); },
   async kddel(v) { const [path, i] = v.split("#"); const d = JSON.parse(JSON.stringify(KD.docs[path] || { files: [] })); const f = d.files.splice(+i, 1)[0]; if (!f || !confirm("წავშალო „" + f.name + "“?")) return; try { await kdSave(path, d); kcall("fileDel", { id: f.id }).catch(() => {}); } catch (e) { toast(errMsg(e)); } render(); },
   async kdprev(v) { const [path, i] = v.split("#"); const f = (KD.docs[path] || { files: [] }).files[+i]; if (!f) return; try { await loadXLSX(); const buf = await fetch(f.id).then(r => r.arrayBuffer()); const wb = XLSX.read(buf, { type: "array" }); const ws = wb.Sheets[wb.SheetNames[0]]; let html = XLSX.utils.sheet_to_html(ws, { header: "", footer: "" }); html = html.replace(/<table/, '<table class="kt"'); KD.prev = { path, name: f.name + " · " + wb.SheetNames[0], html }; } catch (e) { toast("ვერ გაიხსნა: " + errMsg(e)); } render(); },
@@ -2342,7 +2344,7 @@ document.addEventListener("change", e => { const el = e.target; const id = el.da
   const cur = (MSEL.cur[id] || []).filter(v => v !== el.value); if (el.checked) cur.push(el.value);
   MSEL.set[id] && MSEL.set[id](cur); render(); });
 document.addEventListener("input", e => { const id = e.target.dataset && e.target.dataset.mselq; if (!id) return; MSEL.q[id] = e.target.value; render(); const i = document.querySelector(`[data-mselq="${CSS.escape(id)}"]`); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } });
-document.addEventListener("click", e => { if (MSEL.open && !e.target.closest(".msel")) { MSEL.open = ""; render(); } }, true);
+document.addEventListener("click", e => { if (MSEL.open && !e.target.closest(".msel")) { MSEL.open = ""; document.querySelectorAll(".msel.op").forEach(m => { m.classList.remove("op"); const p = m.querySelector(".mselp"); if (p) p.remove(); }); } }, true);
 function mselQ(id, quick) { MSEL.quick[id] = quick; return quick; }
 
 </script>
