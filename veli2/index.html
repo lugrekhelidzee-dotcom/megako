@@ -1964,14 +1964,14 @@ function aiMd(t) {
 }
 function aiView() {
   if (S.who !== "__m") return "";
-  if (!AI.open) return `<button class="aifab" data-a="aiopen" title="Claude ასისტენტი"><span>✦</span> Claude</button>`;
-  if (AI.ready === null) { AI.ready = "…"; aiCall({ op: "status" }).then(r => { AI.ready = r.ready; render(); }).catch(() => { AI.ready = false; render(); }); }
+  if (!AI.open) return `<button class="aifab" data-a="aiopen" title="Claude ასისტენტი"><span>✦</span> ასისტენტი</button>`;
+  if (AI.ready === null) { AI.ready = "…"; aiCall({ op: "status" }).then(r => { AI.ready = r.ready; AI.prov = r.provider === "gemini" ? "Google Gemini" : r.provider === "groq" ? "Groq" : r.provider === "claude" ? "Claude" : ""; render(); }).catch(() => { AI.ready = false; render(); }); }
   const sug = ["როგორ ვართ ამ წელს შარშანდელთან შედარებით?", "რომელ ობიექტებს სჭირდება ყურადღება მაგნიტში?", "ჩემი დღევანდელი დავალებები", "აგენტების დავალებების მდგომარეობა"];
-  const body = AI.ready === false ? `<div class="aiwarn"><b>Claude ჯერ არ არის ჩართული.</b><br>საჭიროა Anthropic API-ს გასაღები (claude.com/platform → API Keys). გასაღები ჩასვი Supabase-ში: Edge Functions → Secrets → სახელი <code>ANTHROPIC_API_KEY</code>. ამის შემდეგ ასისტენტი ავტომატურად იმუშავებს.</div>`
+  const body = AI.ready === false ? `<div class="aiwarn"><b>ასისტენტი ჯერ არ არის ჩართული.</b><br>უფასოდ: გახსენი <b>aistudio.google.com</b> → „Get API key“ → „Create API key“ და დააკოპირე. შემდეგ Supabase-ში: პროექტი megako-field-team → Edge Functions → <b>Secrets</b> → „Add new secret“: სახელი <code>GEMINI_API_KEY</code>, მნიშვნელობა — დაკოპირებული გასაღები → Save. ამის შემდეგ ასისტენტი ავტომატურად იმუშავებს.</div>`
     : (AI.msgs.length ? AI.msgs.map(m => `<div class="aim ${m.role}">${m.role === "assistant" ? aiMd(m.text) : esc(m.text).replace(/\n/g, "<br>")}${m.tools && m.tools.length ? `<div class="aitools">მონაცემები: ${esc([...new Set(m.tools)].join(", "))}</div>` : ""}</div>`).join("")
       : `<div class="aihello">გამარჯობა! მკითხე გაყიდვებზე, ქსელებზე, ობიექტებზე, აქციებზე, აგენტებზე ან შენს დავალებებზე — პასუხს ბაზის რეალური მონაცემებით გაგცემ.<div class="chips" style="margin-top:10px">${sug.map(s => `<button class="chip" data-a="aisug" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)
       + (AI.busy ? `<div class="aim assistant aibusy">ვფიქრობ და მონაცემებს ვამოწმებ…</div>` : "");
-  return `<div class="aibox"><div class="aihead"><b>✦ Claude</b><span class="small muted">JDE vs MEGAKO ასისტენტი</span><span style="flex:1"></span>${AI.msgs.length ? `<button class="ib" data-a="aiclear" title="ახალი საუბარი">↺</button>` : ""}<button class="ib" data-a="aiclose" title="დახურვა">✕</button></div>
+  return `<div class="aibox"><div class="aihead"><b>✦ ასისტენტი</b><span class="small muted">${esc(AI.prov || "")}</span><span style="flex:1"></span>${AI.msgs.length ? `<button class="ib" data-a="aiclear" title="ახალი საუბარი">↺</button>` : ""}<button class="ib" data-a="aiclose" title="დახურვა">✕</button></div>
     <div class="aibody" id="aibody">${body}</div>
     <div class="aiin"><textarea id="aitx" rows="2" placeholder="დაწერე შეკითხვა… (Enter — გაგზავნა)" ${AI.busy || AI.ready === false ? "disabled" : ""}>${esc(AI.text)}</textarea><button class="btn primary" data-a="aisend" ${AI.busy || AI.ready === false ? "disabled" : ""}>➤</button></div></div>`;
 }
