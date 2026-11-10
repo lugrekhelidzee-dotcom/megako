@@ -480,6 +480,17 @@ label.btn.disabled{opacity:.6;pointer-events:none}
 .xlb:hover{background:var(--acc,#1f6f5c);color:#fff}
 .kper{display:inline-flex;gap:4px}
 .kch.kdense .km{font-size:9px}
+.prt td{vertical-align:middle}
+.prt .prin{width:74px;min-height:34px;padding:4px 8px;text-align:right}
+.prt tr.prok td{background:#e5f6ec}
+.prt tr.prok td:first-child{box-shadow:inset 4px 0 0 #1f9d55}
+.prt tr.prdl td{opacity:.7;background:#fbf4f2}
+.prt b.good{color:#1f9d55}.prt b.warn{color:#b7791f}.prt b.bad{color:#c0392b}
+.prmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.prmap label{display:flex;flex-direction:column;gap:3px;font-size:12px}
+.primp{border:2px dashed var(--acc,#1f6f5c)}
+@media (prefers-color-scheme:dark){.prt tr.prok td{background:#16382a}.prt tr.prdl td{background:#3a2621}}
+.prt td:first-child{min-width:190px;max-width:280px}.prt th,.prt td{padding-left:6px;padding-right:6px}
 
 </style>
 </head>
@@ -866,7 +877,7 @@ function orderCard(x,openDefault){
     (co?ls.map(l=>`<div class="oline tap ${chk[lineKey(x,l)]?"ok":""}" data-a="ochk" data-v="${esc(lineKey(x,l))}"><div>${esc(l.product)}</div><div class="q">${qtyf(l.qty)}</div><div class="s">${l.barcode?esc(l.barcode):""}</div><div class="s r">${l.price?money(l.price)+" ₾":""}</div></div>`).join(""):"")}).join("")}</div>`:""}</div>`}
 function catGroups(x){const by={};x.lines.forEach(l=>{const c=l.category||"სხვა";(by[c]=by[c]||[]).push(l)});return Object.keys(by).sort((a,b)=>(a==="სხვა")-(b==="სხვა")||a.localeCompare(b,"ka")).map(c=>[c,by[c]])}
 
-const IC={today:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+const IC={tag:'<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',today:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
 rev:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
 all:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
 team:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14.5c2.4.2 4 1.8 4.5 4.5"/>',
@@ -896,9 +907,9 @@ function mView(){
   const NAV=[["","მთავარი",[["my","ჩემი დავალებები",0,"",IC.all],["today","დღეს",todayCnt,"",IC.today],["rev","შესამოწმებელი",rev,"",IC.rev],["all","ყველა დავალება",0,"",IC.all]]],
     ["","გუნდი",[["team","აგენტები",0,"",IC.team],["rep","ფოტო-რეპორტები",unseen,"",IC.rep],["chat","ჩატი",chatUnread(),"",IC.chat]]],
     ["","ქსელები",[["promo","აქციები",prNow,"pr",IC.promo],["orders","შეკვეთები",0,"",IC.orders],["files","ფაილები",0,"",IC.files]]],
-    ["","ქსელების მართვა (KAM)",[["k-sales","გაყიდვები",0,"",IC.chart],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]],
+    ["","ქსელების მართვა (KAM)",[["k-sales","გაყიდვები",0,"",IC.chart],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-promo","აქციები",0,"",IC.tag],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]],
     ["","სისტემა",[["settings","პარამეტრები",0,"",IC.gear]]]];
-  const TT={my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა",settings:"პარამეტრები"};
+  const TT={my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა","k-promo":"აქციები: დაგეგმვა და მარჟა",settings:"პარამეტრები"};
   let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">JDE vs MEGAKO</div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
   <nav class="navs">${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0);return `<button class="ng ${op?"op":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}"><span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}"><svg class="i" viewBox="0 0 24 24">${ic}</svg>${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+(g.includes("KAM")?kNetNav():"")+`</div>`:"")}).join("")}</nav>
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
@@ -1473,8 +1484,9 @@ function kamView() {
   if (!K.info && !K.loading.info) { K.loading.info = true; kcall("info").then(r => { K.info = r; K.loading.info = false; kBuildAg(r.agents || []); kInitF(); render(); }).catch(e => { K.loading.info = false; K.info = { rows: 0, err: errMsg(e) }; render(); }); }
   if (!K.info) return `<div class="empty"><b>იტვირთება…</b></div>`;
   if (S.tab === "k-import") return kImport();
+  if (S.tab === "k-promo") return kPromo();
   if (!K.info.rows && S.tab !== "k-import") return `<div class="empty"><b>გაყიდვების მონაცემი ჯერ არ არის ატვირთული</b>${K.info.err ? esc(K.info.err) + "<br>" : ""}გადადი „მონაცემების ატვირთვა“-ზე და ატვირთე მეგაკოს პროგრამიდან გამოტანილი ფაილები.<div style="margin-top:12px"><button class="btn primary" data-a="tab" data-v="k-import">ატვირთვა</button></div></div>`;
-  if (S.tab === "k-sales") return kSales();
+  if (S.tab === "k-sales") { if (K.netLock) { K.f.nets = []; K.netLock = null; } return kSales(); }
   if (S.tab === "k-assort") return kAssort();
   if (S.tab === "k-objects") return K.code ? kObj() : kObjects();
   return "";
@@ -1767,7 +1779,7 @@ Object.assign(A, {
     if (k === "ag") { if (kAg()) return; f.team = false; f.agents = f.agents[0] === x ? [] : [x]; } else { const a = f[key]; const i = a.indexOf(x); if (i >= 0) a.splice(i, 1); else a.push(x); }
     if (k === "cat") { const L = K.info.levels || []; f.l1 = f.l1.filter(l => !f.cats.length || L.some(z => f.cats.includes(z[0]) && z[1] === l)); }
     if (k === "cat" || k === "l1") { const L = K.info.levels || []; f.l2 = f.l2.filter(l => L.some(z => f.l1.includes(z[1]) && z[2] === l)); }
-    if (kAg()) K.asub = "sales"; else if (S.tab !== "k-sales") { S.tab = "k-sales"; } render(); },
+    if (kAg()) K.asub = "sales"; else if (S.tab !== "k-sales" && !String(S.tab).endsWith("|sales")) { S.tab = "k-sales"; } render(); },
   kclr() { Object.assign(K.f, { nets: [], cats: [], l1: [], l2: [] }); render(); },
   kasub(v) { K.asub = v; K.code = null; render(); scrollTo(0, 0); },
   kan(v) { K.an = v; render(); },
@@ -1805,7 +1817,7 @@ function kMySales() {
 
 /* ჩემი ქსელები: ქსელი → ასორტიმენტი, ობიექტები, შეთანხმებული აქციები, ანაზღაურება, პლანოგრამა */
 const MYNETS = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
-const NSUB = [["assort", "ასორტიმენტი"], ["objects", "ობიექტები"], ["promos", "შეთანხმებული აქციები"], ["comp", "ანაზღაურება"], ["plano", "პლანოგრამა"]];
+const NSUB = [["sales", "გაყიდვები"], ["assort", "ასორტიმენტი"], ["objects", "ობიექტები"], ["promos", "შეთანხმებული აქციები"], ["comp", "ანაზღაურება"], ["plano", "პლანოგრამა"]];
 const NSALES = { "მადაგონი": "მადაგონი 2" };
 let NNAV = { open: false, nets: {} };
 try { const v = JSON.parse(localStorage.getItem("mg.nnav") || "null"); if (v) NNAV = Object.assign(NNAV, v); } catch (e) {}
@@ -1832,6 +1844,12 @@ function kNetView() {
   if (r.sub === "comp" || r.sub === "plano") return tabs + kNetDocs(r.net, r.sub);
   if (!K.info && !K.loading.info) { K.loading.info = true; kcall("info").then(x => { K.info = x; K.loading.info = false; kBuildAg(x.agents || []); kInitF(); render(); }).catch(e => { K.loading.info = false; K.info = { rows: 0, err: errMsg(e) }; render(); }); }
   if (!K.info) return tabs + `<div class="empty"><b>იტვირთება…</b></div>`;
+  if (r.sub === "sales") {
+    if (!K.info.rows) return tabs + `<div class="empty"><b>გაყიდვების მონაცემი ჯერ არ არის ატვირთული</b></div>`;
+    kInitF(); const sn = NSALES[r.net] || r.net;
+    if (K.netLock !== sn) { K.f.nets = [sn]; K.netLock = sn; }
+    return tabs + kSales().replace(/<div class="chips"><span class="klab">ქსელი<\/span>[\s\S]*?<\/div>/, "");
+  }
   if (r.sub === "assort") {
     if (K.an !== r.net) { K.an = r.net; }
     return tabs + kAssort().replace(/<div class="kbar"><div class="chips">[\s\S]*?<\/div>/, '<div class="kbar">');
@@ -1992,6 +2010,240 @@ function settingsView() {
   • <b>ახალი აგენტი:</b> „აგენტები“ ფურცელზე ახალი სტრიქონი, „აქტიური“ = TRUE. PIN-ს პირველ შესვლაზე თვითონ დააყენებს.</div></div>
   <div class="small muted" style="margin-top:6px">სკრიპტი (მხოლოდ საჭიროებისას): <a href="${GSCRIPT}" target="_blank" rel="noopener">Apps Script რედაქტორი ↗</a></div>`;
 }
+
+/* ---------- აქციების დაგეგმვა: ქსელი → ასორტიმენტი → რეტრო + სააქციო ბონუსი → ნეტ ფასი → სარეკომენდაციო ფასი → მარჟა ---------- */
+const PR = { net: "", docs: {}, loaded: false, loading: false, as: {}, asLoading: {}, q: "", cat: "", st: "", dl: false, imp: null, saveT: {} };
+const PRNET = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
+const prKey = r => String(r.mg_barcode || r.net_barcode || r.mg_name || r.net_name || "").trim();
+const prF = v => v == null || v === "" || isNaN(+v) ? null : +v;
+const prPctIn = v => { v = String(v ?? "").replace(",", ".").replace("%", "").trim(); if (v === "") return null; const n = +v; return isFinite(n) ? (Math.abs(n) > 1 ? n / 100 : n) : null; };
+const prP = v => v == null ? "" : (+v * 100).toFixed(1).replace(/\.0$/, "");
+const prM = v => v == null || !isFinite(v) ? "—" : (+v).toFixed(2);
+function prPlan(net) { const k = "promo/" + net; if (!PR.docs[k]) PR.docs[k] = { name: "", from: "", to: "", items: {} }; if (!PR.docs[k].items) PR.docs[k].items = {}; return PR.docs[k]; }
+function prLoad() {
+  if (PR.loaded || PR.loading) return; PR.loading = true;
+  kcall("docs").then(rows => { rows.filter(x => x.path.startsWith("promo/")).forEach(x => PR.docs[x.path] = x.data || {}); PR.loaded = true; PR.loading = false; render(); })
+    .catch(e => { PR.loading = false; PR.loaded = true; toast(errMsg(e)); render(); });
+}
+function prSave(net, now) {
+  clearTimeout(PR.saveT[net]);
+  const go = () => { const p = prPlan(net); p.upd = new Date().toISOString(); kcall("docSet", { path: "promo/" + net, data: p }).then(() => { PR.saved = Date.now(); const el = document.getElementById("prsaved"); if (el) el.textContent = "✓ შენახულია"; }).catch(e => toast("ვერ შეინახა: " + errMsg(e))); };
+  if (now) go(); else PR.saveT[net] = setTimeout(go, 700);
+  const el = document.getElementById("prsaved"); if (el) el.textContent = "ინახება…";
+}
+function prAssort(net) {
+  const to = K.info && K.info.max;
+  if (!PR.as[net] && !PR.asLoading[net] && to) {
+    PR.asLoading[net] = true;
+    kcall("assort", { net, to }).then(r => { PR.as[net] = r; PR.asLoading[net] = false; render(); }).catch(e => { PR.asLoading[net] = false; PR.as[net] = { rows: [], stats: { products: [] } }; toast(errMsg(e)); render(); });
+  }
+  return PR.as[net];
+}
+/* ერთი ხაზის გამოთვლა */
+function prCalc(r, it) {
+  const B = prF(r.buy_price), P = prF(r.price_list);
+  const retro = it.retro != null ? it.retro : prF(r.retro) ?? 0;
+  const bonus = it.bonus != null ? it.bonus : 0;
+  const net = B != null ? B * (1 - (retro || 0) - (bonus || 0)) : null;
+  const shelf = it.shelf != null ? it.shelf : null;
+  const marg = shelf && net != null ? (shelf - net) / shelf : null;
+  return { P, B, inv: prF(r.inv_disc), retro, bonus, net, retroGel: B != null ? B * (retro || 0) : null, bonusGel: B != null ? B * (bonus || 0) : null, shelf, marg, margGel: shelf && net != null ? shelf - net : null };
+}
+function prRows(net) {
+  const a = PR.as[net]; if (!a) return null;
+  const plan = prPlan(net);
+  const act = (a.rows || []).map(r => ({ r, key: prKey(r), dl: false }));
+  const used = {}; (a.rows || []).forEach(r => used[String(r.mg_name).trim()] = 1);
+  const dl = (a.stats && a.stats.products || []).filter(p => !used[String(p.k).trim()] && p.a > 0).map(p => ({ r: { net, net_name: "", mg_name: p.k, category: "", sold: p.a }, key: String(p.k).trim(), dl: true }));
+  return act.concat(dl).map(x => ({ ...x, it: plan.items[x.key] || {} }));
+}
+function kPromo() {
+  prLoad();
+  if (!PR.net) PR.net = PRNET[0];
+  const net = PR.net, sn = NSALES[net] || net;
+  const a = prAssort(sn);
+  const plan = prPlan(net);
+  const conf = n => { const p = PR.docs["promo/" + n]; return p && p.items ? Object.values(p.items).filter(x => x.ok).length : 0; };
+  let h = `<div class="kbar"><div class="chips">${PRNET.map(n => `<button class="chip ${n === net ? "on" : ""}" data-a="prnet" data-v="${esc(n)}">${esc(n)}${conf(n) ? ` <span class="count">${conf(n)}</span>` : ""}</button>`).join("")}</div></div>`;
+  if (!PR.loaded || !a) return h + `<div class="empty"><b>იტვირთება…</b></div>`;
+  const rows = prRows(sn) || [];
+  if (!rows.length) return h + `<div class="empty"><b>${esc(net)}-ის ასორტიმენტი ფაილში არ არის</b>ატვირთე ასორტიმენტის ფაილი „მონაცემების ატვირთვა“-ზე.</div>`;
+  const cats = [...new Set(rows.filter(x => !x.dl).map(x => x.r.category || "სხვა"))].sort((x, y) => x.localeCompare(y, "ka"));
+  const q = norm(PR.q || "");
+  const vis = rows.filter(x => (PR.dl ? true : !x.dl) && (!PR.cat || (x.r.category || "სხვა") === PR.cat) && (!q || norm([x.r.net_name, x.r.mg_name, x.r.net_barcode, x.r.mg_barcode, x.r.lvl1, x.r.lvl2].join(" ")).includes(q))
+    && (!PR.st || (PR.st === "ok" ? x.it.ok : PR.st === "no" ? !x.it.ok : PR.st === "file" ? x.it.src === "file" : PR.st === "edit" ? (x.it.bonus != null || x.it.shelf != null || x.it.retro != null) : true)));
+  const act = rows.filter(x => !x.dl), dln = rows.length - act.length, okL = act.filter(x => x.it.ok);
+  const avgM = okL.length ? okL.map(x => prCalc(x.r, x.it).marg).filter(v => v != null) : [];
+  h += `<div class="kpis"><div class="kpi"><div class="muted">აქტიური ასორტიმენტი</div><div class="v">${act.length}</div></div>
+    <div class="kpi good"><div class="muted">დადასტურებული</div><div class="v">${okL.length}</div></div>
+    <div class="kpi"><div class="muted">საშ. მარჟა (დადასტ.)</div><div class="v">${avgM.length ? (avgM.reduce((s, v) => s + v, 0) / avgM.length * 100).toFixed(1) + "%" : "—"}</div></div>
+    <div class="kpi ${dln ? "warn" : ""}"><div class="muted">დელისტი (იყიდება, ფაილში არ არის)</div><div class="v">${dln}</div></div></div>`;
+  h += `<div class="kcard prhead"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+    <div class="field" style="flex:2;min-width:180px;margin:0"><label>აქციის სახელი</label><input type="text" data-prh="name" value="${esc(plan.name || "")}" placeholder="მაგ. დეკემბრის აქცია"></div>
+    <div class="field" style="margin:0"><label>-დან</label><input type="date" data-prh="from" value="${esc(plan.from || "")}"></div>
+    <div class="field" style="margin:0"><label>-მდე</label><input type="date" data-prh="to" value="${esc(plan.to || "")}"></div>
+    <span id="prsaved" class="small muted"></span></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">
+    <button class="btn primary" data-a="prxl" data-v="ok">⬇ დადასტურებულები Excel</button>
+    <button class="btn" data-a="prxl" data-v="all">⬇ მთელი ცხრილი Excel</button>
+    <button class="btn" data-a="prxl" data-v="allnets">⬇ ყველა ქსელის დადასტურებულები</button>
+    <label class="btn">⬆ ქსელის აქციის ფაილი<input type="file" accept=".xlsx,.xls,.csv" data-prfile="1" hidden></label>
+    <button class="btn ghost" data-a="prtpl">⬇ შაბლონი</button>
+    <button class="btn ghost danger" data-a="prclr">გასუფთავება</button></div></div>`;
+  if (PR.imp && PR.imp.net === net) h += prImpView();
+  h += `<div class="kbar"><div class="row" style="gap:8px;flex-wrap:wrap"><input type="search" data-prq="1" value="${esc(PR.q)}" placeholder="ძებნა: სახელი, შტრიხკოდი, დონე…" style="max-width:320px">
+    <select data-prs="st"><option value="">ყველა</option>${[["ok", "დადასტურებული"], ["no", "დაუდასტურებელი"], ["edit", "შეცვლილი"], ["file", "ქსელის ფაილიდან"]].map(([v, l]) => `<option value="${v}" ${PR.st === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <label class="small"><input type="checkbox" data-prs="dl" ${PR.dl ? "checked" : ""}> დელისტიც ვაჩვენო</label>
+    <span class="small muted">${vis.length} / ${rows.length}</span></div>
+    <div class="chips"><span class="klab">კატეგორია</span><button class="chip ${!PR.cat ? "on" : ""}" data-a="prcat" data-v="">ყველა</button>${cats.map(c => `<button class="chip ${PR.cat === c ? "on" : ""}" data-a="prcat" data-v="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>`;
+  const inp = (key, f, v, ph) => `<input class="prin" type="text" inputmode="decimal" data-pri="${esc(key)}" data-prf="${f}" value="${v == null ? "" : esc(v)}" placeholder="${ph}">`;
+  h += `<div class="kcard"><div class="ktw"><table class="kt prt"><thead><tr><th>პროდუქტი</th><th>კატეგორია</th><th>შტრიხკოდი</th><th>საპრაისო</th><th>შესასყიდი</th><th>რეტრო %</th><th>სააქციო ბონუსი %</th><th>ნეტ ფასი</th><th>სარეკომ. ფასი</th><th>მარჟა</th><th></th></tr></thead><tbody>${vis.map(x => {
+    if (x.dl) return `<tr class="prdl"><td><b>${esc(x.r.mg_name)}</b> <span class="pill w-late">დელისტი</span><div class="small muted">ბოლო 3 თვეში გაიყიდა ${kmoney(x.r.sold)}, ასორტიმენტის ფაილში არ არის</div></td><td colspan="10"></td></tr>`;
+    const c = prCalc(x.r, x.it), k = x.key;
+    return `<tr class="${x.it.ok ? "prok" : ""}" data-prrow="${esc(k)}"><td><b>${esc(x.r.net_name || x.r.mg_name)}</b><div class="small muted">${esc(x.r.mg_name)}</div>${x.it.src === "file" ? `<span class="pill">ქსელის ფაილიდან</span>` : ""}</td>
+      <td class="small">${esc([x.r.category, x.r.lvl1, x.r.lvl2].filter(Boolean).join(" · "))}</td><td class="mono small">${esc(x.r.net_barcode || x.r.mg_barcode || "")}</td>
+      <td>${prM(c.P)}</td><td>${prM(c.B)}${c.inv ? `<div class="small muted">ინვ. −${prP(c.inv)}%</div>` : ""}</td>
+      <td>${inp(k, "retro", x.it.retro != null ? prP(x.it.retro) : null, prP(prF(x.r.retro)) || "0")}</td>
+      <td>${inp(k, "bonus", x.it.bonus != null ? prP(x.it.bonus) : null, "0")}</td>
+      <td class="prnet"><b>${prM(c.net)}</b><div class="small muted">${c.retroGel ? "რეტრო " + prM(c.retroGel) : ""}${c.bonusGel ? " · ბონ. " + prM(c.bonusGel) : ""}</div></td>
+      <td>${inp(k, "shelf", x.it.shelf, "₾")}</td>
+      <td class="prmarg">${c.marg != null ? `<b class="${c.marg < 0.1 ? "bad" : c.marg < 0.2 ? "warn" : "good"}">${(c.marg * 100).toFixed(1)}%</b><div class="small muted">${prM(c.margGel)} ₾</div>` : "—"}</td>
+      <td><button class="btn ${x.it.ok ? "okb" : ""}" data-a="prok" data-v="${esc(k)}" title="დადასტურება">${x.it.ok ? "✓" : "✓?"}</button></td></tr>`;
+  }).join("")}</tbody></table></div></div>
+  <div class="small muted">ნეტ ფასი = შესასყიდი × (1 − რეტრო − სააქციო ბონუსი). მარჟა = (სარეკომენდაციო − ნეტ) ÷ სარეკომენდაციო. ცარიელი რეტრო = ასორტიმენტის ფაილის რეტრო. ყველაფერი ავტომატურად ინახება.</div>`;
+  return h;
+}
+/* ხაზის ცვლილება ხელახალი render-ის გარეშე */
+function prUpdRow(key) {
+  const net = PR.net, sn = NSALES[net] || net, a = PR.as[sn]; if (!a) return;
+  const r = (a.rows || []).find(z => prKey(z) === key); if (!r) return;
+  const it = prPlan(net).items[key] || {}; const c = prCalc(r, it);
+  const tr = document.querySelector(`tr[data-prrow="${CSS.escape(key)}"]`); if (!tr) return;
+  tr.querySelector(".prnet").innerHTML = `<b>${prM(c.net)}</b><div class="small muted">${c.retroGel ? "რეტრო " + prM(c.retroGel) : ""}${c.bonusGel ? " · ბონ. " + prM(c.bonusGel) : ""}</div>`;
+  tr.querySelector(".prmarg").innerHTML = c.marg != null ? `<b class="${c.marg < 0.1 ? "bad" : c.marg < 0.2 ? "warn" : "good"}">${(c.marg * 100).toFixed(1)}%</b><div class="small muted">${prM(c.margGel)} ₾</div>` : "—";
+}
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.dataset.pri) { const net = PR.net, k = el.dataset.pri, f = el.dataset.prf; const p = prPlan(net); const it = p.items[k] = p.items[k] || {};
+    if (f === "shelf") { const v = String(el.value).replace(",", ".").trim(); it.shelf = v === "" || isNaN(+v) ? null : +v; } else it[f] = prPctIn(el.value);
+    if (it.ok) { it.ok = false; const tr = el.closest("tr"); if (tr) tr.classList.remove("prok"); const b = tr && tr.querySelector("[data-a=prok]"); if (b) { b.classList.remove("okb"); b.textContent = "✓?"; } }
+    prUpdRow(k); prSave(net); return; }
+  if (el.dataset.prh) { prPlan(PR.net)[el.dataset.prh] = el.value; prSave(PR.net); return; }
+  if (el.dataset.prq) { PR.q = el.value; clearTimeout(PR.qt); PR.qt = setTimeout(() => { render(); const i = document.querySelector("[data-prq]"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); }
+});
+document.addEventListener("change", e => {
+  const el = e.target;
+  if (el.dataset.prs === "st") { PR.st = el.value; render(); }
+  else if (el.dataset.prs === "dl") { PR.dl = el.checked; render(); }
+  else if (el.dataset.prfile) { const f = el.files[0]; el.value = ""; if (f) prImport(f); }
+  else if (el.dataset.prmap) { PR.imp.map[el.dataset.prmap] = +el.value; render(); }
+});
+/* ექსპორტი */
+function prExportRows(net, onlyOk) {
+  const sn = NSALES[net] || net, plan = prPlan(net), rows = (prRows(sn) || []).filter(x => !x.dl && (!onlyOk || x.it.ok));
+  return rows.map(x => { const c = prCalc(x.r, x.it); return [net, plan.name || "", plan.from || "", plan.to || "", x.r.net_name || "", x.r.mg_name || "", x.r.net_barcode || x.r.mg_barcode || "", x.r.category || "", x.r.lvl1 || "", x.r.lvl2 || "", c.P, c.B, c.inv, c.retro, c.retroGel, c.bonus, c.bonusGel, c.net, c.shelf, c.marg, c.margGel, x.it.ok ? "დადასტურებული" : "", x.it.src === "file" ? "ქსელის ფაილი" : ""]; });
+}
+const PRH = ["ქსელი", "აქცია", "-დან", "-მდე", "ქსელის დასახელება", "მეგაკოს დასახელება", "შტრიხკოდი", "კატეგორია", "დონე 1", "დონე 2", "საპრაისო ფასი", "შესასყიდი ფასი", "ინვოისის ფასდაკლება %", "რეტრო %", "რეტრო ₾", "სააქციო ბონუსი %", "სააქციო ბონუსი ₾", "ნეტ ფასი", "სარეკომენდაციო ფასი", "მარჟა %", "მარჟა ₾", "სტატუსი", "წყარო"];
+async function prXl(mode) {
+  try { await loadXLSX(); } catch (e) { return toast(errMsg(e)); }
+  let rows = [];
+  if (mode === "allnets") { for (const n of PRNET) { const sn = NSALES[n] || n; if (!PR.as[sn]) { try { PR.as[sn] = await kcall("assort", { net: sn, to: K.info.max }); } catch (e) { continue; } } rows = rows.concat(prExportRows(n, true)); } }
+  else rows = prExportRows(PR.net, mode === "ok");
+  if (!rows.length) return toast(mode === "all" ? "ცხრილი ცარიელია" : "დადასტურებული ნომენკლატურა ჯერ არ არის — დააჭირე ✓-ს");
+  const ws = XLSX.utils.aoa_to_sheet([PRH].concat(rows));
+  const pct = [12, 13, 15, 19], money = [10, 11, 14, 16, 17, 18, 20];
+  rows.forEach((r, i) => { pct.forEach(j => { const c = ws[XLSX.utils.encode_cell({ r: i + 1, c: j })]; if (c && typeof c.v === "number") c.z = "0.0%"; }); money.forEach(j => { const c = ws[XLSX.utils.encode_cell({ r: i + 1, c: j })]; if (c && typeof c.v === "number") c.z = "#,##0.00"; }); });
+  ws["!cols"] = PRH.map((h, j) => ({ wch: [5, 6, 7].includes(j) ? 14 : [4, 5].includes(j) ? 46 : Math.max(10, h.length + 2) }));
+  ws["!autofilter"] = { ref: "A1:" + XLSX.utils.encode_cell({ r: rows.length, c: PRH.length - 1 }) };
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "აქცია");
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  XLSX.writeFile(wb, `აქცია ${mode === "allnets" ? "ყველა ქსელი" : PR.net}${mode === "all" ? " (სრული)" : ""} ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.xlsx`);
+}
+async function prTpl() {
+  try { await loadXLSX(); } catch (e) { return toast(errMsg(e)); }
+  const sn = NSALES[PR.net] || PR.net, rows = (prRows(sn) || []).filter(x => !x.dl);
+  const H = ["შტრიხკოდი", "დასახელება", "სააქციო (სარეკომენდაციო) ფასი", "სააქციო ბონუსი %", "რეტრო %", "შენიშვნა"];
+  const ws = XLSX.utils.aoa_to_sheet([H].concat(rows.map(x => [x.r.net_barcode || x.r.mg_barcode || "", x.r.net_name || x.r.mg_name, "", "", "", ""])));
+  ws["!cols"] = [{ wch: 16 }, { wch: 55 }, { wch: 18 }, { wch: 16 }, { wch: 10 }, { wch: 30 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "აქცია");
+  XLSX.writeFile(wb, `აქციის შაბლონი ${PR.net}.xlsx`);
+}
+/* ქსელის გამოგზავნილი აქციის ფაილის ანალიზი */
+const PRCOL = [["bc", "შტრიხკოდი", /შტრიხ|ბარკოდ|barcode|ean|შ\/კ/i], ["name", "დასახელება", /დასახელ|ნომენკლ|პროდუქ|საქონ|name|product/i], ["shelf", "სააქციო / სარეკომ. ფასი", /სააქციო ფას|აქციის ფას|აქციით|ახალი ფას|promo.*price|სარეკომ|ფასი აქცი/i], ["reg", "რეგულარული ფასი", /რეგულარ|ძველი ფას|თაროს ფას|regular|ჩვეულებრ/i], ["disc", "ფასდაკლება %", /ფასდაკლ|discount|%/i], ["bonus", "სააქციო ბონუსი", /ბონუს|კომპენს|ანაზღაურ|bonus/i], ["retro", "რეტრო", /რეტრო|retro/i]];
+async function prImport(file) {
+  try { await loadXLSX(); } catch (e) { return toast(errMsg(e)); }
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    let best = null;
+    wb.SheetNames.forEach(sn => {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: "" });
+      for (let i = 0; i < Math.min(rows.length, 40); i++) {
+        const H = rows[i].map(x => String(x || "").trim()); const hit = PRCOL.filter(([, , re]) => H.some(h => re.test(h))).length;
+        if (hit >= 2 && (!best || hit > best.hit)) best = { sheet: sn, rows, hi: i, H, hit };
+      }
+    });
+    if (!best) {
+      const sn = wb.SheetNames[0]; const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: "" });
+      best = { sheet: sn, rows, hi: 0, H: (rows[0] || []).map(x => String(x || "")), hit: 0 };
+    }
+    const map = {}; PRCOL.forEach(([k, , re]) => { map[k] = best.H.findIndex(h => re.test(h)); });
+    if (map.bc < 0) { // შტრიხკოდის სვეტი მნიშვნელობებით ვიპოვოთ
+      const cnt = best.H.map((_, j) => best.rows.slice(best.hi + 1, best.hi + 60).filter(r => /^\d{8,14}$/.test(String(r[j] || "").trim())).length);
+      const m = Math.max(...cnt); if (m > 2) map.bc = cnt.indexOf(m);
+    }
+    PR.imp = { net: PR.net, file: file.name, ...best, map };
+    render(); scrollTo(0, 0);
+  } catch (e) { toast("ფაილი ვერ წავიკითხე: " + errMsg(e)); }
+}
+function prImpMatch() {
+  const I = PR.imp; if (!I) return { hit: [], miss: [] };
+  const sn = NSALES[I.net] || I.net, rows = (prRows(sn) || []).filter(x => !x.dl);
+  const byBc = {}; rows.forEach(x => { [x.r.net_barcode, x.r.mg_barcode].forEach(b => { b = String(b || "").replace(/\D/g, "").replace(/^0+/, ""); if (b) byBc[b] = x; }); });
+  const byName = {}; rows.forEach(x => { [x.r.net_name, x.r.mg_name].forEach(n => { if (n) byName[norm(n)] = x; }); });
+  const hit = [], miss = [];
+  const num = v => { if (v === "" || v == null) return null; const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^\d.,-]/g, "").replace(",", ".")); return isFinite(n) ? n : null; };
+  I.rows.slice(I.hi + 1).forEach(r => {
+    const bc = I.map.bc >= 0 ? String(r[I.map.bc] || "").replace(/\D/g, "").replace(/^0+/, "") : ""; const nm = I.map.name >= 0 ? String(r[I.map.name] || "").trim() : "";
+    if (!bc && !nm) return;
+    const x = (bc && byBc[bc]) || (nm && byName[norm(nm)]);
+    const g = k => I.map[k] >= 0 ? num(r[I.map[k]]) : null;
+    const rec = { bc, nm, shelf: g("shelf"), reg: g("reg"), disc: g("disc"), bonus: g("bonus"), retro: g("retro") };
+    if (rec.shelf == null && rec.reg != null && rec.disc != null) rec.shelf = +(rec.reg * (1 - (Math.abs(rec.disc) > 1 ? rec.disc / 100 : rec.disc))).toFixed(2);
+    if (x) hit.push({ x, rec }); else miss.push(rec);
+  });
+  return { hit, miss };
+}
+function prImpView() {
+  const I = PR.imp, m = prImpMatch();
+  const opt = k => `<select data-prmap="${k}"><option value="-1">—</option>${I.H.map((h, j) => `<option value="${j}" ${I.map[k] === j ? "selected" : ""}>${esc(h || "სვეტი " + (j + 1))}</option>`).join("")}</select>`;
+  return `<div class="kcard primp"><div class="kh"><b>ქსელის ფაილი: ${esc(I.file)}</b><span class="small muted">ფურცელი „${esc(I.sheet)}“, სათაურის ხაზი ${I.hi + 1}</span></div>
+    <div class="small muted" style="margin-bottom:8px">სვეტები ავტომატურად ამოვიცანი — თუ რამე არასწორია, შეცვალე:</div>
+    <div class="prmap">${PRCOL.map(([k, l]) => `<label><span>${l}</span>${opt(k)}</label>`).join("")}</div>
+    <div class="row" style="gap:10px;margin:10px 0;flex-wrap:wrap"><span class="kd up">ასორტიმენტში ვიპოვე: ${m.hit.length}</span>${m.miss.length ? `<span class="kd down">ვერ ვიპოვე: ${m.miss.length}</span>` : ""}</div>
+    ${m.hit.length ? `<div class="ktw"><table class="kt"><thead><tr><th>პროდუქტი</th><th>შტრიხკოდი</th><th>სააქციო ფასი</th><th>რეგ. ფასი</th><th>ფასდაკლება</th><th>ბონუსი</th><th>რეტრო</th></tr></thead><tbody>${m.hit.slice(0, 200).map(({ x, rec }) => `<tr><td>${esc(x.r.net_name || x.r.mg_name)}</td><td class="mono small">${esc(rec.bc)}</td><td><b>${rec.shelf ?? ""}</b></td><td>${rec.reg ?? ""}</td><td>${rec.disc ?? ""}</td><td>${rec.bonus ?? ""}</td><td>${rec.retro ?? ""}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${m.miss.length ? `<details style="margin-top:8px"><summary class="small">ასორტიმენტში ვერ ვიპოვე (${m.miss.length})</summary><div class="small">${m.miss.slice(0, 100).map(r => esc((r.bc || "") + " " + (r.nm || ""))).join("<br>")}</div></details>` : ""}
+    <div class="row" style="gap:8px;margin-top:10px"><button class="btn primary" data-a="prapply" ${m.hit.length ? "" : "disabled"}>გამოყენება (${m.hit.length})</button><button class="btn ghost" data-a="primpx">დახურვა</button></div>
+    <div class="small muted" style="margin-top:6px">„გამოყენება“ ჩაწერს სააქციო ფასს სარეკომენდაციო ფასად, ბონუსს და რეტროს (თუ ფაილშია), და მონიშნავს „ქსელის ფაილიდან“. დადასტურება (✓) შენზეა.</div></div>`;
+}
+Object.assign(A, {
+  prnet(v) { PR.net = v; PR.cat = ""; PR.imp = PR.imp && PR.imp.net === v ? PR.imp : null; render(); },
+  prcat(v) { PR.cat = v; render(); },
+  prok(k) { const p = prPlan(PR.net); const it = p.items[k] = p.items[k] || {}; it.ok = !it.ok; it.at = it.ok ? new Date().toISOString() : ""; prSave(PR.net, true); render(); },
+  prxl(v) { prXl(v); },
+  prtpl() { prTpl(); },
+  primpx() { PR.imp = null; render(); },
+  prapply() {
+    const { hit } = prImpMatch(); const p = prPlan(PR.net);
+    const frac = v => v == null ? null : Math.abs(v) > 1 ? v / 100 : v;
+    hit.forEach(({ x, rec }) => { const it = p.items[x.key] = p.items[x.key] || {};
+      if (rec.shelf != null) it.shelf = rec.shelf;
+      if (rec.bonus != null) { const bh = String(PR.imp.H[PR.imp.map.bonus] || ""); const gel = /₾|ლარ|gel/i.test(bh) && !/%/.test(bh); it.bonus = gel && x.r.buy_price ? rec.bonus / x.r.buy_price : frac(rec.bonus); }
+      if (rec.retro != null) it.retro = frac(rec.retro);
+      it.src = "file"; it.ok = false; });
+    prSave(PR.net, true); toast(`${hit.length} ნომენკლატურა შეივსო ქსელის ფაილიდან`); PR.imp = null; PR.st = "file"; render();
+  },
+  prclr() { if (!confirm("გავასუფთავო " + PR.net + "-ის აქციის ყველა ჩანაწერი?")) return; PR.docs["promo/" + PR.net] = { name: "", from: "", to: "", items: {} }; prSave(PR.net, true); render(); },
+});
 
 /* ---------- Excel-ში ექსპორტი: ყველა ცხრილთან „⬇ Excel“ ღილაკი ---------- */
 function xlNum(t) {
