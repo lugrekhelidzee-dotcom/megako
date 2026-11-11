@@ -555,6 +555,21 @@ h2{font-size:18px}h3{font-size:15.5px}
 .kpi .v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:520px){.kcard .kpis{grid-template-columns:repeat(2,1fr)}.kpi .v{font-size:16px}}
 .aiact{margin-top:8px;padding:10px;border:1px solid #cfe9e0;border-radius:10px;background:#f6fbf9;font-size:13px}
+/* KPI ფილტრად */
+.kpi.kpf{cursor:pointer;transition:box-shadow .15s,transform .1s;position:relative}
+.kpi.kpf:hover{box-shadow:0 0 0 2px var(--line,#d9e2dd)}
+.kpi.kpf.on{box-shadow:0 0 0 2px var(--accent,#0e7c66);background:color-mix(in srgb,var(--accent,#0e7c66) 7%,var(--card,#fff))}
+.kpi.kpf:active{transform:scale(.98)}
+/* ჩაკეცვადი ბლოკები */
+details.kfold>summary{list-style:none;cursor:pointer;user-select:none;margin-bottom:0}
+details.kfold>summary::-webkit-details-marker{display:none}
+details.kfold>summary b::before{content:"▸";display:inline-block;width:14px;color:var(--muted,#789);transition:transform .15s}
+details.kfold[open]>summary b::before{transform:rotate(90deg)}
+details.kfold[open]>summary{margin-bottom:8px}
+details.kfold:not([open]){padding-top:10px;padding-bottom:10px}
+.kt tr.kgrp td{background:var(--soft,#f2f6f4);font-weight:700;font-size:12px;padding-top:6px;padding-bottom:6px}
+.kbar .row .msel{flex:0 0 auto}
+.btn.dis{opacity:.6;pointer-events:none}
 
 </style>
 </head>
@@ -979,12 +994,12 @@ function mView(){
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
   <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button><div class="tt">${TT[S.tab]||kTitle()||"JDE vs MEGAKO"}<small>${todayLine()}</small></div><button class="ib" data-a="refresh" title="განახლება">${svg("refresh")}</button></header>
   ${["today","rev","all"].includes(S.tab)?`<div class="kpis">
-    <div class="kpi"><div class="muted">სულ დავალება</div><div class="v">${tot}</div></div>
-    <div class="kpi"><div class="muted">შესასრულებელი</div><div class="v">${open}</div></div>
-    <div class="kpi acc"><div class="muted">შესამოწმებელი</div><div class="v">${rev}</div></div>
-    <div class="kpi good"><div class="muted">დადასტურებული</div><div class="v">${done}</div></div>
-    <div class="kpi ${late?"bad":""}"><div class="muted">ვადაგადაცილებული</div><div class="v">${late}</div></div>
-    <div class="kpi ${today?"warn":""}"><div class="muted">დღეს იწურება</div><div class="v">${today}</div></div>
+    <div class="kpi kpf ${S.tab==="all"&&S.fl.st==="all"?"on":""}" data-a="tkpi" data-v="all"><div class="muted">სულ დავალება</div><div class="v">${tot}</div></div>
+    <div class="kpi kpf ${S.tab==="all"&&S.fl.st==="active"?"on":""}" data-a="tkpi" data-v="active"><div class="muted">შესასრულებელი</div><div class="v">${open}</div></div>
+    <div class="kpi kpf acc ${S.tab==="rev"?"on":""}" data-a="tkpi" data-v="rev"><div class="muted">შესამოწმებელი</div><div class="v">${rev}</div></div>
+    <div class="kpi kpf good ${S.tab==="all"&&S.fl.st==="done"?"on":""}" data-a="tkpi" data-v="done"><div class="muted">დადასტურებული</div><div class="v">${done}</div></div>
+    <div class="kpi kpf ${late?"bad":""}" data-a="tkpi" data-v="today"><div class="muted">ვადაგადაცილებული</div><div class="v">${late}</div></div>
+    <div class="kpi kpf ${today?"warn":""} ${S.tab==="today"?"on":""}" data-a="tkpi" data-v="today"><div class="muted">დღეს იწურება</div><div class="v">${today}</div></div>
     <div class="kpi"><div class="muted">შესრულება</div><div class="v">${pct}%</div><div class="progress"><div style="width:${pct}%"></div></div></div>
   </div>`:""}`;
   if(S.tab==="my")return h+`<iframe class="tmframe" src="../tasks/" title="ჩემი დავალებები"></iframe>`;
@@ -1495,7 +1510,35 @@ const kpct = (c, l) => { c = +c || 0; l = +l || 0; if (!l) return c ? `<span cla
 const kAg = () => !!S.who && S.who !== "__m";
 const kpin = () => kAg() ? { who: S.who, pin: S.apin } : S.pin;
 const KAPI = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/kam";
-async function kcall(op, a) { let r; try { r = await fetch(KAPI, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ args: [kpin(), op, a || {}] }) }); } catch (e) { throw new Error("NetworkError: კავშირი ვერ შედგა"); } const j = await r.json(); if (!j || !j.ok) throw new Error((j && j.error) || "შეცდომა"); return j.r; }
+async function kcall(op, a) { let r; try { r = await fetch(KAPI, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ args: [kpin(), op, a || {}] }) }); } catch (e) { throw new Error("NetworkError: კავშირი ვერ შედგა"); } const j = await r.json(); if (!j || !j.ok) throw new Error((j && j.error) || "შეცდომა"); const o = j.r; if (o && typeof o === "object") { if (op === "assort" && Array.isArray(o.rows)) o.rows = kAsSort(o.rows); if (Array.isArray(o.assort)) o.assort = kAsSort(o.assort); } return o; }
+/* ---------- კატეგორიების რიგი და დონეების ფილტრი (ყველგან ერთნაირი) ---------- */
+const KCAT = ["ერთჯერადი", "დაფქული", "ხსნადი", "ფემილი ბეგი", "კაფსულა", "მარცვალი", "ცივი ყავა", "ჩაი"];
+const kCatI = c => { const i = KCAT.indexOf(String(c || "").trim()); return i < 0 ? 99 : i; };
+const kCatCmp = (a, b) => kCatI(a) - kCatI(b) || String(a || "").localeCompare(String(b || ""), "ka");
+const kBp = r => { const v = +r.buy_price; return v > 0 ? v : 1e9; };
+const kAsCmp = (a, b) => kCatI(a.category) - kCatI(b.category) || kBp(a) - kBp(b) || String(a.net_name || a.mg_name || "").localeCompare(String(b.net_name || b.mg_name || ""), "ka");
+const kAsSort = rows => (rows || []).slice().sort(kAsCmp);
+const kUq = a => [...new Set(a)].filter(x => x && x !== "—");
+const kKa = (a, b) => String(a).localeCompare(String(b), "ka");
+// st = {cats:[], l1:[], l2:[]}; L = [[კატეგორია, დონე1, დონე2], ...]
+function kLvlSel(id, st, L, after) {
+  st.cats = st.cats || []; st.l1 = st.l1 || []; st.l2 = st.l2 || [];
+  const in1 = x => !st.cats.length || st.cats.includes(x[0]);
+  const cats = kUq(L.map(x => x[0])).sort(kCatCmp);
+  const L1 = L.filter(in1), l1 = kUq(L1.map(x => x[1])).sort(kKa);
+  const l2 = kUq(L1.filter(x => !st.l1.length || st.l1.includes(x[1])).map(x => x[2])).sort(kKa);
+  const fix = () => { const a = L.filter(in1); st.l1 = st.l1.filter(v => a.some(x => x[1] === v)); const b = a.filter(x => !st.l1.length || st.l1.includes(x[1])); st.l2 = st.l2.filter(v => b.some(x => x[2] === v)); after && after(); };
+  const o = l => l.map(v => ({ v, l: v }));
+  return msel(id + "c", o(cats), st.cats, v => { st.cats = v; fix(); }, { label: "ყველა კატეგორია", unit: "კატეგორია" })
+    + msel(id + "1", o(l1), st.l1, v => { st.l1 = v; fix(); }, { label: "დონე 1: ყველა", unit: "დონე 1" })
+    + msel(id + "2", o(l2), st.l2, v => { st.l2 = v; after && after(); }, { label: "დონე 2: ყველა", unit: "დონე 2" });
+}
+const kLvlOk = (st, c, a, b) => (!st.cats || !st.cats.length || st.cats.includes(c)) && (!st.l1 || !st.l1.length || st.l1.includes(a)) && (!st.l2 || !st.l2.length || st.l2.includes(b));
+/* ჩაკეცვადი ბლოკი: ჩაკეცილია, სანამ არ დააკლიკებ */
+const KFOLD = {};
+document.addEventListener("toggle", e => { const k = e.target && e.target.dataset && e.target.dataset.fold; if (k) KFOLD[k] = e.target.open; }, true);
+const kFold = (key, title, sub, body) => `<details class="kcard kfold" data-fold="${esc(key)}" ${KFOLD[key] ? "open" : ""}><summary class="kh"><b>${title}</b><span class="small muted">${sub || ""}</span></summary>${body}</details>`;
+const kKpi = (a, v, on, cls, lab, val, extra) => `<div class="kpi kpf ${cls || ""} ${on ? "on" : ""}" data-a="${a}" data-v="${esc(v)}" title="დააკლიკე — ფილტრი">${`<div class="muted">${lab}</div><div class="v">${val}</div>`}${extra || ""}</div>`;
 
 /* აგენტის სახელი: მეგაკოს ლათინური → აპის ქართული (თუ ემთხვევა) */
 const KTR = { "ა": "a", "ბ": "b", "გ": "g", "დ": "d", "ე": "e", "ვ": "v", "ზ": "z", "თ": "t", "ი": "i", "კ": "k", "ლ": "l", "მ": "m", "ნ": "n", "ო": "o", "პ": "p", "ჟ": "zh", "რ": "r", "ს": "s", "ტ": "t", "უ": "u", "ფ": "p", "ქ": "q", "ღ": "gh", "ყ": "q", "შ": "sh", "ჩ": "ch", "ც": "ts", "ძ": "dz", "წ": "ts", "ჭ": "ch", "ხ": "kh", "ჯ": "j", "ჰ": "h" };
@@ -1569,7 +1612,7 @@ const kPerL = () => { const r = kRange(); return kPer(r.from - 100, r.to - 100);
 
 /* ---------- გაყიდვების დეშბორდი ---------- */
 function kAgentsSel() { return K.f.team ? (K.info.agents || []).filter(kMine) : K.f.agents; }
-function kSales() {
+function kSales(o = {}) {
   kInitF(); const f = K.f; const r = kRange();
   const ags = kAgentsSel();
   const key = JSON.stringify([r, f.nets, ags, f.cats, f.l1, f.l2]);
@@ -1585,8 +1628,10 @@ function kSales() {
     <span class="kper"><select data-kch="m1">${mo("m1", f.m1)}</select><select data-kch="y1">${years.map(y => `<option ${y === f.y1 ? "selected" : ""}>${y}</option>`).join("")}</select></span><span class="muted">—</span>
     <span class="kper"><select data-kch="m2">${mo("m2", f.m2)}</select><select data-kch="y">${years.map(y => `<option ${y === f.y ? "selected" : ""}>${y}</option>`).join("")}</select></span>
     <span class="small muted">შედარება: ${kPerL()}</span>
+    ${o.noNet ? "" : msel("ksnet", nets.map(n => ({ v: n, l: n })), f.nets, v => { f.nets = v; }, { label: "ყველა ქსელი", unit: "ქსელი" })}
+    ${kLvlSel("ksl", f, K.info.levels || [])}
     ${kAg() ? "" : msel("ksag", (K.info.agents || []).slice().sort((a, b) => (kMine(b) - kMine(a)) || kAgent(a).localeCompare(kAgent(b))).map(a => ({ v: a, l: kAgent(a) + (kMine(a) ? " ★" : "") })), f.agents, v => { f.team = false; f.agents = v; }, { quick: mselQ("ksag", [["★ ჩემი გუნდი", (K.info.agents || []).filter(kMine)]]) })}
-    </div><div class="chips"><span class="klab">ქსელი</span>${chips(nets, f.nets, "net")}</div>${kLevelChips(chips)}</div>`;
+    ${(!o.noNet && f.nets.length) || f.cats.length || f.l1.length || f.l2.length || (f.agents || []).length ? `<button class="chip" data-a="kclr">✕ ფილტრის მოხსნა</button>` : ""}</div></div>`;
   const d = K.dash;
   if (!d || K.loading.dash && !d) return h + `<div class="empty"><b>ითვლება…</b></div>`;
   const t = d.totals;
@@ -1599,13 +1644,13 @@ function kSales() {
   </div>`;
   h += `<div class="kcard"><div class="kh"><b>თვეების მიხედვით</b><span class="klg"><i class="c1"></i>${kPerS()}<i class="c0"></i>წინა წელი</span></div>${kMonthChart(d.months, { ...f, y1: f.y1 })}</div>`;
   const tbl = (title, rows, kind, extra) => {
-    const tot = rows.reduce((s, x) => s + (+x.cur || 0), 0);
-    return `<div class="kcard"><div class="kh"><b>${title}</b></div><div class="ktw"><table class="kt"><thead><tr><th></th><th>პერიოდი</th><th>წინა წელი</th><th>Δ</th><th>წილი</th>${extra ? "<th>" + extra + "</th>" : ""}</tr></thead><tbody>${rows.filter(x => x.cur || x.ly).map(x => `<tr ${kind ? `class="kclick" data-a="kchip" data-v="${esc(kind + "|" + (x.v != null ? x.v : x.k))}"` : ""}><td>${esc(kind === "ag" ? kAgent(x.k) || "— აგენტის გარეშე" : x.k || "—")}${kind === "ag" && kMine(x.k) ? ` <span class="kstar">★</span>` : ""}</td><td>${kmoney(x.cur)}</td><td class="muted">${kmoney(x.ly)}</td><td>${kpct(x.cur, x.ly)}</td><td><div class="kbarc"><div style="width:${tot ? Math.max(0, x.cur / tot * 100) : 0}%"></div></div></td>${extra ? `<td>${knum(x.b)}</td>` : ""}</tr>`).join("")}</tbody></table></div></div>`;
+    rows = rows || []; const tot = rows.reduce((s, x) => s + (+x.cur || 0), 0);
+    return kFold("s:" + (kind || title), title, `${rows.filter(x => x.cur || x.ly).length} · ${kmoney(tot)}`, `<div class="ktw"><table class="kt"><thead><tr><th></th><th>პერიოდი</th><th>წინა წელი</th><th>Δ</th><th>წილი</th>${extra ? "<th>" + extra + "</th>" : ""}</tr></thead><tbody>${rows.filter(x => x.cur || x.ly).map(x => `<tr ${kind ? `class="kclick" data-a="kchip" data-v="${esc(kind + "|" + (x.v != null ? x.v : x.k))}"` : ""}><td>${esc(kind === "ag" ? kAgent(x.k) || "— აგენტის გარეშე" : x.k || "—")}${kind === "ag" && kMine(x.k) ? ` <span class="kstar">★</span>` : ""}</td><td>${kmoney(x.cur)}</td><td class="muted">${kmoney(x.ly)}</td><td>${kpct(x.cur, x.ly)}</td><td><div class="kbarc"><div style="width:${tot ? Math.max(0, x.cur / tot * 100) : 0}%"></div></div></td>${extra ? `<td>${knum(x.b)}</td>` : ""}</tr>`).join("")}</tbody></table></div>`);
   };
-  h += `<div class="kgrid">${tbl("ქსელები", d.nets, "net")}${tbl("კატეგორიები", d.cats, "cat")}</div>`;
+  h += `<div class="kgrid">${tbl("ქსელები", d.nets, "net")}${tbl("კატეგორიები", (d.cats || []).slice().sort((a, b) => kCatCmp(a.k, b.k)), "cat")}</div>`;
   h += `<div class="kgrid">${tbl("დონე 1 (კატეგორია › დონე 1)", (d.l1 || []).map(x => ({ ...x, v: x.l1 })), "l1")}${tbl("დონე 2 (დონე 1 › დონე 2)", (d.l2 || []).map(x => ({ ...x, v: x.l2 })), "l2")}</div>`;
   h += `<div class="kgrid">${kAg() ? "" : tbl("აგენტები", d.agents, "ag", "ობიექტი")}${tbl("ბრენდი / ხაზი", d.brands, "")}</div>`;
-  h += `<div class="kcard"><div class="kh"><b>პროდუქტები (TOP 60)</b></div><div class="ktw"><table class="kt"><thead><tr><th>ნომენკლატურა</th><th>კატეგორია</th><th>პერიოდი</th><th>წინა წელი</th><th>Δ</th><th>ც</th><th>ობიექტი</th></tr></thead><tbody>${(d.products || []).map(x => `<tr><td>${esc(x.k)}</td><td class="muted">${esc(x.cat || "")}</td><td>${kmoney(x.cur)}</td><td class="muted">${kmoney(x.ly)}</td><td>${kpct(x.cur, x.ly)}</td><td>${knum(x.q)}</td><td>${knum(x.b)}</td></tr>`).join("")}</tbody></table></div></div>`;
+  h += kFold("s:prod", "პროდუქტები (TOP 60)", (d.products || []).length + "", `<div class="ktw"><table class="kt"><thead><tr><th>ნომენკლატურა</th><th>კატეგორია</th><th>პერიოდი</th><th>წინა წელი</th><th>Δ</th><th>ც</th><th>ობიექტი</th></tr></thead><tbody>${(d.products || []).map(x => `<tr><td>${esc(x.k)}</td><td class="muted">${esc(x.cat || "")}</td><td>${kmoney(x.cur)}</td><td class="muted">${kmoney(x.ly)}</td><td>${kpct(x.cur, x.ly)}</td><td>${knum(x.q)}</td><td>${knum(x.b)}</td></tr>`).join("")}</tbody></table></div>`);
   return h;
 }
 function kLevelChips(chips) {
@@ -1631,32 +1676,73 @@ function kMonthChart(months, f) {
 }
 
 /* ---------- ასორტიმენტი ---------- */
-function kAssort() {
+function kAssort(o = {}) {
   const to = K.info.max;
-  if (!K.an) K.an = "ორი ნაბიჯი";
+  if (!K.an) K.an = "*";
+  const af = K.af = K.af || { cats: [], l1: [], l2: [], k: "", q: "" };
   if ((!K.assort || K.assort.net !== K.an) && !K.loading.as) {
     K.loading.as = true; const n0 = K.an;
     kcall("assort", { net: n0, to }).then(r => { K.assort = { ...r, net: n0 }; K.loading.as = false; render(); }).catch(e => { K.loading.as = false; K.assort = { net: n0, rows: [], stats: { products: [] }, nets: [] }; toast(errMsg(e)); render(); });
   }
-  const a = K.assort;
-  const nets = a && a.nets && a.nets.length ? a.nets : ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "დეილი", "სპარი", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი"];
-  let h = `<div class="kbar"><div class="chips">${nets.map(n => `<button class="chip ${K.an === n ? "on" : ""}" data-a="kan" data-v="${esc(n)}">${esc(n)}</button>`).join("")}</div><div class="small muted">გაყიდვა და დისტრიბუცია: ბოლო 3 თვე (${kym(to > 0 ? (to % 100 > 2 ? to - 2 : to - 100 + 10) : 0)} — ${kym(to)})</div></div>`;
+  const a = K.assort, all = K.an === "*";
+  const nets = (a && a.nets && a.nets.length ? a.nets : ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "დეილი", "სპარი", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი"]).slice().sort(kKa);
+  const L0 = a && a.net === K.an ? (a.rows || []) : [];
+  let h = `<div class="kbar">${o.noNet ? "" : `<div class="chips"><button class="chip ${all ? "on" : ""}" data-a="kan" data-v="*">ყველა ქსელი</button>${nets.map(n => `<button class="chip ${K.an === n ? "on" : ""}" data-a="kan" data-v="${esc(n)}">${esc(n)}</button>`).join("")}</div>`}
+    <div class="row"><input type="search" data-kin="asq" value="${esc(af.q)}" placeholder="ძებნა: დასახელება, შტრიხკოდი…" style="max-width:260px">${kLvlSel("kasl", af, L0.map(r => [r.category, r.lvl1, r.lvl2]))}
+    ${af.cats.length || af.l1.length || af.l2.length || af.k || af.q ? `<button class="chip" data-a="kafclr">✕ ფილტრის მოხსნა</button>` : ""}
+    <label class="btn sm ${K.asBusy ? "dis" : ""}">${K.asBusy ? "იტვირთება…" : "⬆ ახალი ფასები (Excel)"}<input type="file" accept=".xlsx,.xls" data-kasfile="1" hidden></label></div>
+    <div class="small muted">გაყიდვა და დისტრიბუცია: ბოლო 3 თვე (${kym(to > 0 ? (to % 100 > 2 ? to - 2 : to - 100 + 10) : 0)} — ${kym(to)}) · ახალი ფაილი ცვლის მხოლოდ იმ ქსელებს, რომლებიც ფაილშია${a && a.meta ? "" : ""}</div></div>`;
   if (!a || a.net !== K.an) return h + `<div class="empty"><b>იტვირთება…</b></div>`;
-  const st = {}; (a.stats.products || []).forEach(p => st[String(p.k).trim()] = p);
-  const act = a.stats.active || 0;
+  const stOf = n => all ? ((a.statsBy || {})[n] || { products: [], active: 0 }) : a.stats;
+  const SM = {}; const smap = n => { if (!SM[n]) { SM[n] = {}; (stOf(n).products || []).forEach(p => SM[n][String(p.k).trim()] = p); } return SM[n]; };
   const pc = v => v == null ? "" : (Math.abs(v) <= 1.5 ? (v * 100).toFixed(1) : (+v).toFixed(1)) + "%";
   const pr = v => v == null ? "" : (+v).toFixed(2);
   const used = {};
-  let gaps = 0;
-  const rows = (a.rows || []).map(r => { const s = st[String(r.mg_name).trim()]; used[String(r.mg_name).trim()] = 1; if (!s || !s.a) gaps++; const dist = s && act ? s.b / act * 100 : 0;
+  const R = L0.map(r => { const s = smap(r.net)[String(r.mg_name).trim()]; (used[r.net] = used[r.net] || {})[String(r.mg_name).trim()] = 1; return { r, s, act: +stOf(r.net).active || 0 }; });
+  const qn = norm(af.q || "");
+  const base = R.filter(x => kLvlOk(af, x.r.category, x.r.lvl1, x.r.lvl2) && (!qn || norm([x.r.net_name, x.r.mg_name, x.r.net_barcode, x.r.mg_barcode, x.r.net].join(" ")).includes(qn)));
+  const gaps = base.filter(x => !x.s || !x.s.a), sold = base.filter(x => x.s && x.s.a);
+  const extra = []; (all ? nets : [K.an]).forEach(n => (stOf(n).products || []).forEach(p => { if (!(used[n] || {})[String(p.k).trim()] && p.a > 0) extra.push({ ...p, net: n }); }));
+  extra.sort((x, y) => y.a - x.a);
+  const actT = all ? nets.reduce((s, n) => s + (+stOf(n).active || 0), 0) : (+a.stats.active || 0);
+  h += `<div class="kpis">${kKpi("kaf", "", !af.k, "", "ასორტიმენტში", base.length)}${kKpi("kaf", "gap", af.k === "gap", gaps.length ? "bad" : "good", "3 თვეში არ გაყიდულა", gaps.length)}${kKpi("kaf", "sold", af.k === "sold", "", "იყიდება (აქტიური ობიექტი: " + actT + ")", sold.length)}${kKpi("kaf", "extra", af.k === "extra", extra.length ? "warn" : "", "იყიდება, სიაში არ არის", extra.length)}</div>`;
+  const vis = af.k === "gap" ? gaps : af.k === "sold" ? sold : af.k === "extra" ? [] : base;
+  const row = ({ r, s, act }) => { const dist = s && act ? s.b / act * 100 : 0;
     const chk = r.price_list && r.buy_price && Math.abs(r.price_list - r.buy_price) / r.price_list > 0.6;
-    return `<tr class="${!s || !s.a ? "kbad" : ""}"><td><b>${esc(r.net_name)}</b><div class="small muted">${esc(r.mg_name)}</div>${chk ? `<span class="pill w-late">შეამოწმე მიბმა: პრაისი და შესასყიდი ძალიან განსხვავდება</span>` : ""}</td><td class="small">${esc([r.category, r.lvl1, r.lvl2].filter(Boolean).join(" · "))}</td><td class="mono small">${esc(r.net_barcode)}</td><td>${pr(r.price_list)}</td><td>${pr(r.buy_price)}</td><td>${pc(r.inv_disc)}</td><td>${pc(r.retro)}</td><td><b>${pr(r.net_price)}</b></td><td>${pr(r.shelf_price)}</td><td>${pc(r.net_margin)}</td><td>${s ? kmoney(s.a) : "—"}</td><td>${s ? knum(s.q) : "—"}</td><td><div class="kdist"><div style="width:${dist}%"></div></div><span class="small">${s ? s.b + "/" + act : "0/" + act}</span></td></tr>`; }).join("");
-  const extra = (a.stats.products || []).filter(p => !used[String(p.k).trim()] && p.a > 0).sort((x, y) => y.a - x.a);
-  h += `<div class="kpis"><div class="kpi"><div class="muted">ასორტიმენტში</div><div class="v">${(a.rows || []).length}</div></div><div class="kpi ${gaps ? "bad" : "good"}"><div class="muted">3 თვეში არ გაყიდულა</div><div class="v">${gaps}</div></div><div class="kpi"><div class="muted">აქტიური ობიექტი</div><div class="v">${act}</div></div><div class="kpi ${extra.length ? "warn" : ""}"><div class="muted">იყიდება, სიაში არ არის</div><div class="v">${extra.length}</div></div></div>`;
-  h += `<div class="kcard"><div class="ktw"><table class="kt kts"><thead><tr><th>პროდუქტი (ქსელი / მეგაკო)</th><th>კატეგორია</th><th>შტრიხკოდი</th><th>პრაისი</th><th>შესასყიდი</th><th>ინვოის %</th><th>რეტრო</th><th>ნეტ ფასი</th><th>თაროს ფასი</th><th>მარჟა</th><th>3 თვე ₾</th><th>ც</th><th>დისტრიბუცია</th></tr></thead><tbody>${rows || `<tr><td colspan="13" class="muted">ამ ქსელის ასორტიმენტი ჯერ არ არის ატვირთული</td></tr>`}</tbody></table></div></div>`;
-  if (extra.length) h += `<div class="kcard"><div class="kh"><b>იყიდება, მაგრამ ასორტიმენტის სიაში არ არის</b></div><div class="ktw"><table class="kt"><thead><tr><th>მეგაკოს ნომენკლატურა</th><th>3 თვე ₾</th><th>ც</th><th>ობიექტი</th></tr></thead><tbody>${extra.map(p => `<tr><td>${esc(p.k)}</td><td>${kmoney(p.a)}</td><td>${knum(p.q)}</td><td>${p.b}</td></tr>`).join("")}</tbody></table></div></div>`;
+    return `<tr class="${!s || !s.a ? "kbad" : ""}">${all ? `<td class="small">${esc(r.net)}</td>` : ""}<td><b>${esc(r.net_name)}</b><div class="small muted">${esc(r.mg_name)}</div>${chk ? `<span class="pill w-late">შეამოწმე მიბმა: პრაისი და შესასყიდი ძალიან განსხვავდება</span>` : ""}</td><td class="small">${esc([r.category, r.lvl1, r.lvl2].filter(Boolean).join(" · "))}</td><td class="mono small">${esc(r.net_barcode)}</td><td>${pr(r.price_list)}</td><td><b>${pr(r.buy_price)}</b></td><td>${pc(r.inv_disc)}</td><td>${pc(r.retro)}</td><td>${pr(r.net_price)}</td><td>${pr(r.shelf_price)}</td><td>${pc(r.net_margin)}</td><td>${s ? kmoney(s.a) : "—"}</td><td>${s ? knum(s.q) : "—"}</td><td><div class="kdist"><div style="width:${dist}%"></div></div><span class="small">${s ? s.b + "/" + act : "0/" + act}</span></td></tr>`; };
+  if (af.k !== "extra") {
+    let body = "", cat = null;
+    vis.forEach(x => { const c = x.r.category || "სხვა"; if (c !== cat) { cat = c; body += `<tr class="kgrp"><td colspan="${all ? 14 : 13}">${esc(c)} <span class="muted small">· ${vis.filter(y => (y.r.category || "სხვა") === c).length}</span></td></tr>`; } body += row(x); });
+    h += `<div class="kcard"><div class="ktw"><table class="kt kts"><thead><tr>${all ? "<th>ქსელი</th>" : ""}<th>პროდუქტი (ქსელი / მეგაკო)</th><th>კატეგორია</th><th>შტრიხკოდი</th><th>პრაისი</th><th>შესასყიდი</th><th>ინვოის %</th><th>რეტრო</th><th>ნეტ ფასი</th><th>თაროს ფასი</th><th>მარჟა</th><th>3 თვე ₾</th><th>ც</th><th>დისტრიბუცია</th></tr></thead><tbody>${body || `<tr><td colspan="14" class="muted">${L0.length ? "ამ ფილტრით არაფერია" : "ასორტიმენტი ჯერ არ არის ატვირთული"}</td></tr>`}</tbody></table></div></div>`;
+  }
+  if (extra.length && (af.k === "extra" || !af.k)) h += kFold("as:extra", "იყიდება, მაგრამ ასორტიმენტის სიაში არ არის", extra.length + "", `<div class="ktw"><table class="kt"><thead><tr>${all ? "<th>ქსელი</th>" : ""}<th>მეგაკოს ნომენკლატურა</th><th>3 თვე ₾</th><th>ც</th><th>ობიექტი</th></tr></thead><tbody>${extra.map(p => `<tr>${all ? `<td class="small">${esc(p.net)}</td>` : ""}<td>${esc(p.k)}</td><td>${kmoney(p.a)}</td><td>${knum(p.q)}</td><td>${p.b}</td></tr>`).join("")}</tbody></table></div>`);
+  if (af.k === "extra") KFOLD["as:extra"] = true;
+  K.asVis = vis.map(x => x.r);
   return h;
 }
+async function kAsUpload(f) {
+  if (!f || K.asBusy) return;
+  K.asBusy = true; render();
+  try {
+    await loadXLSX();
+    const wb = XLSX.read(await f.arrayBuffer(), { type: "array", dense: true, cellDates: false });
+    const sn = wb.SheetNames.includes("ასორტიმენტი") ? "ასორტიმენტი" : wb.SheetNames.find(n => kHeaderIdx(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null }), h => h.includes("მეგაკოს დასახელება")) >= 0);
+    if (!sn) throw new Error("ფაილში ასორტიმენტის ცხრილი ვერ ვიპოვე (სვეტი „მეგაკოს დასახელება“)");
+    const r = await kImpAssort(XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: null }), f.name, true);
+    if (!r) throw new Error("ასორტიმენტის სათაური ვერ ვიპოვე");
+    toast(`✓ განახლდა: ${r.n} ხაზი · ${r.nets.join(", ")}`);
+    K.assort = null; PR.as = {};
+  } catch (e) { toast(errMsg(e)); }
+  K.asBusy = false; render();
+}
+document.addEventListener("change", e => { const el = e.target; if (el && el.dataset && el.dataset.kasfile) { const f = el.files && el.files[0]; el.value = ""; kAsUpload(f); } });
+Object.assign(A, {
+  kaf(v) { K.af.k = K.af.k === v ? "" : v; render(); },
+  kafclr() { Object.assign(K.af, { cats: [], l1: [], l2: [], k: "", q: "" }); render(); },
+  kasxl() { const rows = K.asVis || []; if (!rows.length) return toast("ცხრილი ცარიელია");
+    xlRows("ასორტიმენტი " + (K.an === "*" ? "ყველა ქსელი" : K.an), ["ქსელი", "ნომენკლატურა ქსელის", "შტრიხკოდი", "კატეგორია", "დონე 1", "დონე 2", "მეგაკოს დასახელება", "მეგაკოს შტრიხკოდი", "პრაისის ფასი", "შესასყიდი ფასი", "ინვოის %", "რეტრო", "კომერცია", "BTL", "ნეტ ფასი", "ნეტ ფასი კომერცია", "ქსელის რეგულარ ფასი", "ქსელის მარჟა"],
+      rows.map(r => [r.net, r.net_name, r.net_barcode, r.category, r.lvl1, r.lvl2, r.mg_name, r.mg_barcode, r.price_list, r.buy_price, r.inv_disc, r.retro, r.commerce, r.btl, r.net_price, r.net_price_c, r.shelf_price, r.net_margin])); },
+});
 
 /* ---------- ობიექტების ცნობარი ---------- */
 function kObjList() {
@@ -1774,14 +1860,15 @@ async function kFiles(files) {
   } catch (e) { klog("შეცდომა: " + errMsg(e), true); }
   K.imp.busy = false; K.imp.prog = 0; render();
 }
-async function kImpAssort(rows, file) {
+async function kImpAssort(rows, file, partial) {
   const hi = kHeaderIdx(rows, h => h.includes("მეგაკოს დასახელება"));
-  if (hi < 0) return klog("⚠ ასორტიმენტის სათაური ვერ ვიპოვე", true);
+  if (hi < 0) return partial ? null : klog("⚠ ასორტიმენტის სათაური ვერ ვიპოვე", true);
   const H = rows[hi].map(kcell);
   const c = kCols(H, { net: ["ქსელი", "ბრენდი"], net_name: ["ნომენკლატურა ქსელის"], net_barcode: ["შტრიხკოდი"], category: ["კატეგორია"], lvl1: ["დონე 1"], lvl2: ["დონე 2"], mg_name: ["მეგაკოს დასახელება"], mg_barcode: ["მეგაკოს შტრიხკოდი"], price_list: ["პრაისის ფასი"], buy_price: ["შესასყიდი ფასი"], inv_disc: ["ინვოის"], retro: ["რეტრო"], commerce: ["კომერცია"], btl: ["BTL"], net_price: ["ნეტ ფასი"], net_price_c: ["ნეტ ფასი კომერცია"], shelf_price: ["ქსელის რეგულარ"], net_margin: ["ქსელის მარჟა"] });
   c.net_price = H.findIndex(h => h === "ნეტ ფასი");
   const order = ["net", "net_name", "net_barcode", "category", "lvl1", "lvl2", "mg_name", "mg_barcode", "price_list", "buy_price", "inv_disc", "retro", "commerce", "btl", "net_price", "net_price_c", "shelf_price", "net_margin"];
   const out = rows.slice(hi + 1).filter(r => r && r[c.net] && r[c.mg_name]).map(r => order.map(k => c[k] >= 0 ? r[c[k]] : null));
+  if (partial) { const n = await kcall("assortReplace", { rows: out, file, partial: true }); return { n, nets: [...new Set(out.map(r => String(r[0] || "").trim()).filter(Boolean))] }; }
   const n = await kcall("assortReplace", { rows: out, file });
   klog("✓ ასორტიმენტი: " + n + " ხაზი");
 }
@@ -1846,9 +1933,10 @@ Object.assign(A, {
     if (k === "cat") { const L = K.info.levels || []; f.l1 = f.l1.filter(l => !f.cats.length || L.some(z => f.cats.includes(z[0]) && z[1] === l)); }
     if (k === "cat" || k === "l1") { const L = K.info.levels || []; f.l2 = f.l2.filter(l => L.some(z => f.l1.includes(z[1]) && z[2] === l)); }
     if (kAg()) K.asub = "sales"; else if (S.tab !== "k-sales" && !String(S.tab).endsWith("|sales")) { S.tab = "k-sales"; } render(); },
-  kclr() { Object.assign(K.f, { nets: [], cats: [], l1: [], l2: [] }); render(); },
+  kclr() { Object.assign(K.f, { nets: K.netLock ? K.f.nets : [], cats: [], l1: [], l2: [], agents: [], team: false }); render(); },
   kasub(v) { K.asub = v; K.code = null; render(); scrollTo(0, 0); },
   kan(v) { K.an = v; render(); },
+  tkpi(v) { if (v === "rev" || v === "today") S.tab = v; else { S.tab = "all"; S.fl.st = v; } S.open = null; render(); },
   kost(v) { K.of.st = v; K.of.n = 100; render(); },
   kmore() { K.of.n += 200; render(); },
   kobj(v) { K.code = v; if (kAg()) K.asub = "obj"; else if (!String(S.tab).startsWith("n|")) S.tab = "k-objects"; render(); scrollTo(0, 0); },
@@ -1866,7 +1954,7 @@ document.addEventListener("change", e => { const el = e.target;
   else if (k === "ag") { K.f.team = v === "__team"; K.f.agents = v && v !== "__team" ? [v] : []; }
   else if (k === "onet") { K.of.net = v; K.of.n = 100; } else if (k === "oag") { K.of.ag = v; K.of.n = 100; } else if (k === "osort") K.of.sort = v;
   render(); });
-document.addEventListener("input", e => { const el = e.target; if (el.dataset.kin === "oq") { K.of.q = el.value; K.of.n = 100; clearTimeout(K.oqt); K.oqt = setTimeout(render, 300); } });
+document.addEventListener("input", e => { const el = e.target; if (el.dataset.kin === "asq") { K.af.q = el.value; clearTimeout(K.aqt); K.aqt = setTimeout(() => { render(); const i = document.querySelector('[data-kin="asq"]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 300); return; } if (el.dataset.kin === "oq") { K.of.q = el.value; K.of.n = 100; clearTimeout(K.oqt); K.oqt = setTimeout(render, 300); } });
 { const _tab = A.tab; A.tab = (v, el) => { if (v === "k-objects" || (String(v).startsWith("n|") && v !== S.tab)) K.code = null; return _tab(v, el); }; }
 
 /* ---------- აგენტი: ჩემი გაყიდვები ---------- */
@@ -1916,11 +2004,11 @@ function kNetView() {
     if (!K.info.rows) return tabs + `<div class="empty"><b>გაყიდვების მონაცემი ჯერ არ არის ატვირთული</b></div>`;
     kInitF(); const sn = NSALES[r.net] || r.net;
     if (K.netLock !== sn) { K.f.nets = [sn]; K.netLock = sn; }
-    return tabs + kSales().replace(/<div class="chips"><span class="klab">ქსელი<\/span>[\s\S]*?<\/div>/, "");
+    return tabs + kSales({ noNet: true });
   }
   if (r.sub === "assort") {
     if (K.an !== r.net) { K.an = r.net; }
-    return tabs + kAssort().replace(/<div class="kbar"><div class="chips">[\s\S]*?<\/div>/, '<div class="kbar">');
+    return tabs + kAssort({ noNet: true });
   }
   if (r.sub === "objects") {
     if (!K.info.rows) return tabs + `<div class="empty"><b>გაყიდვების მონაცემი ჯერ არ არის ატვირთული</b>გადადი „მონაცემების ატვირთვა“-ზე.</div>`;
@@ -1938,9 +2026,10 @@ function kNetPromos(net) {
   const nm = ["მიმდინარე", "მომავალი", "დასრულებული"], cls = ["good", "warn", ""];
   L.sort((a, b) => st(a) - st(b) || String(a.from || "").localeCompare(String(b.from || "")));
   const cnt = [0, 0, 0]; L.forEach(p => cnt[st(p)]++);
-  let h = `<div class="kpis"><div class="kpi good"><div class="muted">მიმდინარე</div><div class="v">${cnt[0]}</div></div><div class="kpi warn"><div class="muted">მომავალი</div><div class="v">${cnt[1]}</div></div><div class="kpi"><div class="muted">ბოლო 7 დღეში დასრულდა</div><div class="v">${cnt[2]}</div></div></div>`;
+  const nf = K.npf == null ? "" : K.npf;
+  let h = `<div class="kpis">${kKpi("knpf", "0", nf === "0", "good", "მიმდინარე", cnt[0])}${kKpi("knpf", "1", nf === "1", "warn", "მომავალი", cnt[1])}${kKpi("knpf", "2", nf === "2", "", "ბოლო 7 დღეში დასრულდა", cnt[2])}</div>`;
   if (!L.length) return h + `<div class="empty"><b>${esc(net)}-ზე აქციები არ არის</b>აქციებს „ქსელები → აქციები“ გვერდიდან ამატებ.</div>`;
-  h += `<div class="kcard"><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>შტრიხკოდი</th><th>რეგ. ფასი</th><th>აქციის ფასი</th><th>%</th><th>პერიოდი</th><th>შენიშვნა</th></tr></thead><tbody>${L.map(p => `<tr class="${st(p) === 2 ? "kdim" : ""}"><td><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span></td><td class="kw">${esc(p.product)}</td><td class="mono small">${esc(p.barcode)}</td><td>${esc(p.regular)}</td><td><b>${esc(p.price)}</b></td><td>${esc(p.pct)}</td><td class="small">${fmtDate(p.from)} — ${fmtDate(p.to)}</td><td class="small kw">${esc(p.note || "")}</td></tr>`).join("")}</tbody></table></div></div>`;
+  h += `<div class="kcard"><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>შტრიხკოდი</th><th>რეგ. ფასი</th><th>აქციის ფასი</th><th>%</th><th>პერიოდი</th><th>შენიშვნა</th></tr></thead><tbody>${L.filter(p => nf === "" || String(st(p)) === nf).map(p => `<tr class="${st(p) === 2 ? "kdim" : ""}"><td><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span></td><td class="kw">${esc(p.product)}</td><td class="mono small">${esc(p.barcode)}</td><td>${esc(p.regular)}</td><td><b>${esc(p.price)}</b></td><td>${esc(p.pct)}</td><td class="small">${fmtDate(p.from)} — ${fmtDate(p.to)}</td><td class="small kw">${esc(p.note || "")}</td></tr>`).join("")}</tbody></table></div></div>`;
   return h + `<div class="small muted">აქციების დამატება და რედაქტირება: „ქსელები → აქციები“.</div>`;
 }
 /* ანაზღაურება / პლანოგრამა: ფაილები + შენიშვნა თითო ქსელზე */
@@ -1993,6 +2082,8 @@ Object.assign(A, {
 });
 document.addEventListener("change", e => { const el = e.target; if (el.dataset && el.dataset.kdfile) { const fs = [...el.files]; el.value = ""; if (fs.length) kdUpload(el.dataset.kdfile, fs); } });
 document.addEventListener("input", e => { if (e.target.id === "kdn") { const r = nRoute(); if (r) KD.note[kdPath(r.net, r.sub)] = e.target.value; } });
+
+Object.assign(A, { knpf(v) { K.npf = K.npf === v ? "" : v; render(); } });
 
 /* Claude ასისტენტი — მენეჯერის ჩატი */
 const AI_API = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/ai";
@@ -2138,6 +2229,8 @@ function prCalc(r, it, bo) {
   const marg = shelf && net != null ? (shelf - net) / shelf : null;
   return { P, B, B0, bo: bo != null, inv: prF(r.inv_disc), retro, bonus, net, retroGel: B != null ? B * (retro || 0) : null, bonusGel: B != null ? B * (bonus || 0) : null, shelf, marg, margGel: shelf && net != null ? shelf - net : null };
 }
+const prLvOn = () => !!(PR.lv && (PR.lv.cats.length || PR.lv.l1.length || PR.lv.l2.length));
+const prLvOk = x => !PR.lv || kLvlOk(PR.lv, x.r.category || "სხვა", x.r.lvl1, x.r.lvl2);
 function prRows(net) {
   const a = PR.as[net]; if (!a) return null;
   const plan = prPlan(net);
@@ -2157,16 +2250,16 @@ function kPromo() {
   if (!PR.loaded || !a) return h + `<div class="empty"><b>იტვირთება…</b></div>`;
   const rows = prRows(sn) || [];
   if (!rows.length) return h + `<div class="empty"><b>${esc(net)}-ის ასორტიმენტი ფაილში არ არის</b>ატვირთე ასორტიმენტის ფაილი „მონაცემების ატვირთვა“-ზე.</div>`;
-  const cats = [...new Set(rows.filter(x => !x.dl).map(x => x.r.category || "სხვა"))].sort((x, y) => x.localeCompare(y, "ka"));
+  PR.lv = PR.lv || { cats: [], l1: [], l2: [] };
   const q = norm(PR.q || "");
-  const vis = rows.filter(x => (PR.dl ? true : !x.dl) && (!PR.cat || (x.r.category || "სხვა") === PR.cat) && (!q || norm([x.r.net_name, x.r.mg_name, x.r.net_barcode, x.r.mg_barcode, x.r.lvl1, x.r.lvl2].join(" ")).includes(q))
+  const vis = rows.filter(x => (PR.dl ? true : !x.dl) && prLvOk(x) && (!q || norm([x.r.net_name, x.r.mg_name, x.r.net_barcode, x.r.mg_barcode, x.r.lvl1, x.r.lvl2].join(" ")).includes(q))
     && (!PR.st || (PR.st === "ok" ? x.it.ok : PR.st === "no" ? !x.it.ok : PR.st === "file" ? x.it.src === "file" : PR.st === "edit" ? (x.it.bonus != null || x.it.shelf != null || x.it.retro != null) : true)));
   const act = rows.filter(x => !x.dl), dln = rows.length - act.length, okL = act.filter(x => x.it.ok);
   const avgM = okL.length ? okL.map(x => prCalc(x.r, x.it, x.bo).marg).filter(v => v != null) : [];
-  h += `<div class="kpis"><div class="kpi"><div class="muted">აქტიური ასორტიმენტი</div><div class="v">${act.length}</div></div>
-    <div class="kpi good"><div class="muted">დადასტურებული</div><div class="v">${okL.length}</div></div>
+  h += `<div class="kpis">${kKpi("prkf", "", !PR.st, "", "აქტიური ასორტიმენტი", act.length)}
+    ${kKpi("prkf", "ok", PR.st === "ok", "good", "დადასტურებული", okL.length)}
     <div class="kpi"><div class="muted">საშ. მარჟა (დადასტ.)</div><div class="v">${avgM.length ? (avgM.reduce((s, v) => s + v, 0) / avgM.length * 100).toFixed(1) + "%" : "—"}</div></div>
-    <div class="kpi ${dln ? "warn" : ""}"><div class="muted">დელისტი (იყიდება, ფაილში არ არის)</div><div class="v">${dln}</div></div></div>`;
+    ${kKpi("prkf", "dl", PR.dl, dln ? "warn" : "", "დელისტი (იყიდება, ფაილში არ არის)", dln)}</div>`;
   h += `<div class="kcard prhead"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
     <div class="field" style="flex:2;min-width:180px;margin:0"><label>აქციის სახელი</label><input type="text" data-prh="name" value="${esc(plan.name || "")}" placeholder="მაგ. დეკემბრის აქცია"></div>
     <div class="field" style="margin:0"><label>-დან</label><input type="date" data-prh="from" value="${esc(plan.from || "")}"></div>
@@ -2180,7 +2273,7 @@ function kPromo() {
     <button class="btn ghost" data-a="prtpl">⬇ შაბლონი</button>
     <button class="btn ghost danger" data-a="prclr">გასუფთავება</button></div>
     <div class="row prbulk" style="gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center"><b class="small">შესასყიდი ფასები:</b>
-    <input type="text" inputmode="decimal" id="prbulkp" placeholder="±%" style="width:80px"><button class="btn" data-a="prbulk">ყველას შეცვლა %-ით${PR.cat ? " (" + esc(PR.cat) + ")" : ""}</button>
+    <input type="text" inputmode="decimal" id="prbulkp" placeholder="±%" style="width:80px"><button class="btn" data-a="prbulk">ყველას შეცვლა %-ით${prLvOn() ? " (ფილტრით)" : ""}</button>
     <label class="btn">⬆ ახალი შესასყიდი ფასები (Excel)<input type="file" accept=".xlsx,.xls,.csv" data-prfile="buy" hidden></label>
     <button class="btn ghost" data-a="prbuyrst">ფაილის ფასებზე დაბრუნება</button>
     <span class="small muted">${Object.keys(plan.buy || {}).length ? Object.keys(plan.buy).length + " ფასი შეცვლილია" + (plan.buyAt ? " · " + esc(String(plan.buyAt).slice(0, 10)) : "") : ""}</span></div></div>`;
@@ -2189,7 +2282,7 @@ function kPromo() {
     <select data-prs="st"><option value="">ყველა</option>${[["ok", "დადასტურებული"], ["no", "დაუდასტურებელი"], ["edit", "შეცვლილი"], ["file", "ქსელის ფაილიდან"]].map(([v, l]) => `<option value="${v}" ${PR.st === v ? "selected" : ""}>${l}</option>`).join("")}</select>
     <label class="small"><input type="checkbox" data-prs="dl" ${PR.dl ? "checked" : ""}> დელისტიც ვაჩვენო</label>
     <span class="small muted">${vis.length} / ${rows.length}</span></div>
-    <div class="chips"><span class="klab">კატეგორია</span><button class="chip ${!PR.cat ? "on" : ""}" data-a="prcat" data-v="">ყველა</button>${cats.map(c => `<button class="chip ${PR.cat === c ? "on" : ""}" data-a="prcat" data-v="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>`;
+    <div class="row">${kLvlSel("prl", PR.lv, rows.filter(x => !x.dl).map(x => [x.r.category || "სხვა", x.r.lvl1, x.r.lvl2]))}${prLvOn() || PR.st || PR.q ? `<button class="chip" data-a="prclrf">✕ ფილტრის მოხსნა</button>` : ""}</div></div>`;
   const inp = (key, f, v, ph) => `<input class="prin" type="text" inputmode="decimal" data-pri="${esc(key)}" data-prf="${f}" value="${v == null ? "" : esc(v)}" placeholder="${ph}">`;
   h += `<div class="kcard"><div class="ktw"><table class="kt prt"><thead><tr><th>პროდუქტი</th><th>საპრაისო</th><th>შესასყიდი ₾</th><th>რეტრო %</th><th>სააქციო ბონუსი %</th><th>ნეტ ფასი ₾</th><th>სარეკომ. ფასი ₾</th><th>მარჟა %</th><th></th></tr></thead><tbody>${vis.map(x => {
     if (x.dl) return `<tr class="prdl"><td><b>${esc(x.r.mg_name)}</b> <span class="pill w-late">დელისტი</span><div class="small muted">ბოლო 3 თვეში გაიყიდა ${kmoney(x.r.sold)}, ასორტიმენტის ფაილში არ არის</div></td><td colspan="8"></td></tr>`;
@@ -2335,7 +2428,9 @@ function prImpView() {
     <div class="small muted" style="margin-top:6px">${I.mode === "buy" ? "„გამოყენება“ ჩაწერს მხოლოდ შესასყიდ ფასებს (სხვა ველს არ შეეხება)." : "თუ ფაილში შესასყიდი ფასიცაა, ისიც განახლდება."} „გამოყენება“ ჩაწერს სააქციო ფასს სარეკომენდაციო ფასად, ბონუსს და რეტროს (თუ ფაილშია), და მონიშნავს „ქსელის ფაილიდან“. დადასტურება (✓) შენზეა.</div></div>`;
 }
 Object.assign(A, {
-  prnet(v) { PR.net = v; PR.cat = ""; PR.imp = PR.imp && PR.imp.net === v ? PR.imp : null; render(); },
+  prclrf() { PR.lv = { cats: [], l1: [], l2: [] }; PR.st = ""; PR.q = ""; render(); },
+  prkf(v) { if (v === "dl") PR.dl = !PR.dl; else PR.st = PR.st === v ? "" : v; render(); },
+  prnet(v) { PR.net = v; PR.imp = PR.imp && PR.imp.net === v ? PR.imp : null; render(); },
   prcat(v) { PR.cat = v; render(); },
   prok(k) { const p = prPlan(PR.net); const it = p.items[k] = p.items[k] || {}; it.ok = !it.ok; it.at = it.ok ? new Date().toISOString() : ""; prSave(PR.net, true); render(); },
   prxl(v) { prXl(v); },
@@ -2354,7 +2449,7 @@ Object.assign(A, {
     prSave(PR.net, true); toast(`${hit.length} ნომენკლატურა შეივსო ქსელის ფაილიდან`); PR.imp = null; PR.st = "file"; render();
   },
   prbulk() { const i = document.getElementById("prbulkp"); const pc = prPctIn(i && i.value); if (pc == null || !pc) return toast("ჩაწერე პროცენტი, მაგ. 5 ან -3");
-    const net = PR.net, sn = NSALES[net] || net, p = prPlan(net); const rows = (prRows(sn) || []).filter(x => !x.dl && (!PR.cat || (x.r.category || "სხვა") === PR.cat));
+    const net = PR.net, sn = NSALES[net] || net, p = prPlan(net); const rows = (prRows(sn) || []).filter(x => !x.dl && prLvOk(x));
     rows.forEach(x => { const b = x.bo != null ? x.bo : prF(x.r.buy_price); if (b != null) p.buy[x.key] = +(b * (1 + pc)).toFixed(2); });
     p.buyAt = new Date().toISOString(); prSave(net, true); toast(`${rows.length} შესასყიდი ფასი შეიცვალა ${(pc * 100).toFixed(1)}%-ით`); render(); },
   prbuyrst() { const p = prPlan(PR.net); const n = Object.keys(p.buy || {}).length; if (!n) return toast("შესასყიდი ფასები შეცვლილი არ არის"); p.buy = {}; p.buyAt = ""; prSave(PR.net, true); toast(n + " ფასი დაბრუნდა ფაილის მნიშვნელობაზე"); render(); },
@@ -2387,15 +2482,15 @@ function kAlerts() {
   const list = all.filter(o => (!INS.net || o.network === INS.net) && (!qq || norm(o.object + " " + o.agent + " " + (o.skus || []).map(s => s.p).join(" ")).includes(qq)));
   const silent = list.filter(o => o.silent).length, gaps = list.filter(o => !o.silent).length, nsku = list.reduce((a, o) => a + (o.skus || []).length, 0);
   const by = {};
-  list.forEach(o => { const k = insAg(o.agent) || (o.agent ? kAgent(o.agent) : "") || "— აგენტის გარეშე"; (by[k] = by[k] || []).push(o); });
+  list.filter(o => !INS.kf || (INS.kf === "silent" ? o.silent : !o.silent)).forEach(o => { const k = insAg(o.agent) || (o.agent ? kAgent(o.agent) : "") || "— აგენტის გარეშე"; (by[k] = by[k] || []).push(o); });
   const keys = Object.keys(by).sort((a, b) => (insAg(b) ? 1 : 0) - (insAg(a) ? 1 : 0) || by[b].length - by[a].length);
   let h = `<div class="kbar"><div class="row"><span class="klab">არ უკვეთავს</span>${[7, 14, 21, 30].map(d => `<button class="chip ${INS.days === d ? "on" : ""}" data-a="insd" data-v="${d}">${d} დღე+</button>`).join("")}
     <label class="small" style="display:flex;gap:6px;align-items:center;margin-left:6px"><input type="checkbox" data-insother ${INS.other ? "checked" : ""}> სხვა აგენტების ობიექტებიც</label></div>
     <div class="row"><span class="klab">ქსელი</span><button class="chip ${!INS.net ? "on" : ""}" data-a="insn" data-v="">ყველა</button>${nets.map(n => `<button class="chip ${INS.net === n ? "on" : ""}" data-a="insn" data-v="${esc(n)}">${esc(n)}</button>`).join("")}</div>
     <div class="row"><input type="search" data-insq value="${esc(INS.q)}" placeholder="ძებნა: ობიექტი, აგენტი, პროდუქტი…" style="max-width:340px"></div></div>
-  <div class="kpis"><div class="kpi bad"><div class="muted">ჩუმი ობიექტი (არაფერს უკვეთავს)</div><div class="v">${silent}</div></div>
-    <div class="kpi warn"><div class="muted">ობიექტი, რომელმაც პროდუქტი შეწყვიტა</div><div class="v">${gaps}</div></div>
-    <div class="kpi"><div class="muted">შეწყვეტილი პოზიცია</div><div class="v">${nsku}</div></div></div>
+  <div class="kpis">${kKpi("inskf", "silent", INS.kf === "silent", "bad", "ჩუმი ობიექტი (არაფერს უკვეთავს)", silent)}
+    ${kKpi("inskf", "gaps", INS.kf === "gaps", "warn", "ობიექტი, რომელმაც პროდუქტი შეწყვიტა", gaps)}
+    ${kKpi("inskf", "gaps", false, "", "შეწყვეტილი პოზიცია", nsku)}</div>
   ${vadaCard()}
   <div class="small muted" style="margin:8px 0">წესი: ობიექტმა ან პროდუქტმა ბოლო 120 დღეში მინიმუმ 2-ჯერ შეუკვეთა, ბოლო ${INS.days} დღეში კი — აღარ. ისტორია გროვდება 22 ოქტომბრიდან, ასე რომ სია დროთა განმავლობაში ზუსტდება.</div>`;
   if (INS.busy && !INS.data) return h + `<div class="empty"><b>იტვირთება…</b></div>`;
@@ -2530,6 +2625,7 @@ function aiPhBox(id) {
 }
 
 Object.assign(A, {
+  inskf(v) { INS.kf = INS.kf === v ? "" : v; render(); },
   insd(v) { INS.days = +v; INS.data = null; render(); },
   insn(v) { INS.net = v; render(); },
   ins1(v) { const o = (INS.data || []).find(x => x.network + "|" + x.object === v); if (o) insSend([o]); },
@@ -2651,19 +2747,20 @@ function msel(id, opts, sel, set, o = {}) {
   const lab = o.label || "ყველა აგენტი";
   const nm = v => { const x = opts.find(z => z.v === v); return x ? x.l : v; };
   const team = (o.quick || []).find(q => q[1].length && q[1].length === sel.length && q[1].every(v => sel.includes(v)));
-  const cap = !sel.length ? lab : team ? team[0] : sel.length === 1 ? nm(sel[0]) : `${o.unit || "აგენტი"}: ${sel.length} არჩეული`;
+  const cap = !sel.length ? lab : opts.length > 1 && sel.length === opts.length ? `${o.unit || "აგენტი"}: ყველა (${sel.length})` : team ? team[0] : sel.length === 1 ? nm(sel[0]) : `${o.unit || "აგენტი"}: ${sel.length} არჩეული`;
   const q = norm(MSEL.q[id] || "");
   const open = MSEL.open === id;
   return `<div class="msel ${open ? "op" : ""} ${sel.length ? "has" : ""}"><button type="button" class="mselb" data-a="mselo" data-v="${esc(id)}">${esc(cap)} <span class="muted">▾</span></button>${open ? `<div class="mselp">
     <input type="search" data-mselq="${esc(id)}" value="${esc(MSEL.q[id] || "")}" placeholder="ძებნა…" autocomplete="off">
-    <div class="mselqk"><button type="button" class="chip" data-a="mselk" data-v="${esc(id)}|">${esc(lab)}</button>${(o.quick || []).map((qq, i) => `<button type="button" class="chip ${team && team[0] === qq[0] ? "on" : ""}" data-a="mselk" data-v="${esc(id)}|${i}">${esc(qq[0])}</button>`).join("")}</div>
+    <div class="mselqk"><button type="button" class="chip" data-a="mselk" data-v="${esc(id)}|*">✓ ყველას მონიშვნა</button><button type="button" class="chip" data-a="mselk" data-v="${esc(id)}|">✕ ${esc(lab)}</button>${(o.quick || []).map((qq, i) => `<button type="button" class="chip ${team && team[0] === qq[0] ? "on" : ""}" data-a="mselk" data-v="${esc(id)}|${i}">${esc(qq[0])}</button>`).join("")}</div>
     <div class="msell">${opts.filter(x => !q || norm(x.l + " " + x.v).includes(q)).map(x => `<label><input type="checkbox" data-mselv="${esc(id)}" value="${esc(x.v)}" ${sel.includes(x.v) ? "checked" : ""}> ${esc(x.l)}</label>`).join("")}</div>
     <div class="row" style="justify-content:flex-end"><button type="button" class="btn primary" data-a="mselo" data-v="">მზადაა</button></div></div>` : ""}</div>`;
 }
 MSEL.quick = {};
 Object.assign(A, {
   mselo(v) { MSEL.open = MSEL.open === v ? "" : v; render(); const i = v && document.querySelector(`[data-mselq="${CSS.escape(v)}"]`); if (i) i.focus(); },
-  mselk(v) { const i = v.lastIndexOf("|"), id = v.slice(0, i), k = v.slice(i + 1); const qk = MSEL.quick[id] || []; MSEL.set[id] && MSEL.set[id](k === "" ? [] : (qk[+k] ? qk[+k][1].slice() : [])); render(); },
+  mselk(v) { const i = v.lastIndexOf("|"), id = v.slice(0, i), k = v.slice(i + 1); const qk = MSEL.quick[id] || []; if (k === "*") { const q = norm(MSEL.q[id] || ""); const all = (MSEL.opts[id] || []).filter(x => !q || norm(x.l + " " + x.v).includes(q)).map(x => x.v); MSEL.set[id] && MSEL.set[id]([...new Set((q ? MSEL.cur[id] || [] : []).concat(all))]); render(); return; }
+    MSEL.set[id] && MSEL.set[id](k === "" ? [] : (qk[+k] ? qk[+k][1].slice() : [])); render(); },
 });
 document.addEventListener("change", e => { const el = e.target; const id = el.dataset && el.dataset.mselv; if (!id) return;
   const cur = (MSEL.cur[id] || []).filter(v => v !== el.value); if (el.checked) cur.push(el.value);
