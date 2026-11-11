@@ -2768,16 +2768,22 @@ async function phImport(files) {
         it.mg_name = it.mg_name || r.mg_name || ""; it.net_name = it.net_name || r.net_name || ""; it.cat = it.cat || r.category || ""; it.l1 = it.l1 || r.lvl1 || ""; it.l2 = it.l2 || r.lvl2 || "";
         if (it.P == null) it.P = prF(r.price_list); if (it.B == null) it.B = prF(r.buy_price); if (it.retro == null && prF(r.retro) != null) it.retro = Math.abs(r.retro) > 1.5 ? r.retro / 100 : +r.retro; });
       // თვე — აქციების დაწყების თარიღების უმრავლესობით
-      const mc = {}; g.items.forEach(it => { const m = (it.from || it.to || "").slice(0, 7); if (m) mc[m] = (mc[m] || 0) + 1; });
-      const mon = Object.keys(mc).sort((x, y) => mc[y] - mc[x])[0] || "";
-      const ds = g.items.map(it => it.from).filter(Boolean).sort(), de = g.items.map(it => it.to).filter(Boolean).sort();
-      const data = { net: g.net, month: mon, name: mon ? `${PHMON[+mon.slice(5) - 1]} ${mon.slice(0, 4)}` : g.file.replace(/\.[^.]+$/, ""), from: ds[0] || "", to: de[de.length - 1] || "", file: g.file, items: g.items, at: new Date().toISOString() };
-      // იგივე ქსელის იგივე თვის აქციები ახლით იცვლება; ძველი, თარიღების გარეშე ჩაწერილიც (იგივე ფაილიდან) იშლება
-      const old = (PH.list || []).filter(p => p.net === g.net && ((mon && p.month === mon) || (!p.from && !p.to && p.file === g.file)));
-      const path = old[0] ? old[0].path : "promoh/" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      await kcall("docSet", { path, data });
-      for (const o of old.slice(1)) { try { await kcall("docDel", { path: o.path }); } catch (e) {} }
-      PH.list = (PH.list || []).filter(p => !old.includes(p)).concat([{ ...data, path }]);
+      // თითო ხაზი თავისი დაწყების თვის ჩანაწერში. იგივე ხაზი (შტრიხკოდი + ტიპი + თარიღები) ახლით განახლდება, დანარჩენი რჩება
+      const byM = {}; g.items.forEach(it => { const m = (it.from || it.to || "").slice(0, 7); (byM[m] = byM[m] || []).push(it); });
+      const ikey = it => [phBc(it.bc) || norm(it.net_name || it.mg_name), it.type || "", it.from || "", it.to || ""].join("|");
+      // წინა (შეცდომით, თარიღების გარეშე ჩაწერილი) ჩანაწერები იგივე ფაილიდან იშლება
+      for (const o of (PH.list || []).filter(p => phNet(p.net) === g.net && !p.from && !p.to && p.file === g.file)) { try { await kcall("docDel", { path: o.path }); } catch (e) {} PH.list = PH.list.filter(z => z !== o); }
+      for (const mon of Object.keys(byM)) {
+        const ex = (PH.list || []).find(p => phNet(p.net) === g.net && mon && p.month === mon);
+        const nk = new Set(byM[mon].map(ikey));
+        const items = (ex ? (ex.items || []).filter(it => !nk.has(ikey(it))) : []).concat(byM[mon]);
+        const ds = items.map(it => it.from).filter(Boolean).sort(), de = items.map(it => it.to).filter(Boolean).sort();
+        const files = [...new Set([].concat(ex && ex.file ? String(ex.file).split(" · ") : [], [g.file]))].join(" · ");
+        const data = { net: g.net, month: mon, name: mon ? `${PHMON[+mon.slice(5) - 1]} ${mon.slice(0, 4)}` : g.file.replace(/\.[^.]+$/, ""), from: ds[0] || "", to: de[de.length - 1] || "", file: files, items, at: new Date().toISOString() };
+        const path = ex ? ex.path : "promoh/" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        await kcall("docSet", { path, data });
+        PH.list = (PH.list || []).filter(p => p !== ex).concat([{ ...data, path }]);
+      }
       nPos += g.items.length;
     }
     toast(`✓ ატვირთულია ${G.length} ქსელი, ${nPos} პოზიცია` + (nEnr < nPos ? ` · ასორტიმენტში ვერ ვიპოვე ${nPos - nEnr}` : "") + (bad.length ? ` · ვერ წავიკითხე: ${bad.join(", ")}` : ""));
@@ -2819,7 +2825,7 @@ async function phTpl() {
     ws["N" + i] = { t: "n", f: `IF(G${i}="","",G${i}*${h})`, z: "#,##0.00" };
     ws["O" + i] = { t: "n", f: `IF(G${i}="","",G${i}*${b})`, z: "#,##0.00" };
   }
-  const help = [["როგორ შევავსო"], ["1. პირველი 10 სვეტი იგივეა, რაც ქსელების აქციების ფაილში: ქსელი, აქციის ტიპი, დასახელება, შტრიხკოდი, დაწყების და დასრულების თარიღი, სააქციო შესასყიდი ფასი, რეტრო ბონუსი, დადასტურებული სააქციო ბონუსი, სარეკომენდაციო გასაყიდი."], ["2. თითო ხაზს თავისი ტიპი და თარიღები აქვს (კვირეული, შოკი, თაროს აქცია…). ერთი პროდუქტი რამდენიმე აქციაში — რამდენიმე ხაზად."], ["3. შესასყიდი ფასი და რეტრო ასორტიმენტიდანაა — საჭიროებისამებრ შეცვალე. პროცენტი შეგიძლია ჩაწერო 12, 12% ან 0.12."], ["4. ნეტ ფასი, მარჟა და ₾ თანხები თვითონ ითვლება. აქციაში არმონაწილე ხაზები წაშალე."], ["5. ატვირთე: „აქციები → აქციების არქივი → ⬆ ატვირთვა“. ერთ ფაილში შეიძლება ყველა ქსელი იყოს; იგივე ქსელის იგივე თვის აქციები ახლით ჩანაცვლდება."]];
+  const help = [["როგორ შევავსო"], ["1. პირველი 10 სვეტი იგივეა, რაც ქსელების აქციების ფაილში: ქსელი, აქციის ტიპი, დასახელება, შტრიხკოდი, დაწყების და დასრულების თარიღი, სააქციო შესასყიდი ფასი, რეტრო ბონუსი, დადასტურებული სააქციო ბონუსი, სარეკომენდაციო გასაყიდი."], ["2. თითო ხაზს თავისი ტიპი და თარიღები აქვს (კვირეული, შოკი, თაროს აქცია…). ერთი პროდუქტი რამდენიმე აქციაში — რამდენიმე ხაზად."], ["3. შესასყიდი ფასი და რეტრო ასორტიმენტიდანაა — საჭიროებისამებრ შეცვალე. პროცენტი შეგიძლია ჩაწერო 12, 12% ან 0.12."], ["4. ნეტ ფასი, მარჟა და ₾ თანხები თვითონ ითვლება. აქციაში არმონაწილე ხაზები წაშალე."], ["5. ატვირთე: „აქციები → აქციების არქივი → ⬆ ატვირთვა“. ერთ ფაილში შეიძლება ყველა ქსელი იყოს; იგივე ხაზი (შტრიხკოდი + ტიპი + თარიღები) ახლით განახლდება, დანარჩენი ხაზები შენახული რჩება."]];
   const wh = XLSX.utils.aoa_to_sheet(help); wh["!cols"] = [{ wch: 120 }];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "აქციები"); XLSX.utils.book_append_sheet(wb, wh, "ინსტრუქცია");
   XLSX.writeFile(wb, `აქციების შაბლონი ${net}.xlsx`);
