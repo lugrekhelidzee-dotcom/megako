@@ -1780,6 +1780,7 @@ function kObjects() {
   if (of.st === "down") L = L.filter(x => x.m3ly && x.m3 < x.m3ly * 0.8);
   if (of.st === "nodir") L = L.filter(x => !x.dir);
   if (of.st === "nolink") L = L.filter(x => x.dir && !x.bc);
+  K.oVis = L;
   const sk = of.sort; L.sort((a, b) => sk === "name" ? String(a.name).localeCompare(b.name) : sk === "d" ? (a.m3 - a.m3ly) - (b.m3 - b.m3ly) : (b[sk] || 0) - (a[sk] || 0));
   const stb = (k, l, n) => `<button class="chip ${of.st === k ? "on" : ""}" data-a="kost" data-v="${k}">${l}${n != null ? ` <b>${n}</b>` : ""}</button>`;
   let h = `<div class="kbar"><div class="row"><input type="search" id="koq" data-kin="oq" value="${esc(of.q)}" placeholder="ძებნა: დასახელება, კოდი, მისამართი…" style="max-width:320px">
@@ -1787,11 +1788,21 @@ function kObjects() {
     ${kAg() ? "" : msel("koag", ags.slice().sort((a, b) => (kMine(b) - kMine(a)) || kAgent(a).localeCompare(kAgent(b))).map(a => ({ v: a, l: kAgent(a) + (kMine(a) ? " ★" : "") })), of.ags || [], v => { of.ags = v; of.n = 100; }, { quick: mselQ("koag", [["★ ჩემი გუნდი", ags.filter(kMine)]]) })}
     <select data-kch="osort"><option value="m3" ${sk === "m3" ? "selected" : ""}>დალაგება: 3 თვის გაყიდვა</option><option value="ytd" ${sk === "ytd" ? "selected" : ""}>წლის გაყიდვა</option><option value="d" ${sk === "d" ? "selected" : ""}>ყველაზე დიდი ვარდნა</option><option value="name" ${sk === "name" ? "selected" : ""}>დასახელება</option></select></div>
     <div class="chips">${stb("", "ყველა", L.length && !of.st ? L.length : null)}${stb("nos", "3 თვე გაყიდვა არ აქვს", cnt.nos)}${stb("down", "ვარდნა >20%", cnt.down)}${stb("nodir", "ცნობარში არ არის", cnt.nodir)}${stb("nolink", "მეგაკოს ობიექტი არ არის მიბმული", cnt.nolink)}</div></div>`;
-  h += `<div class="kcard"><div class="ktw"><table class="kt"><thead><tr><th>ქსელი</th><th>კოდი</th><th data-xh="ობიექტი|მეგაკოს დასახელება">ობიექტი</th><th>აგენტი</th><th>რეგიონი</th><th>ბოლო</th><th>3 თვე</th><th>Δ შარშან</th><th>${Math.floor(to / 100)}</th></tr></thead><tbody>${L.slice(0, of.n).map(x => `<tr class="kclick" ${x.bc ? `data-a="kobj" data-v="${esc(x.bc)}"` : ""}><td>${esc(x.net)}</td><td class="mono">${esc(x.code)}</td><td class="kw"><b>${esc(x.name)}</b>${x.mg && x.mg !== x.name ? `<div class="small muted">${esc(x.mg)}</div>` : ""}${!x.dir ? ` <span class="pill w-soon">ცნობარში არ არის</span>` : ""}${x.dir && !x.bc ? ` <span class="pill w-late">არ არის მიბმული</span>` : ""}</td><td>${esc(kAgent(x.ag || x.agf))}${kMine(x.ag || x.agf) ? ` <span class="kstar">★</span>` : ""}</td><td class="small">${esc(x.region)}</td><td class="small ${x.bc && (!x.last || x.last < cut) ? "kred" : ""}">${kym(x.last)}</td><td>${kmoney(x.m3)}</td><td>${kpct(x.m3, x.m3ly)}</td><td>${kmoney(x.ytd)}</td></tr>`).join("")}</tbody></table></div>
+  h += `<div class="kcard"><div class="ktw"><table class="kt" data-xlfn="kObjXl"><thead><tr><th>ქსელი</th><th>კოდი</th><th data-xh="ობიექტი|მეგაკოს დასახელება">ობიექტი</th><th>აგენტი</th><th>რეგიონი</th><th>ბოლო გაყიდვა</th><th>${kPer(cut, to)}</th><th>Δ შარშან</th><th>${kPer(Math.floor(to / 100) * 100 + 1, to)}</th></tr></thead><tbody>${L.slice(0, of.n).map(x => `<tr class="kclick" ${x.bc ? `data-a="kobj" data-v="${esc(x.bc)}"` : ""}><td>${esc(x.net)}</td><td class="mono">${esc(x.code)}</td><td class="kw"><b>${esc(x.name)}</b>${x.mg && x.mg !== x.name ? `<div class="small muted">${esc(x.mg)}</div>` : ""}${!x.dir ? ` <span class="pill w-soon">ცნობარში არ არის</span>` : ""}${x.dir && !x.bc ? ` <span class="pill w-late">არ არის მიბმული</span>` : ""}</td><td>${esc(kAgent(x.ag || x.agf))}${kMine(x.ag || x.agf) ? ` <span class="kstar">★</span>` : ""}</td><td class="small">${esc(x.region)}</td><td class="small ${x.bc && (!x.last || x.last < cut) ? "kred" : ""}">${kym(x.last)}</td><td>${kmoney(x.m3)}</td><td>${kpct(x.m3, x.m3ly)}</td><td>${kmoney(x.ytd)}</td></tr>`).join("")}</tbody></table></div>
   ${L.length > of.n ? `<div style="text-align:center;margin:10px"><button class="btn ghost" data-a="kmore">კიდევ (${L.length - of.n})</button></div>` : ""}</div>`;
   return h;
 }
 
+function kObjXl() {
+  const L = K.oVis || [], to = K.info.max; if (!L.length) return toast("სია ცარიელია");
+  const cut = to % 100 > 2 ? to - 2 : to - 100 + 10, y1 = Math.floor(to / 100) * 100 + 1;
+  const ymD = ym => ym ? { d: new Date(Date.UTC(Math.floor(ym / 100), ym % 100 - 1, 1)), m: 1 } : "";
+  const of = K.of, net = of.net || "ყველა ქსელი";
+  xlRows(`ობიექტები ${net}${of.st ? " (ფილტრით)" : ""}`,
+    ["ქსელი", "კოდი", "ობიექტი", "მეგაკოს დასახელება", "მეგაკოს კოდი", "აგენტი", "რეგიონი", "ბოლო გაყიდვის თვე", `გაყიდვა ${kPer(cut, to)} ₾`, `გაყიდვა ${kPer(cut - 100, to - 100)} ₾`, "ზრდა 3 თვე %", `გაყიდვა ${kPer(y1, to)} ₾`, `გაყიდვა ${kPer(y1 - 100, to - 100)} ₾`, "ზრდა წელი %", "შენიშვნა"],
+    L.map(x => [x.net, x.code, x.name, x.mg && x.mg !== x.name ? x.mg : "", x.bc, kAgent(x.ag || x.agf) || x.ag || x.agf || "", x.region, ymD(x.last), x.m3 || 0, x.m3ly || 0, x.m3ly ? { p: (x.m3 - x.m3ly) / Math.abs(x.m3ly) } : "", x.ytd || 0, x.ytdly || 0, x.ytdly ? { p: (x.ytd - x.ytdly) / Math.abs(x.ytdly) } : "",
+      [!x.dir ? "ცნობარში არ არის" : "", x.dir && !x.bc ? "მეგაკოს ობიექტი არ არის მიბმული" : "", x.bc && (!x.last || x.last < cut) ? "3 თვე გაყიდვა არ აქვს" : ""].filter(Boolean).join("; ")]));
+}
 /* ---------- ობიექტის ბარათი ---------- */
 function kObj() {
   const to = K.info.max;
@@ -2695,6 +2706,8 @@ function xlNum(t) {
   if (m) return { d: new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) };
   m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})$/) || s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4}),? (\d{1,2}):(\d{2})$/);
   if (m) { const iso = m[1].length === 4; return { d: new Date(Date.UTC(iso ? +m[1] : +m[3], +m[2] - 1, iso ? +m[3] : +m[1], +m[4], +m[5])), t: 1 }; }
+  m = s.match(/^(იან|თებ|მარ|აპრ|მაი|ივნ|ივლ|აგვ|სექ|ოქტ|ნოე|დეკ)\.? (\d{4})$/);
+  if (m) return { d: new Date(Date.UTC(+m[2], ["იან", "თებ", "მარ", "აპრ", "მაი", "ივნ", "ივლ", "აგვ", "სექ", "ოქტ", "ნოე", "დეკ"].indexOf(m[1]), 1)), m: 1 };
   m = s.match(/^([▲▼+\-−]?)\s*(\d[\d,\s]*(?:\.\d+)?|\.\d+)\s*(₾|%|ც|ცალი|კგ|GEL|ლ)?\.?$/);
   if (!m) return s;
   const raw = m[2].replace(/[\s,]/g, "");
@@ -2789,7 +2802,7 @@ function xlSheet(head, rows) {
     if (v == null || v === "") return;
     if (typeof v === "number") { v = Math.round(v * 1e6) / 1e6; cell = { t: "n", v, z: r && dec[c] ? "#,##0.00" : "#,##0" }; }
     else if (typeof v === "object" && v.p != null) cell = { t: "n", v: v.p, z: "0.0%" };
-    else if (typeof v === "object" && v.d) cell = { t: "n", v: (v.d.getTime() / 864e5) + 25569, z: v.t ? "dd.mm.yyyy hh:mm" : "dd.mm.yyyy" };
+    else if (typeof v === "object" && v.d) cell = { t: "n", v: (v.d.getTime() / 864e5) + 25569, z: v.t ? "dd.mm.yyyy hh:mm" : v.m ? "mm.yyyy" : "dd.mm.yyyy" };
     else cell = { t: "s", v: String(v) };
     ws[enc({ r, c })] = cell;
   };
