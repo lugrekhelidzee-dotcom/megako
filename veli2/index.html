@@ -581,6 +581,10 @@ details.kfold:not([open]){padding-top:10px;padding-bottom:10px}
 .kt td.pcbad{background:#ffc7ce !important;font-weight:600}
 .kt td.pcok{color:#1e7b3c;font-weight:600}
 .kt td.pcwarn{background:#ffeb9c !important}
+/* ფაილის ჩაგდება */
+body.dragging .dropz{outline:2px dashed var(--accent,#0e7c66);outline-offset:3px;border-radius:10px;position:relative}
+body.dragging .dropz.dropon{outline-style:solid;background:color-mix(in srgb,var(--accent,#0e7c66) 14%,transparent)!important}
+body.dragging::after{content:"ჩააგდე ფაილი განათებულ ღილაკზე";position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0e3b31;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:9999;pointer-events:none}
 
 </style>
 </head>
@@ -3393,6 +3397,34 @@ function mselQ(id, quick) { MSEL.quick[id] = quick; return quick; }
 function mselClamp() { document.querySelectorAll(".mselp").forEach(p => { p.style.left = "0px"; const r = p.getBoundingClientRect(), over = r.right - (innerWidth - 8); if (over > 0) p.style.left = -Math.min(over, r.left - 8) + "px"; }); }
 { const _rnd1 = render; render = function () { const o = _rnd1.apply(this, arguments); try { mselClamp(); } catch (e) {} return o; }; }
 addEventListener("resize", () => { try { mselClamp(); } catch (e) {} });
+/* ფაილის ჩაგდება (drag & drop) ყველგან, სადაც ფაილის ატვირთვის ღილაკია */
+(() => {
+  let depth = 0;
+  const hasFiles = e => [...((e.dataTransfer && e.dataTransfer.types) || [])].includes("Files");
+  const inputs = () => [...document.querySelectorAll('input[type="file"]')].filter(i => !i.disabled && (i.closest("label,.btn,.drop,.field,.kcard,.card") || i).getBoundingClientRect().width > 0);
+  const zone = i => i.closest("label") || i.closest(".btn") || i.parentElement || i;
+  const okType = (i, f) => { const acc = (i.getAttribute("accept") || "").toLowerCase().split(",").map(s => s.trim()).filter(Boolean); if (!acc.length) return true; const n = f.name.toLowerCase(); return acc.some(a => a.startsWith(".") ? n.endsWith(a) : a.endsWith("/*") ? (f.type || "").startsWith(a.slice(0, -1)) : f.type === a); };
+  const clear = () => { depth = 0; document.body.classList.remove("dragging"); document.querySelectorAll(".dropz,.dropon").forEach(x => x.classList.remove("dropz", "dropon")); };
+  const give = (inp, files) => {
+    const L = [...files].filter(f => okType(inp, f));
+    if (!L.length) return toast("ეს ფაილი აქ არ მიიღება" + (inp.getAttribute("accept") ? " (" + inp.getAttribute("accept") + ")" : ""));
+    const dt = new DataTransfer(); (inp.multiple ? L : L.slice(0, 1)).forEach(f => dt.items.add(f));
+    try { inp.files = dt.files; } catch (e) { return toast("ბრაუზერმა ფაილის ჩაგდება არ დაუშვა — გამოიყენე ღილაკი"); }
+    inp.dispatchEvent(new Event("change", { bubbles: true }));
+    if (!inp.multiple && L.length > 1) toast("აქ ერთი ფაილი მიიღება — აიღო პირველი: " + L[0].name);
+  };
+  addEventListener("dragenter", e => { if (!hasFiles(e)) return; e.preventDefault(); depth++; if (depth === 1) { document.body.classList.add("dragging"); inputs().forEach(i => zone(i).classList.add("dropz")); } });
+  addEventListener("dragleave", e => { if (!hasFiles(e)) return; depth = Math.max(0, depth - 1); if (!depth) clear(); });
+  addEventListener("dragover", e => { if (!hasFiles(e)) return; e.preventDefault(); const z = e.target && e.target.closest && e.target.closest(".dropz"); document.querySelectorAll(".dropon").forEach(x => x !== z && x.classList.remove("dropon")); if (z) z.classList.add("dropon"); e.dataTransfer.dropEffect = "copy"; });
+  addEventListener("drop", e => {
+    if (!hasFiles(e)) return; e.preventDefault();
+    const files = e.dataTransfer.files, z = e.target && e.target.closest && e.target.closest(".dropz"); clear();
+    if (!files || !files.length) return;
+    let inp = z && z.querySelector('input[type="file"]');
+    if (!inp) { const all = inputs().filter(i => [...files].some(f => okType(i, f))); if (all.length === 1) inp = all[0]; else if (!all.length) return toast("ამ გვერდზე ფაილის ატვირთვის ადგილი არ არის"); else return toast("ამ გვერდზე რამდენიმე ატვირთვაა — ფაილი ჩააგდე სასურველ (განათებულ) ღილაკზე"); }
+    give(inp, files);
+  });
+})();
 
 </script>
 </body>
