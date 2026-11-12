@@ -604,7 +604,11 @@ const S={who:null,pin:null,apin:null,login:null,chatText:"",chatPh:[],chatSeenN:
 const CB={};
 const $=s=>document.querySelector(s);
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+const LSCK=/^mg\.(who|pin|apin|tab)$/;
+const ckGet=k=>{try{const m=document.cookie.match(new RegExp("(?:^|; )"+k.replace(/\./g,"\\.")+"=([^;]*)"));return m?decodeURIComponent(m[1]):null}catch(e){return null}};
+const ckSet=(k,v)=>{try{document.cookie=k+"="+(v==null?"":encodeURIComponent(v))+";path=/;max-age="+(v==null?0:31536000)+";SameSite=Lax"+(location.protocol==="https:"?";Secure":"")}catch(e){}};
+const ls={get(k){let v=null;try{v=localStorage.getItem(k)}catch(e){}if(v==null&&LSCK.test(k)){v=ckGet(k);if(v!=null)try{localStorage.setItem(k,v)}catch(e){}}return v},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}if(LSCK.test(k))ckSet(k,v)}};
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 const API="https:"+"/"+"/bwldyaqpntcslmrywwau.supabase.co/functions/v1/api";
 const run=(fn,...a)=>fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({fn,args:a})}).then(r=>r.json(),()=>{throw new Error("NetworkError: კავშირი ვერ შედგა")}).then(j=>{if(!j||!j.ok)throw new Error((j&&j.error)||"შეცდომა");return j.r});
 const auth=()=>S.who==="__m"?{mgr:S.pin}:{who:S.who,pin:S.apin};
@@ -1499,7 +1503,7 @@ document.addEventListener("change",async e=>{const el=e.target,k=el.dataset.ch;
     if(kind==="af")S.af.photos.push(...ids);else if(kind==="chat")S.chatPh.push(...ids);else if(kind==="q")S.q.ref.push(...ids);
     render()}});
 
-S.who=ls.get("mg.who");S.pin=ls.get("mg.pin");S.apin=ls.get("mg.apin");if(S.who==="__m"&&!S.pin)S.who=null;if(S.who&&S.who!=="__m"&&!S.apin){S.login=S.who;S.who=null}
+S.who=ls.get("mg.who");S.pin=ls.get("mg.pin");S.apin=ls.get("mg.apin");if(S.who==="__m"&&!S.pin)S.who=null;if(S.who==="__m"){const t0=ls.get("mg.tab");if(t0&&!/^(login)$/.test(t0))S.tab=t0}if(S.who==="__m"&&S.pin){ls.set("mg.who","__m");ls.set("mg.pin",S.pin)}if(S.who&&S.who!=="__m"&&S.apin){ls.set("mg.who",S.who);ls.set("mg.apin",S.apin)}if(S.who&&S.who!=="__m"&&!S.apin){S.login=S.who;S.who=null}
 try{const c=JSON.parse(localStorage.getItem("mg.data")||"null");if(c&&c.agents){D=c;S.loaded=true;if(S.who&&S.who!=="__m")S.atab=startTab();render()}}catch(e){}
 load().then(()=>{if(S.who&&S.who!=="__m"){const a=D.agents.find(x=>x.name===S.who);if(!a){S.who=null}else if(!a.hasPin){S.login=S.who;S.who=null;S.apin=null;ls.set("mg.apin",null)}else S.atab=startTab();render()}});
 setInterval(()=>pollChat(),15000);
@@ -1992,6 +1996,8 @@ function kMySales() {
   h += sub === "obj" ? (K.code ? kObj() : kObjects()) : kSales();
   return h + `</div>`;
 }
+/* ბოლო გახსნილი გვერდი — აპის თავიდან გახსნისას იქვე დაბრუნდება */
+{ const _rnd0 = render; render = function () { try { if (S.who === "__m" && S.tab && ls.get("mg.tab") !== S.tab) ls.set("mg.tab", S.tab); } catch (e) {} return _rnd0.apply(this, arguments); }; }
 
 /* ჩემი ქსელები: ქსელი → ასორტიმენტი, ობიექტები, შეთანხმებული აქციები, ანაზღაურება, პლანოგრამა */
 const MYNETS = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
