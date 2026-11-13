@@ -629,7 +629,7 @@ const ckSet=(k,v)=>{try{document.cookie=k+"="+(v==null?"":encodeURIComponent(v))
 const ls={get(k){let v=null;try{v=localStorage.getItem(k)}catch(e){}if(v==null&&LSCK.test(k)){v=ckGet(k);if(v!=null)try{localStorage.setItem(k,v)}catch(e){}}return v},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}if(LSCK.test(k))ckSet(k,v)}};
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 const API="https:"+"/"+"/bwldyaqpntcslmrywwau.supabase.co/functions/v1/api";
-const run=(fn,...a)=>fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({fn,args:a})}).then(r=>r.json(),()=>{throw new Error("NetworkError: კავშირი ვერ შედგა")}).then(j=>{if(!j||!j.ok)throw new Error((j&&j.error)||"შეცდომა");return j.r});
+let run=(fn,...a)=>fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({fn,args:a})}).then(r=>r.json(),()=>{throw new Error("NetworkError: კავშირი ვერ შედგა")}).then(j=>{if(!j||!j.ok)throw new Error((j&&j.error)||"შეცდომა");return j.r});
 const auth=()=>S.who==="__m"?{mgr:S.pin}:{who:S.who,pin:S.apin};
 const ME=()=>S.who==="__m"?"მენეჯერი":S.who;
 const th=(id,w)=>String(id).startsWith("local:")?(ls.get("mg.img."+id)||""):/^https?:/.test(String(id))?String(id):HTTPS+"drive.google.com"+SL+"thumbnail?id="+encodeURIComponent(id)+"&sz=w"+(w||400);
@@ -2310,8 +2310,36 @@ document.addEventListener("input", e => { if (e.target.id === "aitx") AI.text = 
 document.addEventListener("keydown", e => { if (e.target.id === "aitx" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); aiSend(e.target.value); } });
 { const _render = render; render = function () { _render.apply(this, arguments); aiMount(); }; }
 
+/* ოფლაინ რეჟიმი: ბოლო მიღებული მონაცემები ინახება მოწყობილობაზე (IndexedDB) და ინტერნეტის გარეშე ისინი ჩანს */
+const OFF = { at: 0, db: null };
+function offDb() { if (OFF.db) return OFF.db; OFF.db = new Promise((res, rej) => { try { const r = indexedDB.open("mg-off", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); return OFF.db; }
+async function offSet(k, v) { try { const db = await offDb(); await new Promise((res, rej) => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put({ v, at: Date.now() }, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); } catch (e) {} }
+async function offGet(k) { try { const db = await offDb(); return await new Promise((res, rej) => { const t = db.transaction("kv", "readonly"); const q = t.objectStore("kv").get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }); } catch (e) { return null; } }
+const offIsNet = e => /NetworkError|Failed to fetch|კავშირი ვერ შედგა|Load failed|network/i.test(String(e && e.message || e));
+const offKey = (who, a) => (S.who || "") + "|" + who + "|" + JSON.stringify(a, (k, v) => (typeof v === "string" && v && (v === S.pin || v === ls.get("mg.apin"))) ? "•" : v);
+// მხოლოდ წასაკითხი მოთხოვნები ინახება (ცვლილებები არა)
+const OFF_RUN = /^(getData|getChat|getOrders|getOrderDates|getFiles|getPromos|getReports|getTasks|getAgents)$/;
+const OFF_KAM = /^(info|dash|dashObjs|buyers|buyer|assort|docs|digest|noorder|shipped|promoEffect)$/;
+async function offWrap(key, fn) {
+  try { const r = await fn(); if (OFF.at) { OFF.at = 0; offBadge(); } offSet(key, r); return r; }
+  catch (e) { if (!offIsNet(e) && navigator.onLine) throw e; const c = await offGet(key); if (!c) throw new Error("📴 ინტერნეტი არ არის და ეს მონაცემი ჯერ შენახული არ მაქვს"); OFF.at = OFF.at ? Math.min(OFF.at, c.at) : c.at; offBadge(); return c.v; }
+}
+{ const _run = run; run = (fn, ...a) => OFF_RUN.test(fn) ? offWrap(offKey("run:" + fn, a), () => _run(fn, ...a)) : _run(fn, ...a); }
+{ const _k = kcall; kcall = (op, a) => OFF_KAM.test(op) ? offWrap(offKey("kam:" + op, a || {}), () => _k(op, a)) : _k(op, a); }
+function offBadge() {
+  let b = document.getElementById("offb");
+  if (!OFF.at && navigator.onLine) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement("div"); b.id = "offb"; b.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9998;background:#3b4350;color:#fff;padding:7px 14px;border-radius:20px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer"; b.onclick = () => { if (navigator.onLine) location.reload(); }; document.body.appendChild(b); }
+  const d = OFF.at ? new Date(OFF.at) : null;
+  b.textContent = "📴 ოფლაინ" + (d ? " — ნაჩვენებია შენახული მონაცემი (" + d.toLocaleDateString("ka-GE") + " " + d.toTimeString().slice(0, 5) + ")" : " — ინტერნეტი არ არის");
+}
+addEventListener("offline", offBadge);
+addEventListener("online", () => { offBadge(); try { if (S.who) { load(true); if (typeof flushQ === "function") flushQ(); } } catch (e) {} });
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+setTimeout(offBadge, 1500);
+
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261113100028";
+const APP_BUILD = "20261113101509";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
