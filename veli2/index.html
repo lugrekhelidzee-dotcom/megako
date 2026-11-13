@@ -1935,17 +1935,24 @@ async function kImpSales(rows, file) {
   const H = rows[hi].map(kcell);
   const c = kCols(H, { ag: ["სავაჭრო აგენტი"], prod: ["ნომენკლატურა"], buyer: ["მყიდველი"], addr: ["ფაქტიური მისამართი"], code: ["კოდი"], tin: ["გსნ"], net: ["ქსელი"], mon: ["თვეების მიხედვით"], qty: ["რაოდენობა"], sum: ["გაყიდვის თანხა"] });
   if ([c.prod, c.buyer, c.code, c.mon, c.sum].some(x => x < 0)) return klog("⚠ გაყიდვების სვეტები ვერ ვიცანი", true);
-  const data = []; const buyers = {}; let mn = 999999, mx = 0, skip = 0;
+  // რიცხვი შეიძლება ტექსტად იყოს: „1 414,08“
+  const kn = v => typeof v === "number" ? v : (parseFloat(String(v == null ? "" : v).replace(/[\s\u00a0]/g, "").replace(",", ".")) || 0);
+  const agg = new Map(); const buyers = {}; let mn = 999999, mx = 0, skip = 0;
   for (let i = hi + 1; i < rows.length; i++) {
     const r = rows[i]; if (!r) continue;
     const p = kcell(r[c.prod]), code = kcell(r[c.code]), mon = kcell(r[c.mon]).split(/\s+/);
     const ym = mon.length > 1 && KMF[mon[0]] ? (+mon[1]) * 100 + KMF[mon[0]] : 0;
     if (!p || !code || !ym) { skip++; continue; }
     if (!buyers[code]) { const name = kcell(r[c.buyer]), addr = kcell(r[c.addr]); const net = kNet(kcell(r[c.net]), name, addr); buyers[code] = { code, name, addr, tin: kcell(r[c.tin]), net, store_code: kCode(name, addr, net) }; }
-    data.push([ym, code, p, kcell(r[c.ag]), +r[c.qty] || 0, +r[c.sum] || 0]);
+    const ag = kcell(r[c.ag]), key = ym + "|" + code + "|" + p + "|" + ag, cur = agg.get(key);
+    if (cur) { cur[4] += kn(r[c.qty]); cur[5] += kn(r[c.sum]); } else agg.set(key, [ym, code, p, ag, kn(r[c.qty]), kn(r[c.sum])]);
     if (ym < mn) mn = ym; if (ym > mx) mx = ym;
   }
+  const data = [...agg.values()];
   klog(`გაყიდვები: ${knum(data.length)} ხაზი, ${kym(mn)} — ${kym(mx)}, ${Object.keys(buyers).length} მყიდველი. იგზავნება…`);
+  // განახლებული ფაილი ცვლის ძველს: ამ თვეებში ამ აგენტებისა და ქსელების ძველი ხაზები ჯერ იშლება
+  if (data.length) { const ags = [...new Set(data.map(x => x[3]))], nets = [...new Set(Object.values(buyers).map(b => b.net))];
+    const del = await kcall("salesClear", { from: mn, to: mx, agents: ags, nets }); if (del) klog(`ძველი ვერსია ჩანაცვლდა: ${knum(del)} ხაზი (${kym(mn)} — ${kym(mx)})`); }
   const N = 4000; let sent = 0, next = 0;
   const chunks = []; for (let i = 0; i < data.length; i += N) chunks.push(data.slice(i, i + N));
   const work = async () => {
