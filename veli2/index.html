@@ -2358,7 +2358,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261113125958";
+const APP_BUILD = "20261113134222";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -2501,9 +2501,10 @@ function kPromo() {
   if (PR.imp && PR.imp.net === net) h += prImpView();
   h += `<div class="kbar"><div class="row" style="gap:8px;flex-wrap:wrap"><input type="search" data-prq="1" value="${esc(PR.q)}" placeholder="ძებნა: სახელი, შტრიხკოდი, დონე…" style="max-width:320px">
     <select data-prs="st"><option value="">ყველა</option>${[["ok", "დადასტურებული"], ["no", "დაუდასტურებელი"], ["edit", "შეცვლილი"], ["file", "ქსელის ფაილიდან"]].map(([v, l]) => `<option value="${v}" ${PR.st === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    ${kLvlSel("prl2", PR.lv, LV)}
     <label class="small"><input type="checkbox" data-prs="dl" ${PR.dl ? "checked" : ""}> დელისტიც ვაჩვენო</label>
     <span class="small muted">${vis.length} / ${rows.length}</span></div>
-    ${PR.st || PR.q ? `<div class="row"><button class="chip" data-a="prclrf">✕ ფილტრის მოხსნა</button></div>` : ""}</div>`;
+    ${PR.st || PR.q || prLvOn() ? `<div class="row"><button class="chip" data-a="prclrf">✕ ფილტრის მოხსნა</button></div>` : ""}</div>`;
   const inp = (key, f, v, ph) => `<input class="prin" type="text" inputmode="decimal" data-pri="${esc(key)}" data-prf="${f}" value="${v == null ? "" : esc(v)}" placeholder="${ph}">`;
   h += `<div class="kcard"><div class="ktw"><table class="kt prt" data-xlfn="prXlVis"><thead><tr><th>პროდუქტი</th><th>საპრაისო</th><th>შესასყიდი ₾</th><th>რეტრო %</th><th>სააქციო ბონუსი %</th><th>ნეტ ფასი ₾</th><th>სარეკომ. ფასი ₾</th><th>მარჟა %</th><th></th></tr></thead><tbody>${vis.map(x => {
     if (x.dl) return `<tr class="prdl"><td><b>${esc(x.r.mg_name)}</b> <span class="pill w-late">დელისტი</span><div class="small muted">ბოლო 3 თვეში გაიყიდა ${kmoney(x.r.sold)}, ასორტიმენტის ფაილში არ არის</div></td><td colspan="8"></td></tr>`;
