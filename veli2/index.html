@@ -1604,9 +1604,11 @@ const kMine = raw => !!raw && !!(kAgent(raw), KAGM[raw]);
 function kNet(net, name, addr) {
   net = String(net || "").trim(); const t = (name || "") + " " + (addr || "");
   if (/ზღაპარი/.test(name || "") && (net === "ბაია" || /#/.test(net))) return "ზღაპარი";
-  const m = t.match(/\b([MKDS])\d{3}\b/);
+  // შპს რითეილ ჯგუფი: ქსელს ობიექტის კოდის ასო განსაზღვრავს — M მაგნიტი, K კალათა, S/SS სპარი, D დეილი
+  const m = String(name || "").match(/(?:^|[^A-Za-z])(SS|[MKDS])\d{3}/);
+  if (/რითეილ ჯგუფი/.test(name || "") && m) return { M: "მაგნიტი", K: "კალათა", D: "დეილი", S: "სპარი", SS: "სპარი" }[m[1]];
+  if (/\(\s*კალათა\s*\)/.test(name || "") && /^(დეილი|მაგნიტი|სხვა)?$|რითეილ ჯგუფი|^#/.test(net)) return "კალათა";
   if (/რითეილ ჯგუფი|^#|^$/.test(net) || net === "#N/A" || net === "#REF!") {
-    if (m) return { M: "მაგნიტი", K: "კალათა", D: "დეილი", S: "სპარი" }[m[1]];
     if (/დეილი/.test(name || "")) return "დეილი";
     if (/ორი ნაბიჯი/.test(name || "")) return "ორი ნაბიჯი";
     if (/რითეილ ჯგუფი/.test(net)) return "მაგნიტი";
@@ -2356,7 +2358,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261113123637";
+const APP_BUILD = "20261113125958";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
