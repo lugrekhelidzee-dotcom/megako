@@ -1661,6 +1661,12 @@ function kSales(o = {}) {
     K.loading.dash = true; const k0 = key;
     kcall("dash", prm).then(d => { K.dash = d; K.dashKey = k0; K.loading.dash = false; (d.brands || []).forEach(b => { K.brandsAll = K.brandsAll || {}; K.brandsAll[b.k] = 1; }); render(); }).catch(e => { K.loading.dash = false; K.dashKey = k0; toast(errMsg(e)); render(); });
   }
+  // ზედა ობიექტის ფილტრის სია — იტვირთება, როცა ფილტრს გახსნი
+  const pkPrm = { ...prm, buyers: [] }, pkKey = JSON.stringify(pkPrm);
+  if (MSEL.open === "ksobj" && K.objPickKey !== pkKey && !K.loading.op) {
+    K.loading.op = true; const k2 = pkKey;
+    kcall("dashObjs", pkPrm).then(o => { K.objPick = o || []; K.objPickKey = k2; K.loading.op = false; render(); }).catch(e => { K.loading.op = false; K.objPickKey = k2; K.objPick = []; toast(errMsg(e)); render(); });
+  }
   // ობიექტები — მხოლოდ მაშინ, როცა ბლოკი გახსნილია (მძიმე მოთხოვნაა)
   if (KFOLD["s:obj"] && K.objKey !== key && !K.loading.obj) {
     K.loading.obj = true; const k1 = key;
@@ -1678,6 +1684,8 @@ function kSales(o = {}) {
     ${o.noNet ? "" : msel("ksnet", nets.map(n => ({ v: n, l: n })), f.nets, v => { f.nets = v; }, { label: "ყველა ქსელი", unit: "ქსელი" })}
     ${kLvlSel("ksl", f, K.info.levels || [])}
     ${msel("ksbr", Object.keys(Object.assign({}, K.brandsAll || {}, ...(f.brands || []).map(b => ({ [b]: 1 })))).sort(kKa).map(b => ({ v: b, l: b })), f.brands, v => { f.brands = v; }, { label: "ყველა ბრენდი", unit: "ბრენდი" })}
+    ${(() => { const P = K.objPickKey === pkKey ? (K.objPick || []) : []; const opts = P.map(o => ({ v: o.code, l: o.name + " · " + (o.net || "") + " · " + o.code })); f.buyers.forEach(c => { if (!opts.some(x => x.v === c)) opts.unshift({ v: c, l: (f.bnames[c] || c) + " · " + c }); });
+      return msel("ksobj", opts, f.buyers, v => { f.buyers = v; v.forEach(c => { const o = P.find(x => x.code === c); if (o) f.bnames[c] = o.name; }); }, { label: "ყველა ობიექტი", unit: "ობიექტი", max: 300, empty: K.loading.op ? "ობიექტები იტვირთება…" : "ობიექტი ვერ მოიძებნა" }); })()}
     ${f.buyers.length ? f.buyers.map(c => `<button class="chip on" data-a="kobjf" data-v="${esc(c)}" title="ობიექტის ფილტრის მოხსნა">🏪 ${esc((f.bnames || {})[c] || c)} ✕</button>`).join("") : ""}
     ${kAg() ? "" : msel("ksag", (K.info.agents || []).slice().sort((a, b) => (kMine(b) - kMine(a)) || kAgent(a).localeCompare(kAgent(b))).map(a => ({ v: a, l: kAgent(a) + (kMine(a) ? " ★" : "") })), f.agents, v => { f.team = false; f.agents = v; }, { quick: mselQ("ksag", [["★ ჩემი გუნდი", (K.info.agents || []).filter(kMine)]]) })}
     ${(!o.noNet && f.nets.length) || f.cats.length || f.l1.length || f.l2.length || (f.agents || []).length || f.brands.length || f.buyers.length ? `<button class="chip" data-a="kclr">✕ ფილტრის მოხსნა</button>` : ""}</div></div>`;
@@ -2339,7 +2347,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261113101509";
+const APP_BUILD = "20261113103701";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -3627,7 +3635,9 @@ function msel(id, opts, sel, set, o = {}) {
   return `<div class="msel ${open ? "op" : ""} ${sel.length ? "has" : ""}"><button type="button" class="mselb" data-a="mselo" data-v="${esc(id)}">${esc(cap)} <span class="muted">▾</span></button>${open ? `<div class="mselp">
     <input type="search" data-mselq="${esc(id)}" value="${esc(MSEL.q[id] || "")}" placeholder="ძებნა…" autocomplete="off">
     <div class="mselqk"><button type="button" class="chip" data-a="mselk" data-v="${esc(id)}|*">✓ ყველას მონიშვნა</button><button type="button" class="chip" data-a="mselk" data-v="${esc(id)}|">✕ ${esc(lab)}</button>${(o.quick || []).map((qq, i) => `<button type="button" class="chip ${team && team[0] === qq[0] ? "on" : ""}" data-a="mselk" data-v="${esc(id)}|${i}">${esc(qq[0])}</button>`).join("")}</div>
-    <div class="msell">${opts.filter(x => !q || norm(x.l + " " + x.v).includes(q)).map(x => `<label><input type="checkbox" data-mselv="${esc(id)}" value="${esc(x.v)}" ${sel.includes(x.v) ? "checked" : ""}> ${esc(x.l)}</label>`).join("")}</div>
+    <div class="msell">${(() => { let F = opts.filter(x => !q || norm(x.l + " " + x.v).includes(q)); const tot = F.length;
+      if (o.max && F.length > o.max) F = F.filter(x => sel.includes(x.v)).concat(F.filter(x => !sel.includes(x.v)).slice(0, o.max));
+      return (!opts.length && o.empty ? `<div class="small muted" style="padding:6px">${esc(o.empty)}</div>` : "") + F.map(x => `<label><input type="checkbox" data-mselv="${esc(id)}" value="${esc(x.v)}" ${sel.includes(x.v) ? "checked" : ""}> ${esc(x.l)}</label>`).join("") + (tot > F.length ? `<div class="small muted" style="padding:6px">ნაჩვენებია ${F.length} / ${tot} — დანარჩენისთვის ჩაწერე ძებნაში</div>` : ""); })()}</div>
     <div class="row" style="justify-content:flex-end"><button type="button" class="btn primary" data-a="mselo" data-v="">მზადაა</button></div></div>` : ""}</div>`;
 }
 MSEL.quick = {};
