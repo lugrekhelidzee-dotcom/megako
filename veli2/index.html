@@ -2358,7 +2358,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261113134222";
+const APP_BUILD = "20261113135248";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -3111,7 +3111,7 @@ function phCard() {
 // ამ ქსელის ამ თვის ატვირთული კალკულაცია(ები) — შემოწმების შედეგით
 function phCalcCell(p) {
   if (typeof PC === "undefined" || !PC.list || !p.month) return `<span class="muted">—</span>`;
-  const cs = PC.list.filter(c => c.net === phNet(p.net) && ((c.to || c.from || "").slice(0, 7) === p.month));
+  const cs = PC.list.filter(c => c.net === phNet(p.net) && (pcMonth(c) === p.month));
   if (!cs.length) return `<span class="muted">არ არის ატვირთული</span>`;
   return cs.map(c => { const v = pcEval(c); return `<button class="chip" data-a="phcalc" data-v="${esc(c.path)}" title="${esc(c.file)}">${v.red ? "🔴" : v.org ? "🟡" : "🟢"} ${kmoneyT(v.sumC)}${v.diff > 1 ? ` · <b class="kred">−${kmoneyT(v.diff)}</b>` : ""}${v.shp ? ` · 📦${v.shp}` : ""}</button>`; }).join(" ");
 }
@@ -3170,6 +3170,10 @@ function pcHeader(r) {
   c.bonus = pcFind(H, [/სააქციო ბონუს(?!.*(გეგმა|₾|თანხ))/, /დამატებითი რეტრო/, /^%$/, /ბონუს(?!.*(გეგმა|₾|თანხ|ერთეულ))/], used);
   c.retro = pcFind(H, [/^რეტრო(?!.*₾)/], used);
   c.qty = pcFind(H, [/ჯამური რაოდენობა/, /grand total/, /^გაყიდვები$/, /^სულ გაყიდული/, /^რაოდენობა$/, /^გაყიდვა$/], used);
+  // სხვა დასახელებები: „გაყიდული რაოდ.“, „რეალიზაცია“, „ცალი“, „Qty“, „Sales“ … (თანხის/ფასის სვეტები არა)
+  const nq = h => !/თანხ|₾|ლარ|ანაზ|ფას|ბონუს|რეტრო|%|ღირებ|ჯამური თანხ/.test(h);
+  if (c.qty < 0) c.qty = pcFind(H.map(h => nq(h) ? h : ""), [/რაოდ|გაყიდ|რეალიზ|^ცალ|ცალი|qty|quantity|sold|sales|^სულ$|^ჯამი$/], used);
+  if (c.bonus < 0) c.bonus = pcFind(H.map(h => /თანხ|₾|ლარ/.test(h) ? "" : h), [/ფასდაკლ|დისკონტ|discount|კომპენსაც.*%|სააქციო.*%|აქციის %|%/], used);
   c.amts = []; H.forEach((h, j) => { if (!used.has(j) && /ანაზ[ღრ]აურ|ასანაზ|^თანხა$|კომპენსაც/.test(h) && !/კორ/.test(h)) c.amts.push(j); });
   c.name = pcFind(H, [/^სკუ$/, /^შესასწორებელი$/, /დასახელება|ნომენკლატურა|პროდუქტ/], used);
   c.days = []; r.forEach((v, j) => { const d = pcHdrDate(v); if (d) c.days.push([j, d]); });
@@ -3301,11 +3305,21 @@ function pcEval(ck) {
   return { lines, red, org, grn, shp, sumC, sumOk, diff: sumC - sumOk };
 }
 const knumT = v => (Math.round(+v || 0)).toLocaleString("en-US");
-const pcMon = c => { const d = c.to || c.from || ""; return d ? `${PHMON[+d.slice(5, 7) - 1]} ${d.slice(0, 4)}` : ""; };
+// კალკულაციის თვე: ხელით არჩეული → ფაილის/შიტის სახელში თვე (მაგ. „ოქტომბერი“) → აქციის დღეების უმეტესობა რომელ თვეშია
+const PCMR = [/იანვ/, /თებერვ/, /მარტ/, /აპრილ/, /მაის/, /ივნის/, /ივლის/, /აგვისტ/, /სექტემბ/, /ოქტომბ/, /ნოემბ/, /დეკემბ/];
+function pcMonth(c) {
+  if (c.month) return c.month;
+  const days = {}; (c.lines || []).forEach(l => { const x = l.x || l, f = x.from || c.from, t = x.to || f; if (!f) return; let d = new Date(f + "T00:00:00Z"); const e = new Date((t || f) + "T00:00:00Z"); for (let i = 0; d <= e && i < 400; i++, d = new Date(d.getTime() + 864e5)) { const m = d.toISOString().slice(0, 7); days[m] = (days[m] || 0) + 1; } });
+  const dom = Object.keys(days).sort((a, b) => days[b] - days[a] || a.localeCompare(b))[0] || (c.to || c.from || "").slice(0, 7);
+  const nm = String((c.file || "") + " " + (c.sheet || "")).toLowerCase(), mi = PCMR.findIndex(r => r.test(nm));
+  if (mi >= 0) { const ys = Object.keys(days).map(m => m.slice(0, 4)); const y = (dom || "").slice(0, 4) || ys[0] || String(new Date().getFullYear()); const cand = [y, String(+y - 1), String(+y + 1)].map(yy => yy + "-" + String(mi + 1).padStart(2, "0")); return cand.find(m => days[m]) || cand[0]; }
+  return dom;
+}
+const pcMon = c => { const m = pcMonth(c); return m ? `${PHMON[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}` : ""; };
 const PCL = { r: ["🔴", "წითელი", "pcr"], o: ["🟡", "ყვითელი", "pco"], g: ["🟢", "მწვანე", "pcg"], s: ["⤵", "ჩანაცვლებული", "pcs"], i: ["·", "ინფო", ""] };
 function pcCard() {
   pcLoad(); phLoad(); if (PR.net) prAssort(NSALES[PR.net] || PR.net);
-  const L = (PC.list || []).filter(c => prNetOk(c.net)).sort((a, b) => String(b.to || "").localeCompare(String(a.to || "")) || String(b.at).localeCompare(String(a.at)));
+  const L = (PC.list || []).filter(c => prNetOk(c.net)).sort((a, b) => String(pcMonth(b)).localeCompare(String(pcMonth(a))) || String(b.at).localeCompare(String(a.at)));
   let h = `<div class="kcard pccard"><div class="kh"><b>ანაზღაურების შემოწმება — ქსელის კალკულაცია vs შეთანხმება და გადატვირთვა</b><span class="small muted">${L.length} კალკულაცია</span></div>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:6px"><label class="btn sm primary ${PC.busy ? "dis" : ""}">${PC.busy ? "მოწმდება…" : "⬆ ქსელის კალკულაციის ატვირთვა"}<input type="file" accept=".xlsx,.xls" data-pcfile="1" hidden></label>
     <span class="small muted">🟢 ბონუსი და თანხა ემთხვევა შეთანხმებას · 🔴 ჩვენს საზიანოდ · 🟡 შესამოწმებელი · 📦 გაყიდვა vs ჩვენი გადატვირთვა ცალკე სვეტშია</span></div>`;
@@ -3331,6 +3345,7 @@ function pcDetail(c, v) {
   const np = v.lines.filter(l => !l.priceOk && !l.sup).length;
   return `<div class="row" style="gap:6px;margin:4px 0 6px;flex-wrap:wrap">${ch("", "ყველა", v.lines.length)}${ch("g", "🟢 ემთხვევა", v.grn)}${ch("r", "🔴", v.red)}${ch("o", "🟡", v.org)}${ch("p", "💲 ფასი არ ემთხვევა", np)}${ch("s", "📦 გადატვირთვა", v.shp)}
     <span class="small muted">მოთხოვნილი ${kmoneyT(v.sumC)} · დასტურდება ${kmoneyT(v.sumOk)} · სხვაობა <b class="${v.diff > 1 ? "kred" : ""}">${kmoneyT(v.diff)}</b></span>
+    <span class="kper" title="რომელ თვეს ეკუთვნის ეს კალკულაცია"><select data-pcmon="${esc(c.path)}">${(() => { const cur = pcMonth(c), y = +(cur || "2026").slice(0, 4), o = []; for (let yy = y - 1; yy <= y + 1; yy++) for (let m = 1; m <= 12; m++) o.push(yy + "-" + String(m).padStart(2, "0")); return o.map(m => `<option value="${m}" ${m === cur ? "selected" : ""}>თვე: ${PHMON[+m.slice(5) - 1]} ${m.slice(0, 4)}</option>`).join(""); })()}</select></span>
     <span style="margin-left:auto;display:inline-flex;gap:6px"><button class="btn sm primary" data-a="pcfix" data-v="${esc(c.path)}" title="ქსელის ფაილი, გასწორებული ჩვენი მონაცემებით">✎ გასწორება (ქსელის ფორმაში)</button><button class="btn sm" data-a="pcxl" data-v="${esc(c.path)}">⬇ შემოწმება Excel</button></span></div>
     <div class="ktw" style="max-height:560px;overflow:auto"><table class="kt pct" data-xlfn="pcXlOpen"><thead><tr><th>●</th><th>პროდუქტი</th><th>აქცია / პერიოდი</th><th>რაოდ.</th><th>შესასყიდი</th><th>ბონუსი</th><th>მოთხოვნილი ₾</th><th>დასტურდება ₾</th><th>სხვაობა ₾</th><th>📦 გადატვირთული</th><th>შენიშვნა</th></tr></thead><tbody>${rows.map(l => { const x = l.x, nm = x.name || (l.m && (l.m.net_name || l.m.mg_name)) || "", S = PCL[l.lvl] || PCL.i;
     return `<tr class="${S[2]}"><td title="${S[1]}">${S[0]}</td><td><b>${esc(nm)}</b><div class="small muted mono">${esc(x.bc)}${x.blk ? " · " + esc(x.blk) : ""}</div></td>
@@ -3476,6 +3491,10 @@ Object.assign(A, {
     kcall("docDel", { path: v }).then(() => { PC.list = PC.list.filter(z => z.path !== v); render(); }).catch(e => toast(errMsg(e))); },
 });
 if (typeof kPromo === "function") { const _kp3 = kPromo; kPromo = function () { const h = _kp3.apply(this, arguments); const i = h.indexOf('<div class="kcard prhead"'); return i >= 0 ? h.slice(0, i) + pcCard() + h.slice(i) : h + pcCard(); }; }
+
+document.addEventListener("change", async e => { const el = e.target; const p = el.dataset && el.dataset.pcmon; if (!p) return;
+  const c = (PC.list || []).find(z => z.path === p); if (!c) return; const old = c.month; c.month = el.value; render();
+  try { const { path, ...d } = c; await kcall("docSet", { path, data: d }); toast("თვე შეიცვალა: " + pcMon(c)); } catch (err) { c.month = old; render(); toast(errMsg(err)); } });
 
 /* ---------- Excel-ში ექსპორტი: ყველა ცხრილთან „⬇ Excel“ ღილაკი ---------- */
 /* ტექსტი → რიცხვი / თარიღი / ტექსტი (Excel-ში ფორმულებისთვის) */
