@@ -638,6 +638,25 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 .hsub .htile{min-height:128px}
 @keyframes hsIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .hmg0{grid-auto-flow:row dense}
+/* ===== კომპაქტური გვერდითი მენიუ ===== */
+:root{--sidew:232px}
+.side{padding-left:10px;padding-right:10px}
+.brandbox{padding:2px 6px 10px;gap:9px}.brandbox .lgm{width:34px;height:34px;font-size:13px;border-radius:10px}.brandbox .bn{font-size:14px}.brandbox .bs{font-size:11px}
+.navs .ni{padding:6px 9px;font-size:13px;gap:9px;border-radius:8px;min-height:32px}
+.navs .ni .i{width:17px;height:17px}
+.navs .ni .nc{font-size:10.5px;line-height:17px;min-width:18px;padding:0 6px}
+.ng2{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;color:var(--side-ink);font:inherit;font-size:13px;font-weight:600;padding:7px 9px;border-radius:8px;cursor:pointer;text-align:left;margin-top:2px;min-height:34px}
+.ng2:hover{background:rgba(255,255,255,.06);color:#fff}
+.ng2 .i{width:17px;height:17px;flex:none}
+.ng2 span:not(.nc){flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ng2 .nc{background:#e5484d;color:#fff;border-radius:999px;font-size:10.5px;font-weight:700;padding:0 6px;min-width:18px;text-align:center;line-height:17px}
+.ng2 .chev{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;transform:rotate(-90deg);transition:transform .18s;opacity:.7;flex:none}
+.ng2.op .chev{transform:none}
+.ng2.cur{color:#fff}.ng2.cur:not(.op){background:rgba(18,163,131,.14)}
+.ngi2{margin:1px 0 4px 17px;padding-left:8px;border-left:1px solid rgba(255,255,255,.1)}
+.ngi2 .ni{font-weight:500;color:var(--side-mute)}.ngi2 .ni:hover,.ngi2 .ni.on{color:#fff}
+.ngi2 .ni.on::before{left:-9px}
+.ucard{padding:8px;gap:8px;margin-top:8px}.ucard .av2{width:30px;height:30px;font-size:13px}.ucard .un{font-size:13px}.ucard .ur{font-size:10.5px}
 
 </style>
 </head>
@@ -1051,9 +1070,11 @@ trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
 pct:'<path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
 home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'};
 const svg=k=>`<svg class="i" viewBox="0 0 24 24">${IC[k]||""}</svg>`;
-let NGO=null;try{NGO=JSON.parse(localStorage.getItem("mg.ngo")||"null")}catch(e){}
-function ngOpen(g,items){if(NGO&&g in NGO)return NGO[g];return items.some(x=>x[0]===S.tab)||(g.includes("KAM")&&String(S.tab).startsWith("n|"))}
-function ngToggle(g,open){NGO=NGO||{};NGO[g]=!open;try{localStorage.setItem("mg.ngo",JSON.stringify(NGO))}catch(e){}}
+// კომპაქტური მენიუ: ერთდროულად ერთი ჯგუფია გახსნილი (აკორდეონი); თავიდან — მიმდინარე გვერდის ჯგუფი
+const NGI={"დავალებები":"rev","გუნდი":"team","ქსელები":"orders","KAM მართვა":"chart","სისტემა":"gear","კომუნიკაცია":"mail"};
+let NGA;try{NGA=localStorage.getItem("mg.nga")}catch(e){}
+function ngOpen(g,items){if(NGA!=null&&NGA!=="")return NGA===g;if(NGA==="")return false;return items.some(x=>x[0]===S.tab)||(g.includes("KAM")&&String(S.tab).startsWith("n|"))}
+function ngToggle(g,open){NGA=open?"":g;try{localStorage.setItem("mg.nga",NGA)}catch(e){}}
 function mView(){
   const T=D.tasks,tot=T.length,done=T.filter(t=>t.status==="დადასტურებული").length,rev=T.filter(t=>t.status==="შესრულებული").length,
     open=T.filter(active).length,late=T.filter(isLate).length,today=T.filter(isToday).length,unseen=D.reports.filter(r=>!r.seen).length;
@@ -1063,11 +1084,11 @@ function mView(){
   const NAV=[["","დავალებები",[["my","ჩემი დავალებები",0,"",IC.ucheck],["today","დღეს",todayCnt,"",IC.cal],["rev","შესამოწმებელი",rev,"",IC.rev],["all","ყველა დავალება",0,"",IC.all]]],
     ["","გუნდი",[["team","აგენტები",0,"",IC.team],["rep","ფოტო-რეპორტები",unseen,"",IC.rep],["chat","ჩატი",chatUnread(),"",IC.chat]]],
     ["","ქსელები",[["promo","აქციები",prNow,"pr",IC.promo],["orders","შეკვეთები",0,"",IC.orders],["files","ფაილები",0,"",IC.files]]],
-    ["","ქსელების მართვა (KAM)",[["k-sales","გაყიდვები",0,"",IC.trend],["k-plan","გეგმა და შესრულება",0,"",IC.chart],["k-alerts","შეკვეთის კონტროლი",0,"",IC.orders],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-promo","აქციები",0,"",IC.pct],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]],
+    ["","KAM მართვა",[["k-sales","გაყიდვები",0,"",IC.trend],["k-plan","გეგმა და შესრულება",0,"",IC.chart],["k-alerts","შეკვეთის კონტროლი",0,"",IC.orders],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-promo","აქციები",0,"",IC.pct],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]],
     ["","სისტემა",[["settings","პარამეტრები",0,"",IC.gear]]]];
   const TT={home:"მთავარი",my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-plan":"გეგმა და შესრულება","k-alerts":"შეკვეთის კონტროლი — ვინ შეწყვიტა შეკვეთა","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა","k-promo":"აქციები: დაგეგმვა და მარჟა",settings:"პარამეტრები"};
   let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">JDE vs MEGAKO</div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
-  <nav class="navs"><button class="ni ${S.tab==="home"?"on":""}" data-a="tab" data-v="home">${svg("home")}მთავარი</button>${NAV.map(([_,g,items])=>`<div class="ng">${g}</div><div class="ngi">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}"><svg class="i" viewBox="0 0 24 24">${ic}</svg>${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+(g.includes("KAM")?kNetNav():"")+`</div>`).join("")}</nav>
+  <nav class="navs"><button class="ni ${S.tab==="home"?"on":""}" data-a="tab" data-v="home">${svg("home")}მთავარი</button>${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0),cur=items.some(x=>x[0]===S.tab)||(g.includes("KAM")&&String(S.tab).startsWith("n|"));return `<button class="ng2 ${op?"op":""} ${cur?"cur":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}">${svg(NGI[g]||"all")}<span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi2">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}">${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+(g.includes("KAM")?kNetNav():"")+`</div>`:"")}).join("")}</nav>
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
   <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button><div class="tt">${TT[S.tab]||kTitle()||"JDE vs MEGAKO"}<small>შპს მეგაკო · ${todayLine()}</small></div><button class="syncb" data-a="refresh" title="მონაცემების განახლება">${svg("refresh")}<span>სინქრონიზაცია</span></button></header>
   ${["today","rev","all"].includes(S.tab)?`<div class="kpis">
@@ -2386,7 +2407,7 @@ const HSUB = {
   "k-promo": () => "დაგეგმვა, არქივი, ანაზღაურება", "k-objects": () => "ქსელების ობიექტები და აგენტები", "k-import": () => "გაყიდვები, ასორტიმენტი, ობიექტები (Excel)", settings: () => "PIN, ქსელები, სისტემა"
 };
 const HCOL = ["g", "b", "r", "y", "v", "c"];
-const HGI = { "დავალებები": ["rev", "g", "შესასრულებელი, შესამოწმებელი"], "გუნდი": ["team", "b", "აგენტები, ფოტო-რეპორტები, ჩატი"], "ქსელები": ["orders", "r", "აქციები, შეკვეთები, ფაილები"], "ქსელების მართვა (KAM)": ["chart", "y", "გაყიდვები, გეგმა, ასორტიმენტი, აქციები"], "ჩემი ქსელები": ["home", "c", "ორი ნაბიჯი, მაგნიტი, კალათა…"], "სისტემა": ["gear", "v", "პარამეტრები"] };
+const HGI = { "დავალებები": ["rev", "g", "შესასრულებელი, შესამოწმებელი"], "გუნდი": ["team", "b", "აგენტები, ფოტო-რეპორტები, ჩატი"], "ქსელები": ["orders", "r", "აქციები, შეკვეთები, ფაილები"], "KAM მართვა": ["chart", "y", "გაყიდვები, გეგმა, ასორტიმენტი, აქციები"], "ჩემი ქსელები": ["home", "c", "ორი ნაბიჯი, მაგნიტი, კალათა…"], "სისტემა": ["gear", "v", "პარამეტრები"] };
 let HOPEN = null; try { HOPEN = localStorage.getItem("mg.hopen"); } catch (e) {}
 function mHome(NAV0) {
   const NAV = NAV0.slice(); if (typeof MYNETS !== "undefined") NAV.splice(NAV.length - 1, 0, ["", "ჩემი ქსელები", MYNETS.map(n => ["n|" + n + "|sales", n, 0, "", IC.home])]);
@@ -2403,6 +2424,7 @@ function mHome(NAV0) {
   return h + `</div></div>`;
 }
 A.hgo = v => { HOPEN = HOPEN === v ? null : v; try { HOPEN ? localStorage.setItem("mg.hopen", HOPEN) : localStorage.removeItem("mg.hopen"); } catch (e) {} render(); if (HOPEN) setTimeout(() => { const el = document.querySelector(".hsub"); if (el && el.getBoundingClientRect().top > innerHeight - 120) el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30); };
+{ const _t = A.tab; A.tab = (v, el) => { if (!(el && el.closest && el.closest(".navs"))) { NGA = null; try { localStorage.removeItem("mg.nga"); } catch (e) {} } return _t(v, el); }; }
 
 /* ოფლაინ რეჟიმი: ბოლო მიღებული მონაცემები ინახება მოწყობილობაზე (IndexedDB) და ინტერნეტის გარეშე ისინი ჩანს */
 const OFF = { at: 0, db: null };
@@ -2433,7 +2455,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261116090846";
+const APP_BUILD = "20261116091403";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
