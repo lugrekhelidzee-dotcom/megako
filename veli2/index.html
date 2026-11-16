@@ -657,6 +657,42 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 .ngi2 .ni{font-weight:500;color:var(--side-mute)}.ngi2 .ni:hover,.ngi2 .ni.on{color:#fff}
 .ngi2 .ni.on::before{left:-9px}
 .ucard{padding:8px;gap:8px;margin-top:8px}.ucard .av2{width:30px;height:30px;font-size:13px}.ucard .un{font-size:13px}.ucard .ur{font-size:10.5px}
+/* ===== კომუნიკაცია ===== */
+.cmtabs{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0 10px}
+.cmtabs .chip b{background:#e5484d;color:#fff;border-radius:999px;padding:0 6px;font-size:11px;margin-left:4px}
+.cmmail{display:grid;grid-template-columns:210px 340px 1fr;height:calc(100vh - 150px);min-height:460px;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.cmchatw{grid-template-columns:320px 1fr}
+.cmf{border-right:1px solid var(--line);overflow:auto;padding:6px;background:#fafbfc}
+.cmfi{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;font:inherit;font-size:13px;padding:6px 10px;border-radius:7px;cursor:pointer;text-align:left;color:inherit}
+.cmfi span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmfi b{font-size:11.5px;color:var(--accent,#0e7c66)}
+.cmfi:hover{background:#eef3f1}.cmfi.on{background:#e3f3ee;font-weight:600}
+.cml{border-right:1px solid var(--line);overflow:auto;display:flex;flex-direction:column}
+.cmlh{padding:8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:1}
+.cmlh input{width:100%}
+.cmi{display:flex;flex-direction:column;gap:2px;border:0;border-bottom:1px solid #eef1f4;background:none;font:inherit;text-align:left;padding:9px 12px;cursor:pointer;color:inherit;border-left:3px solid transparent}
+.cmi:hover{background:#f6f8fa}.cmi.on{background:#e8f4f0;border-left-color:var(--accent,#0e7c66)}
+.cmi1{display:flex;gap:8px;align-items:baseline}.cmfr{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.cmdt{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.cmsu{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmi.un .cmfr,.cmi.un .cmsu{font-weight:700;color:#1d2733}.cmi.un{border-left-color:#3b82f6}
+.cmub{background:#25d366;color:#fff;border-radius:999px;padding:0 6px;font-size:10.5px}
+.cmpg{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px}
+.cmr{overflow:auto;display:flex;flex-direction:column;min-width:0}
+.cmempty{align-items:center;justify-content:center}
+.cmrh{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+.cmback{display:none}
+.cmrs{margin:12px 16px 4px;font-size:18px}
+.cmrm{padding:0 16px 8px;font-size:13.5px}
+.cmatt{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 8px}
+.cmbody{flex:1;min-height:360px;border:0;border-top:1px solid #eef1f4;width:100%;background:#fff}
+.cmchat{padding:14px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.cmb{max-width:70%;background:#f1f3f5;border-radius:12px;padding:8px 11px;font-size:14px}.cmb.out{align-self:flex-end;background:#dcf8c6}
+.cmb span{display:block;font-size:10.5px;color:var(--muted);margin-top:3px}
+.cmsetup ol{margin:4px 0 0 18px;padding:0;line-height:1.65;font-size:14px}.cmsetup code{background:#f1f3f5;padding:1px 5px;border-radius:5px;font-size:12.5px;word-break:break-all}
+@media(max-width:1100px){.cmmail{grid-template-columns:170px 290px 1fr}}
+@media(max-width:820px){.cmmail,.cmchatw{grid-template-columns:1fr;height:auto;min-height:0}.cmf{border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;white-space:nowrap}.cmfi{width:auto;padding-left:10px!important}
+  .cmmail.has .cmf,.cmmail.has .cml{display:none}.cmmail:not(.has) .cmr{display:none}.cmback{display:inline-flex}.cmbody{min-height:70vh}}
 
 </style>
 </head>
@@ -1068,7 +1104,8 @@ cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M
 ucheck:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5 1.6 0 3 .4 4.1 1.2M15 18l2 2 4-4.5"/>',
 trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
 pct:'<path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
-home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'};
+home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+mail:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>'};
 const svg=k=>`<svg class="i" viewBox="0 0 24 24">${IC[k]||""}</svg>`;
 // კომპაქტური მენიუ: ერთდროულად ერთი ჯგუფია გახსნილი (აკორდეონი); თავიდან — მიმდინარე გვერდის ჯგუფი
 const NGI={"დავალებები":"rev","გუნდი":"team","ქსელები":"orders","KAM მართვა":"chart","სისტემა":"gear","კომუნიკაცია":"mail"};
@@ -1085,8 +1122,9 @@ function mView(){
     ["","გუნდი",[["team","აგენტები",0,"",IC.team],["rep","ფოტო-რეპორტები",unseen,"",IC.rep],["chat","ჩატი",chatUnread(),"",IC.chat]]],
     ["","ქსელები",[["promo","აქციები",prNow,"pr",IC.promo],["orders","შეკვეთები",0,"",IC.orders],["files","ფაილები",0,"",IC.files]]],
     ["","KAM მართვა",[["k-sales","გაყიდვები",0,"",IC.trend],["k-plan","გეგმა და შესრულება",0,"",IC.chart],["k-alerts","შეკვეთის კონტროლი",0,"",IC.orders],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-promo","აქციები",0,"",IC.pct],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]],
+    ["","კომუნიკაცია",[["comm","მეილი, WhatsApp, Viber",cmUnread(),"",IC.mail]]],
     ["","სისტემა",[["settings","პარამეტრები",0,"",IC.gear]]]];
-  const TT={home:"მთავარი",my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-plan":"გეგმა და შესრულება","k-alerts":"შეკვეთის კონტროლი — ვინ შეწყვიტა შეკვეთა","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა","k-promo":"აქციები: დაგეგმვა და მარჟა",settings:"პარამეტრები"};
+  const TT={home:"მთავარი",comm:"კომუნიკაცია",my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-plan":"გეგმა და შესრულება","k-alerts":"შეკვეთის კონტროლი — ვინ შეწყვიტა შეკვეთა","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა","k-promo":"აქციები: დაგეგმვა და მარჟა",settings:"პარამეტრები"};
   let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">JDE vs MEGAKO</div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
   <nav class="navs"><button class="ni ${S.tab==="home"?"on":""}" data-a="tab" data-v="home">${svg("home")}მთავარი</button>${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0),cur=items.some(x=>x[0]===S.tab)||(g.includes("KAM")&&String(S.tab).startsWith("n|"));return `<button class="ng2 ${op?"op":""} ${cur?"cur":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}">${svg(NGI[g]||"all")}<span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi2">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}">${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+(g.includes("KAM")?kNetNav():"")+`</div>`:"")}).join("")}</nav>
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
@@ -1101,6 +1139,7 @@ function mView(){
     <div class="kpi"><div class="muted">შესრულება</div><div class="v">${pct}%</div><div class="progress"><div style="width:${pct}%"></div></div></div>
   </div>`:""}`;
   if(S.tab==="home"||!TT[S.tab]&&!String(S.tab).startsWith("k-")&&!String(S.tab).startsWith("n|"))return h+mHome(NAV);
+  if(S.tab==="comm")return h+commView();
   if(S.tab==="my")return h+`<iframe class="tmframe" src="../tasks/" title="ჩემი დავალებები"></iframe>`;
   if(S.tab==="settings")return h+settingsView();
   if(String(S.tab).startsWith("n|"))return h+kNetView();
@@ -2398,6 +2437,101 @@ document.addEventListener("input", e => { if (e.target.id === "aitx") AI.text = 
 document.addEventListener("keydown", e => { if (e.target.id === "aitx" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); aiSend(e.target.value); } });
 { const _render = render; render = function () { _render.apply(this, arguments); aiMount(); }; }
 
+/* კომუნიკაცია: Gmail (Outlook-ის საქაღალდეებით), WhatsApp Business, Viber — ერთ ადგილას */
+const CAPI = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/comm";
+const CM = { ch: "mail", folder: "INBOX", page: 0, q: "", st: null, folders: null, list: null, listKey: "", uid: null, msg: null, msgKey: "", chats: null, peer: null, msgs: null, L: {} };
+try { const v = JSON.parse(localStorage.getItem("mg.cm") || "null"); if (v) Object.assign(CM, { ch: v.ch || "mail", folder: v.folder || "INBOX" }); } catch (e) {}
+const cmSave = () => { try { localStorage.setItem("mg.cm", JSON.stringify({ ch: CM.ch, folder: CM.folder, un: CM.un || 0 })); } catch (e) {} };
+async function ccall0(op, a) { let r; try { r = await fetch(CAPI, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ args: [S.pin, op, a || {}] }) }); } catch (e) { throw new Error("NetworkError: კავშირი ვერ შედგა"); } const j = await r.json().catch(() => ({ ok: false, error: "სერვერის პასუხი ვერ წავიკითხე (" + r.status + ")" })); if (!j.ok) throw new Error(j.error || "შეცდომა"); return j.r; }
+const ccall = (op, a) => /^(status|folders|list|read|chats|msgs)$/.test(op) && typeof offWrap === "function" ? offWrap(offKey("comm:" + op, a || {}), () => ccall0(op, a)) : ccall0(op, a);
+function cmLoad(k, p, set) { if (CM.L[k]) return; CM.L[k] = 1; p.then(v => { set(v); CM.L[k] = 0; render(); }).catch(e => { CM.L[k] = 0; set(null, e); render(); }); }
+const cmUnread = () => { let n = 0; try { n = (JSON.parse(localStorage.getItem("mg.cm") || "{}").un || 0); } catch (e) {} const u = CM.st && CM.st.unread || {}; return n + (u.whatsapp || 0) + (u.viber || 0); };
+const FSPEC = { "\\Inbox": ["შემოსული", 0], "\\Flagged": ["მონიშნული ⭐", 1], "\\Sent": ["გაგზავნილი", 2], "\\Drafts": ["მონახაზები", 3], "\\Important": ["მნიშვნელოვანი", 4], "\\All": ["ყველა წერილი", 5], "\\Junk": ["სპამი", 7], "\\Trash": ["ნაგავი", 8] };
+const cmDate = d => { if (!d) return ""; const t = new Date(d), n = new Date(); return t.toDateString() === n.toDateString() ? t.toTimeString().slice(0, 5) : t.getFullYear() === n.getFullYear() ? String(t.getDate()).padStart(2, "0") + "." + String(t.getMonth() + 1).padStart(2, "0") : t.toLocaleDateString("ka-GE"); };
+const cmWho = a => a && a[0] ? (a[0].name || a[0].address) : "";
+function commView() {
+  if (!CM.st && !CM.L.st) cmLoad("st", ccall("status"), (v, e) => { CM.st = v || { err: e && e.message }; });
+  const st = CM.st;
+  const u = st && st.unread || {};
+  let h = `<div class="cmw"><div class="cmtabs">
+    <button class="chip ${CM.ch === "mail" ? "on" : ""}" data-a="cmch" data-v="mail">✉️ მეილი${CM.folders ? (() => { const n = (CM.folders.find(f => f.special === "\\Inbox" || f.path === "INBOX") || {}).unseen; return n ? ` <b>${n}</b>` : ""; })() : ""}</button>
+    <button class="chip ${CM.ch === "whatsapp" ? "on" : ""}" data-a="cmch" data-v="whatsapp">🟢 WhatsApp${u.whatsapp ? ` <b>${u.whatsapp}</b>` : ""}</button>
+    <button class="chip ${CM.ch === "viber" ? "on" : ""}" data-a="cmch" data-v="viber">🟣 Viber${u.viber ? ` <b>${u.viber}</b>` : ""}</button>
+    <button class="btn sm ghost" data-a="cmref" style="margin-left:auto">↻ განახლება</button></div>`;
+  if (!st) return h + `<div class="empty"><b>იტვირთება…</b></div></div>`;
+  if (st.err) return h + `<div class="empty"><b>კავშირი ვერ შედგა</b>${esc(st.err)}</div></div>`;
+  return h + (CM.ch === "mail" ? cmMail(st) : cmChat(st)) + `</div>`;
+}
+function cmSetup(title, steps) { return `<div class="kcard cmsetup"><div class="kh"><b>${title}</b></div><ol>${steps.map(s => `<li>${s}</li>`).join("")}</ol></div>`; }
+function cmMail(st) {
+  if (!st.mail) return cmSetup("✉️ Gmail-ის დაკავშირება (ერთჯერადად, ~5 წუთი)", [
+    `Google ანგარიშში ჩართე <b>2-საფეხურიანი დაცვა</b>, თუ ჯერ არ გაქვს.`,
+    `გახსენი <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a>, სახელად ჩაწერე „MEGAKO app“ და შექმენი — მოგცემს 16-ასოიან პაროლს.`,
+    `გახსენი <a href="https://supabase.com/dashboard/project/bwldyaqpntcslmrywwau/functions/secrets" target="_blank" rel="noopener">Supabase → Edge Functions → Secrets</a> და დაამატე ორი ჩანაწერი: <code>GMAIL_USER</code> = შენი Gmail მისამართი, <code>GMAIL_APP_PASSWORD</code> = ის 16-ასოიანი პაროლი.`,
+    `დაბრუნდი აქ და დააჭირე „↻ განახლება“. Outlook-ში შექმნილი საქაღალდეები Gmail-ში იგივე სახელით ინახება, ამიტომ აქაც ისე დალაგებული დაგხვდება.`,
+    `<span class="small muted">პაროლს მე ვერ ვხედავ და ჩატში ნუ გამომიგზავნი — მხოლოდ Supabase-ის Secrets-ში ჩაწერე.</span>`]);
+  if (!CM.folders && !CM.L.f) cmLoad("f", ccall("folders"), (v, e) => { CM.folders = v || []; if (e) toast(errMsg(e)); const ib = (CM.folders.find(f => f.special === "\\Inbox" || f.path === "INBOX") || {}).unseen || 0; CM.un = ib; cmSave(); });
+  const F = (CM.folders || []).slice();
+  const sp = f => FSPEC[f.special] ? FSPEC[f.special][1] : f.path === "INBOX" ? 0 : 6;
+  F.sort((a, b) => sp(a) - sp(b) || a.path.localeCompare(b.path, "ka"));
+  const fname = f => FSPEC[f.special] ? FSPEC[f.special][0] : f.path === "INBOX" ? "შემოსული" : f.name;
+  const depth = f => f.special || f.path === "INBOX" ? 0 : Math.max(0, String(f.path).split(f.delim || "/").length - 1 - (/^\[Gmail\]/.test(f.path) ? 1 : 0));
+  const fl = `<div class="cmf">${!CM.folders ? `<div class="small muted" style="padding:8px">იტვირთება…</div>` : F.filter(f => f.path !== "[Gmail]").map(f => `<button class="cmfi ${CM.folder === f.path ? "on" : ""}" data-a="cmfold" data-v="${esc(f.path)}" style="padding-left:${10 + depth(f) * 14}px" title="${esc(f.path)}"><span>${esc(fname(f))}</span>${f.unseen ? `<b>${f.unseen}</b>` : ""}</button>`).join("")}</div>`;
+  const lk = JSON.stringify([CM.folder, CM.page, CM.q]);
+  if (CM.listKey !== lk && !CM.L.l) { const k = lk; cmLoad("l", ccall("list", { folder: CM.folder, page: CM.page, q: CM.q }), (v, e) => { CM.list = v; CM.listKey = k; if (e) { CM.listErr = e.message; } else CM.listErr = ""; }); }
+  const L = CM.listKey === lk ? CM.list : null;
+  const list = `<div class="cml"><div class="cmlh"><input type="search" data-cmq value="${esc(CM.q)}" placeholder="ძებნა მეილში… (Enter)"></div>${CM.listErr && CM.listKey === lk ? `<div class="empty"><b>ვერ ჩაიტვირთა</b>${esc(CM.listErr)}</div>` : !L ? `<div class="small muted" style="padding:12px">იტვირთება…</div>` : !L.rows.length ? `<div class="small muted" style="padding:12px">წერილი არ არის</div>` :
+    L.rows.map(m => `<button class="cmi ${m.seen ? "" : "un"} ${CM.uid === m.uid ? "on" : ""}" data-a="cmopen" data-v="${m.uid}"><span class="cmi1"><span class="cmfr">${esc(CM.folder.match(/sent|გაგზავნ/i) || (F.find(f => f.path === CM.folder) || {}).special === "\\Sent" ? "→ " + cmWho(m.to) : cmWho(m.from))}</span><span class="cmdt">${m.att ? "📎 " : ""}${m.flagged ? "⭐ " : ""}${cmDate(m.date)}</span></span><span class="cmsu">${esc(m.subject || "(უსათაურო)")}</span></button>`).join("") +
+    `<div class="cmpg">${L.page > 0 ? `<button class="btn sm ghost" data-a="cmpage" data-v="-1">‹ ახალი</button>` : ""}<span class="small muted">${L.page * L.per + 1}–${Math.min(L.total, (L.page + 1) * L.per)} / ${L.total}</span>${(L.page + 1) * L.per < L.total ? `<button class="btn sm ghost" data-a="cmpage" data-v="1">ძველი ›</button>` : ""}</div>`}</div>`;
+  let rd = `<div class="cmr cmempty"><div class="small muted">აირჩიე წერილი</div></div>`;
+  if (CM.uid) {
+    const mk = CM.folder + "|" + CM.uid;
+    if (CM.msgKey !== mk && !CM.L.m) { const k = mk; cmLoad("m", ccall("read", { folder: CM.folder, uid: CM.uid }), (v, e) => { CM.msg = v || { err: e && e.message }; CM.msgKey = k; if (v && L) { const r = L.rows.find(x => x.uid === CM.uid); if (r && !r.seen) { r.seen = true; const f = (CM.folders || []).find(x => x.path === CM.folder); if (f && f.unseen) f.unseen--; } } }); }
+    const m = CM.msgKey === mk ? CM.msg : null;
+    rd = `<div class="cmr"><div class="cmrh"><button class="btn sm ghost cmback" data-a="cmclose">‹ უკან</button>${m && !m.err ? `<button class="btn sm ghost" data-a="cmflag" data-v="seen">✉ წაუკითხავად მონიშვნა</button><button class="btn sm ghost" data-a="cmflag" data-v="flagged">⭐ მონიშვნა</button>` : ""}</div>` + (!m ? `<div class="small muted" style="padding:16px">იტვირთება…</div>` : m.err ? `<div class="empty"><b>ვერ გაიხსნა</b>${esc(m.err)}</div>` :
+      `<h3 class="cmrs">${esc(m.subject || "(უსათაურო)")}</h3><div class="cmrm"><b>${esc((m.from && (m.from.name || m.from.address)) || "")}</b> <span class="muted">&lt;${esc(m.from && m.from.address || "")}&gt;</span><div class="small muted">მიმღები: ${esc((m.to || []).map(x => x.name || x.address).join(", "))}${(m.cc || []).length ? " · ასლი: " + esc(m.cc.map(x => x.name || x.address).join(", ")) : ""} · ${m.date ? new Date(m.date).toLocaleString("ka-GE") : ""}</div></div>
+      ${(m.atts || []).filter(a => !a.cid || !/image/.test(a.type)).length ? `<div class="cmatt">${m.atts.filter(a => !a.cid || !/image/.test(a.type)).map(a => `<button class="chip" data-a="cmatt" data-v="${a.i}">📎 ${esc(a.name)} <span class="muted">${a.size > 1e6 ? (a.size / 1e6).toFixed(1) + " MB" : Math.ceil(a.size / 1e3) + " KB"}</span></button>`).join("")}</div>` : ""}
+      <iframe class="cmbody" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" srcdoc="${esc(m.html ? '<base target="_blank"><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;font-size:14px;margin:12px;color:#1d2733;word-wrap:break-word}img{max-width:100%;height:auto}</style>' + m.html : '<meta charset="utf-8"><pre style="white-space:pre-wrap;font:14px system-ui,sans-serif;margin:12px">' + esc(m.text || "") + "</pre>")}"></iframe>`) + `</div>`;
+  }
+  return `<div class="cmmail ${CM.uid ? "has" : ""}">${fl}${list}${rd}</div>`;
+}
+function cmChat(st) {
+  const ch = CM.ch, on = ch === "whatsapp" ? st.wa : st.viber, url = st.hook + "?hook=" + (ch === "whatsapp" ? "wa" : "viber");
+  const setup = ch === "whatsapp" ? cmSetup("🟢 WhatsApp Business-ის დაკავშირება", [
+    `საჭიროა <b>WhatsApp Business ნომერი</b> Meta-ს ოფიციალური API-ით (პირადი WhatsApp-ის ჩატებს გარე პროგრამა ვერ კითხულობს). შექმენი აპი <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com</a>-ზე → WhatsApp.`,
+    `Webhook-ის მისამართი: <code>${esc(url)}</code> · Verify token — მოიფიქრე ნებისმიერი სიტყვა. გამოიწერე „messages“.`,
+    `Supabase-ის <a href="https://supabase.com/dashboard/project/bwldyaqpntcslmrywwau/functions/secrets" target="_blank" rel="noopener">Secrets</a>-ში დაამატე: <code>WA_VERIFY_TOKEN</code> (ის სიტყვა), <code>WA_TOKEN</code> (Meta-ს access token), <code>WA_APP_SECRET</code> (აპის secret).`,
+    `შემდეგ ნომერზე მოსული წერილები აქ გამოჩნდება.`]) : cmSetup("🟣 Viber-ის დაკავშირება", [
+    `პირადი Viber-ის ჩატები გარე პროგრამაში ვერ გადმოვა — საჭიროა <b>Viber-ის ბიზნეს ბოტი/ანგარიში</b> (<a href="https://partners.viber.com" target="_blank" rel="noopener">partners.viber.com</a>), რომელსაც აგენტები და ქსელები მისწერენ.`,
+    `ბოტის token ჩაწერე Supabase-ის <a href="https://supabase.com/dashboard/project/bwldyaqpntcslmrywwau/functions/secrets" target="_blank" rel="noopener">Secrets</a>-ში სახელით <code>VIBER_TOKEN</code>.`,
+    `Webhook-ის მისამართი: <code>${esc(url)}</code> — ამის დაყენებაში დაგეხმარები, როცა token მზად იქნება.`]);
+  if (!CM.chats && !CM.L.c) cmLoad("c", ccall("chats"), (v, e) => { CM.chats = v || []; });
+  const C = (CM.chats || []).filter(c => c.channel === ch).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  if (!on && !C.length) return setup;
+  const list = `<div class="cml">${!C.length ? `<div class="small muted" style="padding:12px">შეტყობინება ჯერ არ მოსულა</div>` : C.map(c => `<button class="cmi ${c.unread ? "un" : ""} ${CM.peer === c.peer ? "on" : ""}" data-a="cmpeer" data-v="${esc(c.peer)}"><span class="cmi1"><span class="cmfr">${esc(c.name || c.peer)}</span><span class="cmdt">${c.unread ? `<b class="cmub">${c.unread}</b> ` : ""}${cmDate(c.at)}</span></span><span class="cmsu">${esc(c.last || "")}</span></button>`).join("")}</div>`;
+  let rd = `<div class="cmr cmempty"><div class="small muted">აირჩიე საუბარი</div></div>`;
+  if (CM.peer) {
+    const k = ch + "|" + CM.peer;
+    if (CM.msgsKey !== k && !CM.L.ms) cmLoad("ms", ccall("msgs", { channel: ch, peer: CM.peer }), (v) => { CM.msgs = v || []; CM.msgsKey = k; const c = (CM.chats || []).find(x => x.channel === ch && x.peer === CM.peer); if (c) c.unread = 0; if (CM.st && CM.st.unread) CM.st.unread[ch] = Math.max(0, (CM.st.unread[ch] || 0) - (c ? 0 : 0)); });
+    const M = CM.msgsKey === k ? CM.msgs : null;
+    rd = `<div class="cmr"><div class="cmrh"><button class="btn sm ghost cmback" data-a="cmpeer" data-v="">‹ უკან</button><b>${esc(((CM.chats || []).find(x => x.peer === CM.peer) || {}).name || CM.peer)}</b></div><div class="cmchat">${!M ? `<div class="small muted">იტვირთება…</div>` : M.map(m => `<div class="cmb ${m.dir}"><div>${esc(m.body || "")}</div><span>${new Date(m.at).toLocaleString("ka-GE")}</span></div>`).join("")}</div></div>`;
+  }
+  return (on ? "" : setup) + `<div class="cmmail cmchatw ${CM.peer ? "has" : ""}">${list}${rd}</div>`;
+}
+Object.assign(A, {
+  cmch(v) { CM.ch = v; CM.peer = null; cmSave(); render(); },
+  cmref() { CM.st = null; CM.folders = null; CM.listKey = ""; CM.msgKey = ""; CM.chats = null; CM.msgsKey = ""; render(); },
+  cmfold(v) { CM.folder = v; CM.page = 0; CM.uid = null; cmSave(); render(); },
+  cmpage(v) { CM.page = Math.max(0, CM.page + +v); CM.uid = null; render(); },
+  cmopen(v) { CM.uid = +v; render(); },
+  cmclose() { CM.uid = null; render(); },
+  cmpeer(v) { CM.peer = v || null; render(); },
+  async cmflag(v) { const r = CM.list && CM.list.rows.find(x => x.uid === CM.uid); if (!r) return; const on = v === "seen" ? false : !r.flagged; try { await ccall0("flag", { folder: CM.folder, uid: CM.uid, flag: v, v: on }); if (v === "seen") { r.seen = false; CM.uid = null; } else r.flagged = on; toast("შესრულდა"); } catch (e) { toast(errMsg(e)); } render(); },
+  async cmatt(v) { try { toast("იტვირთება…"); const r = await ccall0("att", { folder: CM.folder, uid: CM.uid, i: +v }); const b = Uint8Array.from(atob(r.b64), c => c.charCodeAt(0)); const url = URL.createObjectURL(new Blob([b], { type: r.type || "application/octet-stream" })); const a = document.createElement("a"); a.href = url; a.download = r.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000); } catch (e) { toast(errMsg(e)); } }
+});
+document.addEventListener("keydown", e => { const el = e.target; if (el && el.dataset && el.dataset.cmq !== undefined && e.key === "Enter") { CM.q = el.value.trim(); CM.page = 0; CM.uid = null; render(); } });
+document.addEventListener("search", e => { const el = e.target; if (el && el.dataset && el.dataset.cmq !== undefined && !el.value) { CM.q = ""; CM.page = 0; render(); } }, true);
+
 /* მთავარი გვერდი (ელ თი ზის სტილში): მისალმება, თარიღი და განყოფილებების ბარათები ჯგუფებად */
 const HSUB = {
   my: () => "პირადი სამუშაო სია", today: () => "დღეს და ვადაგადაცილებული", rev: () => "აგენტების შესრულებული — დასადასტურებელი", all: () => "ყველა აგენტის დავალება",
@@ -2407,7 +2541,7 @@ const HSUB = {
   "k-promo": () => "დაგეგმვა, არქივი, ანაზღაურება", "k-objects": () => "ქსელების ობიექტები და აგენტები", "k-import": () => "გაყიდვები, ასორტიმენტი, ობიექტები (Excel)", settings: () => "PIN, ქსელები, სისტემა"
 };
 const HCOL = ["g", "b", "r", "y", "v", "c"];
-const HGI = { "დავალებები": ["rev", "g", "შესასრულებელი, შესამოწმებელი"], "გუნდი": ["team", "b", "აგენტები, ფოტო-რეპორტები, ჩატი"], "ქსელები": ["orders", "r", "აქციები, შეკვეთები, ფაილები"], "KAM მართვა": ["chart", "y", "გაყიდვები, გეგმა, ასორტიმენტი, აქციები"], "ჩემი ქსელები": ["home", "c", "ორი ნაბიჯი, მაგნიტი, კალათა…"], "სისტემა": ["gear", "v", "პარამეტრები"] };
+const HGI = { "დავალებები": ["rev", "g", "შესასრულებელი, შესამოწმებელი"], "გუნდი": ["team", "b", "აგენტები, ფოტო-რეპორტები, ჩატი"], "ქსელები": ["orders", "r", "აქციები, შეკვეთები, ფაილები"], "KAM მართვა": ["chart", "y", "გაყიდვები, გეგმა, ასორტიმენტი, აქციები"], "ჩემი ქსელები": ["home", "c", "ორი ნაბიჯი, მაგნიტი, კალათა…"], "კომუნიკაცია": ["mail", "b", "მეილი, WhatsApp, Viber"], "სისტემა": ["gear", "v", "პარამეტრები"] };
 let HOPEN = null; try { HOPEN = localStorage.getItem("mg.hopen"); } catch (e) {}
 function mHome(NAV0) {
   const NAV = NAV0.slice(); if (typeof MYNETS !== "undefined") NAV.splice(NAV.length - 1, 0, ["", "ჩემი ქსელები", MYNETS.map(n => ["n|" + n + "|sales", n, 0, "", IC.home])]);
@@ -2455,7 +2589,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261116091403";
+const APP_BUILD = "20261116092034";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
