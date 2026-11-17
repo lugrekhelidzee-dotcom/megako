@@ -1336,8 +1336,9 @@ function mOrders(){const im=S.imp;const mo=S.mo;
   ${mo.net||(mo.ag&&mo.ag.length)||mo.q||mo.sc||mo.st?`<button class="btn ghost" data-a="moclr">ფილტრის მოხსნა</button>`:""}</div>
   <div class="row"><button class="chip ${mo.view!=="prod"?"on":""}" data-a="moview" data-v="ag">აგენტებით / ობიექტებით</button><button class="chip ${mo.view==="prod"?"on":""}" data-a="moview" data-v="prod">პროდუქტების ჯამი</button></div>`;
   if(mo.loading||mo.rows===null)return h+`<div class="empty"><b>იტვირთება…</b></div>`;
-  const fq=norm(mo.q);
-  const rows=all.filter(r=>(!mo.st||(!r.other&&!!r.ok===(mo.st==="ok")))&&(!mo.sc||(mo.sc==="other")===!!r.other)&&(!mo.net||r.network===mo.net)&&agOk(mo.ag,agKey(r))&&(!fq||norm(r.object+" "+r.address+" "+r.product+" "+r.barcode).includes(fq)));
+  const fqw=norm(mo.q).replace(/["'„“”«»(),.\/\-]/g," ").split(/\s+/).filter(Boolean),fq=fqw.length;
+  const fqOk=r=>{const t=norm(r.object+" "+r.address+" "+r.product+" "+r.barcode+" "+(r.category||"")+" "+(r.agent||r.raw||"")).replace(/["'„“”«»(),.\/\-]/g," ");return fqw.every(w=>t.includes(w))};
+  const rows=all.filter(r=>(!mo.st||(!r.other&&!!r.ok===(mo.st==="ok")))&&(!mo.sc||(mo.sc==="other")===!!r.other)&&(!mo.net||r.network===mo.net)&&agOk(mo.ag,agKey(r))&&(!fq||fqOk(r)));
   const mt=okSplit(rows.filter(r=>!r.other),r=>r.ok),pc=mt.s?Math.round(mt.os/mt.s*100):0;
   h+=`<div class="stats"><div class="stat"><span>ჯამი, ₾</span><b>${money(rows.reduce((s,r)=>s+r.sum,0))}</b><span class="small muted">${new Set(rows.map(r=>r.network+"|"+r.object)).size} ობ. · ${rows.length} პოზ. · ${qtyf(rows.reduce((s,r)=>s+(+r.qty||0),0))} ც.</span></div><div class="stat"><span>ჩემი აგენტები, ₾</span><b>${money(mt.s)}</b><span class="small muted">${qtyf(mt.q)} ც.</span></div><div class="stat good"><span>✓ გაწერილი, ₾</span><b>${money(mt.os)}</b><span class="small muted">${qtyf(mt.oq)} ც. · ${pc}%</span></div><div class="stat ${mt.ns?"bad":""}"><span>✗ გაუწერელი, ₾</span><b>${money(mt.ns)}</b><span class="small muted">${qtyf(mt.nq)} ც.</span></div><div class="stat"><span>სხვა ობიექტები, ₾</span><b>${money(rows.filter(r=>r.other).reduce((s,r)=>s+r.sum,0))}</b></div></div>`;
   if(!rows.length)return h+`<div class="empty"><b>ამ ფილტრით შეკვეთა არ მოიძებნა</b>შეცვალე თარიღი, ქსელი ან აგენტი.</div>`;
@@ -2609,7 +2610,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261117205745";
+const APP_BUILD = "20261117210015";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
