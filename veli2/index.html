@@ -700,6 +700,19 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 .pcrept td,.pcrept th{white-space:nowrap}
 .pcrept tr.pcrtot td{background:var(--soft,#f2f6f4);border-top:2px solid var(--line,#dfe7e3)}
 .pcrept td.kclick:hover{background:var(--soft,#eef5f1);cursor:pointer}
+/* msel ფილტრების ზოლში (.filters input-ის წესი არ უნდა მოედოს) */
+.mselp input{flex:0 0 auto!important;width:100%;min-height:36px;height:36px}
+.mselp .msell label{display:flex!important;flex-direction:row;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--ink,inherit)}
+.mselp .msell label input[type=checkbox]{flex:0 0 auto!important;width:16px;height:16px;min-height:0;margin:0}
+.mselp .msell label span{flex:1;text-align:left}
+/* ძებნის მინიშნებები */
+.sugw{position:relative;flex:1 1 220px;display:flex}
+.sugw>input{flex:1 1 auto!important;width:100%}
+.sugl{position:absolute;z-index:60;top:calc(100% + 4px);left:0;right:0;background:var(--card,#fff);border:1px solid var(--line,#dde3e1);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.16);max-height:340px;overflow:auto;padding:4px}
+.sugl button{display:flex;width:100%;gap:8px;align-items:baseline;text-align:left;border:0;background:none;padding:7px 10px;border-radius:8px;font:inherit;font-size:14px;cursor:pointer;color:inherit}
+.sugl button:hover,.sugl button.on{background:rgba(31,111,92,.09)}
+.sugl .k{font-size:11px;color:var(--muted);flex:0 0 auto;min-width:64px}
+.sugl .s{font-size:11.5px;color:var(--muted);margin-left:auto}
 
 </style>
 </head>
@@ -1332,7 +1345,7 @@ function mOrders(){const im=S.imp;const mo=S.mo;
   <select id="most" data-ch="mo-st">${opt("","ყველა ხაზი",mo.st||"")}${opt("ok","✓ გაწერილი",mo.st||"")}${opt("no","✗ გაუწერელი",mo.st||"")}</select>
   <select id="mosc" data-ch="mo-sc">${opt("","მთლიანი შეკვეთა",mo.sc||"")}${opt("mine","მხოლოდ ჩემი აგენტები",mo.sc||"")}${opt("other","მხოლოდ სხვა ობიექტები",mo.sc||"")}</select>
   ${msel("moag",agl.map(n=>({v:n,l:n})),mo.ag,v=>{mo.ag=v;mo.open=null})}
-  <input type="text" id="moq" data-in="moq" value="${esc(mo.q)}" placeholder="ობიექტი ან პროდუქტი…" autocomplete="off">
+  <div class="sugw"><input type="text" id="moq" data-in="moq" value="${esc(mo.q)}" placeholder="ობიექტი, პროდუქტი, შტრიხკოდი…" autocomplete="off">${moSug(all,mo,agKey)}</div>
   ${mo.net||(mo.ag&&mo.ag.length)||mo.q||mo.sc||mo.st?`<button class="btn ghost" data-a="moclr">ფილტრის მოხსნა</button>`:""}</div>
   <div class="row"><button class="chip ${mo.view!=="prod"?"on":""}" data-a="moview" data-v="ag">აგენტებით / ობიექტებით</button><button class="chip ${mo.view==="prod"?"on":""}" data-a="moview" data-v="prod">პროდუქტების ჯამი</button></div>`;
   if(mo.loading||mo.rows===null)return h+`<div class="empty"><b>იტვირთება…</b></div>`;
@@ -1595,7 +1608,7 @@ const A={
   zoom(_,el){const box=el.closest(".thumbs")||el.parentElement;const ids=[...box.querySelectorAll("[data-a=zoom]")].map(x=>x.dataset.id).filter(Boolean);S.lbList=ids.length?ids:[el.dataset.id];S.lbIdx=Math.max(0,S.lbList.indexOf(el.dataset.id));lbShow()}
 };
 document.addEventListener("scroll",e=>{if(e.target&&e.target.id==="msgs"){const l=e.target;S.chatStick=l.scrollHeight-l.scrollTop-l.clientHeight<60}},true);
-document.addEventListener("compositionend",e=>{const t=e.target;if(t.id==="pdq"||t.id==="pfq"){if(t.id==="pdq")S.pd.q=t.value;else S.pf.q=t.value;S.sugOpen=t.id.slice(0,2);clearTimeout(S.pdt);S.pdt=setTimeout(render,200);return}if(t.id==="moq"){S.mo.q=t.value;clearTimeout(S.mqt);S.mqt=setTimeout(render,450)}else if(t.id==="ordq"){S.ord.q=t.value;clearTimeout(S.oqt);S.oqt=setTimeout(()=>ordUpdate(true),150)}});
+document.addEventListener("compositionend",e=>{const t=e.target;if(t.id==="pdq"||t.id==="pfq"){if(t.id==="pdq")S.pd.q=t.value;else S.pf.q=t.value;S.sugOpen=t.id.slice(0,2);clearTimeout(S.pdt);S.pdt=setTimeout(render,200);return}if(t.id==="moq"){S.mo.q=t.value;clearTimeout(S.mqt);S.mqt=setTimeout(render,250)}else if(t.id==="ordq"){S.ord.q=t.value;clearTimeout(S.oqt);S.oqt=setTimeout(()=>ordUpdate(true),150)}});
 document.addEventListener("mousedown",e=>{if(e.target.closest("[data-cbpick]"))e.preventDefault()});
 document.addEventListener("click",e=>{
   if(e.target.closest("#lb")){const b=e.target.closest("[data-lb]");if(b){e.preventDefault();lbAct(b.dataset.lb)}else if(e.target.id==="lb")lbClose();return}
@@ -1620,7 +1633,7 @@ document.addEventListener("input",e=>{const t=e.target;const k=t.dataset.in;
   if(k==="chatText"){S.chatText=v;return}
   if(k==="tq"){S.tq=v;clearTimeout(S.tqt);S.tqt=setTimeout(render,200);return}
   if(k==="agq"){S.agq=v;const l=$("#wholist");if(l)l.innerHTML=whoList();return}
-  if(k==="moq"){S.mo.q=v;clearTimeout(S.mqt);if(!e.isComposing)S.mqt=setTimeout(render,450);return}
+  if(k==="moq"){S.mo.q=v;clearTimeout(S.mqt);if(!e.isComposing)S.mqt=setTimeout(render,250);return}
   if(k==="ntx"){S.ntx=v;return}
   if(k==="rf-q"){S.rf.q=v;S.rf.n=30;clearTimeout(S.rqt);if(!e.isComposing)S.rqt=setTimeout(render,300);return}
   if(k==="sf-q"){S.sf.q=v;S.sf.n=20;clearTimeout(S.sqt);if(!e.isComposing)S.sqt=setTimeout(render,300);return}
@@ -2251,6 +2264,24 @@ function kMySales() {
 }
 /* ბოლო გახსნილი გვერდი — აპის თავიდან გახსნისას იქვე დაბრუნდება */
 { const _rnd0 = render; render = function () { try { if (S.who === "__m" && S.tab && ls.get("mg.tab") !== S.tab) ls.set("mg.tab", S.tab); } catch (e) {} return _rnd0.apply(this, arguments); }; }
+/* შეკვეთების ძებნის მინიშნებები (3 სიმბოლოდან) */
+function moSug(all, mo, agKey) {
+  const q = String(mo.q || "").trim(); if (q.length < 3 || mo.sugX === q || mo.sugOff === q) return "";
+  const W = norm(q).replace(/["'„“”«»(),.\/\-]/g, " ").split(/\s+/).filter(Boolean), cl = s => norm(s).replace(/["'„“”«»(),.\/\-]/g, " ");
+  const hit = s => { const t = cl(s); return W.every(w => t.includes(w)); }, M = new Map();
+  const add = (k, v, s, n) => { const key = k + "|" + v; const o = M.get(key) || { k, v, s, n: 0, q: 0 }; o.n++; o.q += n || 0; M.set(key, o); };
+  (all || []).forEach(r => {
+    if (hit(r.product + " " + r.barcode)) add("პროდუქტი", r.product, r.barcode, +r.qty || 0);
+    if (hit(r.object + " " + r.address)) add("ობიექტი", r.object, r.network, +r.qty || 0);
+    const a = agKey(r); if (hit(a)) add("აგენტი", a, "", +r.qty || 0);
+  });
+  const L = [...M.values()].sort((a, b) => b.n - a.n).slice(0, 12);
+  if (!L.length) return `<div class="sugl"><div class="small muted" style="padding:8px 10px">„${esc(q)}“ — ამ თარიღებში ვერ მოიძებნა</div></div>`;
+  return `<div class="sugl">${L.map(o => `<button type="button" data-a="mosug" data-v="${esc(o.v)}"><span class="k">${o.k}</span><span>${esc(o.v)}</span><span class="s">${o.k === "პროდუქტი" ? `${knumT(o.q)} ც.${o.s ? " · " + esc(o.s) : ""}` : o.k === "ობიექტი" ? esc(o.s || "") : `${o.n} ხაზი`}</span></button>`).join("")}</div>`;
+}
+Object.assign(A, { mosug(v) { S.mo.q = v; S.mo.sugX = v; S.mo.open = null; render(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && e.target && e.target.id === "moq" && S.mo) { S.mo.sugOff = S.mo.q; render(); } });
+document.addEventListener("click", e => { if (S.mo && S.mo.q && !e.target.closest(".sugw") && document.querySelector(".sugl")) { S.mo.sugOff = S.mo.q; document.querySelectorAll(".sugl").forEach(x => x.remove()); } }, true);
 
 /* ჩემი ქსელები: ქსელი → ასორტიმენტი, ობიექტები, შეთანხმებული აქციები, ანაზღაურება, პლანოგრამა */
 const MYNETS = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
@@ -2610,7 +2641,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261117210015";
+const APP_BUILD = "20261117210656";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
