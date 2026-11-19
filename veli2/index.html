@@ -713,6 +713,11 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 .sugl button:hover,.sugl button.on{background:rgba(31,111,92,.09)}
 .sugl .k{font-size:11px;color:var(--muted);flex:0 0 auto;min-width:64px}
 .sugl .s{font-size:11.5px;color:var(--muted);margin-left:auto}
+.kofdays{display:flex!important;flex-direction:row!important;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.kofdays.dis{opacity:.45}
+.kofdays .kofd{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:4px;font-size:13px;font-weight:500;color:inherit;padding:3px 8px;border:1px solid var(--line,#dde3e1);border-radius:8px;cursor:pointer}
+.kofdays .kofd input{width:auto!important;min-height:0;margin:0}
+.kasgrid .kofm{grid-column:span 2}
 
 </style>
 </head>
@@ -2026,7 +2031,7 @@ function kObjects() {
 }
 
 // ახალი ობიექტის დამატება ცნობარში (ყველა საჭირო ველით)
-const KOF = [["net", "ქსელი *"], ["net_obj", "ობიექტის დასახელება (ქსელში) *"], ["code", "ქსელის კოდი"], ["mg_addr", "მისამართი"], ["region", "რეგიონი / ქალაქი"], ["cluster", "კლასტერი"], ["shop", "ფორმატი / ტიპი"], ["agent_raw", "აგენტი"], ["buyer_code", "მეგაკოს კლიენტის კოდი"], ["mg_name", "მეგაკოს დასახელება"]];
+const KOF = [["net", "ქსელი *"], ["net_obj", "ობიექტის დასახელება (ქსელში) *"], ["code", "ქსელის კოდი"], ["mg_addr", "მისამართი"], ["region", "რეგიონი / ქალაქი"], ["cluster", "კლასტერი"], ["shop", "ფორმატი / ტიპი"], ["agent_raw", "აგენტი"], ["merch", "მერჩენდაიზერი"], ["buyer_code", "მეგაკოს კლიენტის კოდი"], ["mg_name", "მეგაკოს დასახელება"]];
 function kObjForm(nets, ags) {
   const v = K.onew || {}, allNets = [...new Set(nets.concat((K.info.nets || [])))].filter(Boolean).sort(kKa);
   const agL = [...new Set(ags.concat(K.info.agents || []))].filter(Boolean).sort((a, b) => String(kAgent(a)).localeCompare(String(kAgent(b)), "ka"));
@@ -2034,6 +2039,10 @@ function kObjForm(nets, ags) {
   const fld = ([k, l]) => { const val = esc(v[k] || "");
     if (k === "net") return `<label><span class="small muted">${l}</span><input name="net" list="kof-nets" value="${val}" placeholder="აირჩიე ან ჩაწერე"><datalist id="kof-nets">${allNets.map(n => `<option value="${esc(n)}">`).join("")}</datalist></label>`;
     if (k === "agent_raw") return `<label><span class="small muted">${l}</span><select name="agent_raw"><option value="">—</option>${agL.map(a => `<option value="${esc(a)}" ${a === v.agent_raw ? "selected" : ""}>${esc(kAgent(a) || a)}</option>`).join("")}</select></label>`;
+    if (k === "merch") { if (!K.merchs && !K.merchL) { K.merchL = 1; kcall("merchs").then(r => { K.merchs = r || []; render(); }).catch(() => { K.merchs = []; }).finally(() => { K.merchL = 0; }); }
+      const M = (K.merchs || []).slice().sort((x, y) => (y.role === "merch") - (x.role === "merch") || String(x.name).localeCompare(String(y.name), "ka")), dd = v.merch_days || [];
+      return `<label class="kofm"><span class="small muted">${l} <span class="muted">(თუ ჰყავს)</span></span><select name="merch" data-kofm="1"><option value="">— არ ჰყავს</option>${M.map(m => `<option value="${esc(m.name)}" ${m.name === v.merch ? "selected" : ""}>${esc(m.name)}${m.role === "merch" ? "" : " (აგენტი)"}</option>`).join("")}</select>
+        <span class="kofdays ${v.merch ? "" : "dis"}"><span class="small muted">მერჩის დღეები:</span>${["ორშ", "სამ", "ოთხ", "ხუთ", "პარ"].map((d, i) => `<label class="kofd"><input type="checkbox" name="mday" value="${i + 1}" ${dd.includes(i + 1) ? "checked" : ""} ${v.merch ? "" : "disabled"}>${d}</label>`).join("")}</span></label>`; }
     if (k === "buyer_code") return `<label><span class="small muted">${l} <span class="muted">(გაყიდვებთან მისაბმელად)</span></span><input name="buyer_code" list="kof-b" value="${val}" placeholder="კოდი ან დასახელება"><datalist id="kof-b">${B.slice(0, 3000).map(b => `<option value="${esc(b.code)}">${esc(b.name + " · " + (b.net || ""))}</option>`).join("")}</datalist></label>`;
     return `<label><span class="small muted">${l}</span><input name="${k}" value="${val}"></label>`; };
   return `<div class="kcard"><div class="kh"><b>＋ ახალი ობიექტი</b><span class="small muted">* სავალდებულო ველები</span></div><form class="kasform" data-kof="1" onsubmit="return false"><div class="kasgrid">${KOF.map(fld).join("")}</div>
@@ -2041,10 +2050,11 @@ function kObjForm(nets, ags) {
 }
 async function kObjSave(form) {
   if (K.oSaving) return; const o = {}; KOF.forEach(([k]) => { const el = form.elements[k]; if (el) o[k] = String(el.value || "").trim(); });
+  o.merch_days = o.merch ? [...form.querySelectorAll("input[name=mday]:checked")].map(x => +x.value) : [];
   if (!o.net || !o.net_obj) return toast("შეავსე ქსელი და ობიექტის დასახელება");
   if (o.buyer_code) { const B = K.buyers.stats || []; if (!B.some(b => b.code === o.buyer_code)) { const m = B.find(b => norm(b.name) === norm(o.buyer_code)); if (m) o.buyer_code = m.code; else return toast("მეგაკოს კლიენტის კოდი ვერ ვიპოვე — აირჩიე სიიდან ან დატოვე ცარიელი"); } if (!o.mg_name) { const b = B.find(x => x.code === o.buyer_code); if (b) o.mg_name = b.name; } }
   K.oSaving = true;
-  try { await kcall("objectSet", o); toast("ობიექტი დაემატა ✓"); K.onew = null; K.buyers = null; K.olist = null; }
+  try { await kcall("objectSet", o); toast(o.merch ? `ობიექტი დაემატა ✓ · მერჩი: ${o.merch} — შეკვეთებს აგენტიც და მერჩიც დაინახავს` : "ობიექტი დაემატა ✓"); K.onew = null; K.buyers = null; K.olist = null; }
   catch (e) { toast(errMsg(e)); } finally { K.oSaving = false; render(); }
 }
 function kObjXl() {
@@ -2282,6 +2292,9 @@ function moSug(all, mo, agKey) {
 Object.assign(A, { mosug(v) { S.mo.q = v; S.mo.sugX = v; S.mo.open = null; render(); } });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && e.target && e.target.id === "moq" && S.mo) { S.mo.sugOff = S.mo.q; render(); } });
 document.addEventListener("click", e => { if (S.mo && S.mo.q && !e.target.closest(".sugw") && document.querySelector(".sugl")) { S.mo.sugOff = S.mo.q; document.querySelectorAll(".sugl").forEach(x => x.remove()); } }, true);
+
+// ახალი ობიექტის ფორმა: მერჩის არჩევისას დღეები ჩაირთოს (ფორმის სხვა ველები არ იშლება)
+document.addEventListener("change", e => { const el = e.target; if (!el || !el.dataset || !el.dataset.kofm) return; const w = el.closest("label").querySelector(".kofdays"); if (!w) return; w.classList.toggle("dis", !el.value); w.querySelectorAll("input").forEach(i => { i.disabled = !el.value; if (!el.value) i.checked = false; }); });
 
 /* ჩემი ქსელები: ქსელი → ასორტიმენტი, ობიექტები, შეთანხმებული აქციები, ანაზღაურება, პლანოგრამა */
 const MYNETS = ["ორი ნაბიჯი", "მაგნიტი", "კალათა", "ჯიბე", "ექსპრეს ქსელი", "ზღაპარი", "მადაგონი", "დეილი", "სპარი"];
@@ -2641,7 +2654,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261117210656";
+const APP_BUILD = "20261119163828";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
