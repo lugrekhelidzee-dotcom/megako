@@ -2654,7 +2654,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261120132038";
+const APP_BUILD = "20261120132511";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -3233,6 +3233,28 @@ function pfmParse(rows) {
   }
   return null;
 }
+// გრძელი ფორმა (pivot): თვე | აგენტი | გეგმა | ფაქტი — „Jan Total“ ხაზი სუპერვაიზერს აჩვენებს
+const PFME = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+function pfmLong(rows, fname) {
+  for (let hi = 0; hi < Math.min(rows.length, 30); hi++) {
+    const H = (rows[hi] || []).map(x => String(x == null ? "" : x).toLowerCase().trim());
+    const pc = H.findIndex(h => /^(გეგმა|plan)/.test(h)), fc = H.findIndex(h => /^(ფაქტ|fact)/.test(h)); if (pc < 0 || fc < 0) continue;
+    let year = 0; (rows[hi] || []).concat(rows[hi - 1] || []).forEach(x => { if (typeof x === "number" && x >= 2015 && x <= 2040) year = x; else { const m = String(x || "").match(/^(20\d\d)$/); if (m) year = +m[1]; } });
+    if (!year) year = +((String(fname || "").match(/20\d\d/) || [])[0] || 0); if (!year) continue;
+    const mon = v => { const t = String(v || "").toLowerCase().trim(); let i = PFME.findIndex(x => t.startsWith(x)); if (i < 0) i = PFMN.findIndex(x => t.startsWith(x)); return i; };
+    let mc = -1, ac = -1;
+    for (const r of rows.slice(hi + 1, hi + 6)) { (r || []).forEach((x, j) => { if (j < pc && mc < 0 && mon(x) >= 0) mc = j; }); if (mc >= 0) { ac = (r || []).findIndex((x, j) => j > mc && j < pc && typeof x === "string" && x.trim() && mon(x) < 0); break; } }
+    if (mc < 0 || ac < 0) continue;
+    const by = {}, pend = []; let any = 0;
+    for (const r0 of rows.slice(hi + 1)) { const r = r0 || []; const mt = String(r[mc] || "").trim(), mi = mon(mt), ag = String(r[ac] || "").replace(/\s+/g, " ").trim();
+      if (mi < 0 || !ag) { if (any && !mt && !ag) break; continue; }
+      if (/total|ჯამ/i.test(mt)) { pend.forEach(o => { o.sup = o.sup || ag; }); pend.length = 0; continue; }
+      const p = +r[pc] || 0, f = +r[fc] || 0; if (!p && !f) continue; any = 1;
+      const o = by[norm(ag)] = by[norm(ag)] || { ag, sup: "", m: {} }; o.m[year * 100 + mi + 1] = { p: Math.round(p * 100) / 100, f: Math.round(f * 100) / 100 }; pend.push(o); }
+    const out = Object.values(by); if (out.length) return { rows: out, months: [...new Set(out.flatMap(o => Object.keys(o.m).map(Number)))].sort() };
+  }
+  return null;
+}
 async function plnImport(file) {
   try {
     await loadXLSX();
@@ -3241,7 +3263,7 @@ async function plnImport(file) {
     const find = (v, list) => { const n = norm(v); return n ? list.find(x => norm(x) === n) : null; };
     // 1) თვეების გეგმა-ფაქტი
     for (const sn of wb.SheetNames) {
-      const P = pfmParse(XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: "" })); if (!P) continue;
+      const R = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: "" }); const P = pfmParse(R) || pfmLong(R, file.name); if (!P) continue;
       P.rows.forEach(r => { r.ag = find(r.ag, known) || r.ag; });
       PLN.jde = PLN.jde || {}; const old = PLN.jde["jde/pfm"] || { rows: [] }, by = {};
       (old.rows || []).forEach(r => { by[norm(r.ag)] = { ...r, m: { ...(r.m || {}) } }; });
