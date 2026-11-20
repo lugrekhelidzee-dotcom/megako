@@ -2654,7 +2654,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261120134052";
+const APP_BUILD = "20261120141223";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -3306,7 +3306,7 @@ function jdePfmCard() {
   if (F.mine == null) F.mine = D.rows.some(r => kMine(r.ag)); F.q = F.q || ""; F.sort = F.sort || "pct";
   const ms = F.ms.map(Number).filter(m => all.includes(m)).sort(), yrs = [...new Set(all.map(m => Math.floor(m / 100)))];
   const quick = [["ბოლო თვე", [all[all.length - 1]]], ["ბოლო 3 თვე", all.slice(-3)]];
-  yrs.forEach(y => { const ym = all.filter(m => Math.floor(m / 100) === y); [[1, 3], [4, 6], [7, 9], [10, 12]].forEach(([a, b], i) => { const q = ym.filter(m => m % 100 >= a && m % 100 <= b); if (q.length) quick.push([`Q${i + 1} ${y}`, q]); }); quick.push([`${y} მთელი`, ym]); });
+  yrs.forEach(y => { const ym = all.filter(m => Math.floor(m / 100) === y); [[1, 3], [4, 6], [7, 9], [10, 12]].forEach(([a, b], i) => { const q = ym.filter(m => m % 100 >= a && m % 100 <= b); if (q.length) quick.push([`Q${i + 1} ${y}` + (q.length < 3 ? ` (${q.length} თვე)` : ""), q]); }); quick.push([`${y} მთელი`, ym]); });
   const qn = norm(F.q);
   // ჩემი გუნდი: ჩემი აგენტები + ვინც ჩემს სუპერვაიზერთან იყო (წასულებიც, იმ თვეებში, როცა გაყიდვა აქვთ)
   const sc = {}; D.rows.filter(r => kMine(r.ag) && r.sup).forEach(r => { sc[r.sup] = (sc[r.sup] || 0) + 1; }); const mySup = Object.keys(sc).sort((a, b) => sc[b] - sc[a])[0] || "";
@@ -3332,7 +3332,7 @@ function jdePfmCard() {
   return `<div class="kcard"><div class="kh"><b>JDE გეგმა / ფაქტი · ${esc(lab)}</b><span class="small muted">ფაილი: ${esc(D.file || "")} · ${esc(D.at || "")}</span></div>
   <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
     ${msel("pfmm", all.slice().reverse().map(m => ({ v: m, l: kYm(m) })), ms, v => { F.ms = v.map(Number); }, { label: "აირჩიე თვე", unit: "თვე", quick: mselQ("pfmm", quick) })}
-    ${quick.slice(0, 2).concat(quick.filter(q => /^Q|მთელი/.test(q[0])).slice(-5)).map(q => `<button class="chip ${q[1].length === ms.length && q[1].every(m => ms.includes(m)) ? "on" : ""}" data-a="pfmq" data-v="${q[1].join(",")}">${esc(q[0])}</button>`).join("")}
+    ${(() => { const L = quick.slice(0, 2).concat(quick.filter(q => /^Q|მთელი/.test(q[0])).slice(-5)), on = L.find(q => q[1].length === ms.length && q[1].every(m => ms.includes(m))); return L.map(q => `<button class="chip ${q === on ? "on" : ""}" data-a="pfmq" data-v="${q[1].join(",")}">${esc(q[0])}</button>`).join(""); })()}
     <input type="search" data-pfmq value="${esc(F.q)}" placeholder="ძებნა: აგენტი, სუპერვაიზერი…" style="max-width:220px">
     <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-pfmmine ${F.mine ? "checked" : ""}> მხოლოდ ჩემი გუნდი ★</label>
     ${succ.length ? `<label class="small" style="display:flex;gap:6px;align-items:center" title="${esc(succ.map(z => kAgent(z.from) + " → " + z.to.map(([t, sh]) => kAgent(t) + (sh < 1 ? " " + Math.round(sh * 100) + "%" : "")).join(", ")).join("\n"))}"><input type="checkbox" data-pfmterr ${F.terr ? "checked" : ""}> ტერიტორიით (წასულის შედეგი მემკვიდრეს)</label>` : ""}
@@ -4375,7 +4375,8 @@ Object.assign(A, {
     MSEL.set[id] && MSEL.set[id](k === "" ? [] : (qk[+k] ? qk[+k][1].slice() : [])); render(); },
 });
 document.addEventListener("change", e => { const el = e.target; const id = el.dataset && el.dataset.mselv; if (!id) return;
-  const cur = (MSEL.cur[id] || []).filter(v => v !== el.value); if (el.checked) cur.push(el.value);
+  const ov = ((MSEL.opts[id] || []).find(x => String(x.v) === el.value) || { v: el.value }).v; // რიცხვითი მნიშვნელობებიც (თვეები) სწორად მოიხსნას
+  const cur = (MSEL.cur[id] || []).filter(v => String(v) !== el.value); if (el.checked) cur.push(ov);
   MSEL.set[id] && MSEL.set[id](cur); render(); });
 document.addEventListener("input", e => { const id = e.target.dataset && e.target.dataset.mselq; if (!id) return; MSEL.q[id] = e.target.value; render(); const i = document.querySelector(`[data-mselq="${CSS.escape(id)}"]`); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } });
 document.addEventListener("click", e => { if (MSEL.open && !e.target.closest(".msel")) { MSEL.open = ""; document.querySelectorAll(".msel.op").forEach(m => { m.classList.remove("op"); const p = m.querySelector(".mselp"); if (p) p.remove(); }); } }, true);
