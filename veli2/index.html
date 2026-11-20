@@ -718,6 +718,8 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 .kofdays .kofd{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:4px;font-size:13px;font-weight:500;color:inherit;padding:3px 8px;border:1px solid var(--line,#dde3e1);border-radius:8px;cursor:pointer}
 .kofdays .kofd input{width:auto!important;min-height:0;margin:0}
 .kasgrid .kofm{grid-column:span 2}
+.tpc .tpsub td{background:var(--soft,#f6f8f7);font-size:13px}
+.tpc .lnk{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
 
 </style>
 </head>
@@ -730,8 +732,8 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 <script>
 const SL="/";const IMG="image"+SL+"*";const HTTPS="https:"+SL+SL;
 const XLSX_URL=HTTPS+"cdnjs.cloudflare.com"+SL+"ajax"+SL+"libs"+SL+"xlsx"+SL+"0.18.5"+SL+"xlsx.full.min.js";
-const KINDS=["პლანოგრამა","ფასმაჩვენებელი","შეკვეთა","POSM / აქცია","სხვა"];
-const NOPHOTO=["შეკვეთა","შეხსენება"];
+const KINDS=["პლანოგრამა","ფასმაჩვენებელი","შეკვეთა","POSM / აქცია","გეგმა","სხვა"];
+const NOPHOTO=["შეკვეთა","შეხსენება","გეგმა"];
 const MONTHS=["იანვარი","თებერვალი","მარტი","აპრილი","მაისი","ივნისი","ივლისი","აგვისტო","სექტემბერი","ოქტომბერი","ნოემბერი","დეკემბერი"];
 const WDAYS=["კვირა","ორშაბათი","სამშაბათი","ოთხშაბათი","ხუთშაბათი","პარასკევი","შაბათი"];
 let D={agents:[],tasks:[],reports:[],objects:[],promos:[],orderDates:[],today:""};
@@ -929,7 +931,7 @@ function tasksView(){
     ${t.status==="დაბრუნებული"&&t.managerNote?`<div class="nbox mgr"><label>რა უნდა გასწორდეს</label>${esc(t.managerNote)}</div>`:""}
     ${t.details?`<div class="pre">${esc(t.details)}</div>`:""}
     ${t.ref&&t.ref.length?`<div class="thumbs">${thumbs(t.ref)}</div>`:""}
-    ${active(t)?(t.kind==="შეხსენება"?`<button class="btn" data-a="tdone" data-v="${esc(t.id)}">✓ შესრულდა</button>`:`<button class="btn primary" data-a="tgo" data-v="${esc(t.id)}">შესრულება — ფოტოს გაგზავნა ›</button>`)
+    ${t.kind==="გეგმა"?tplanAgentBox(t):""}${active(t)?(t.kind==="შეხსენება"||t.kind==="გეგმა"?`<button class="btn" data-a="${t.kind==="გეგმა"?"tpdone":"tdone"}" data-v="${esc(t.id)}">${t.kind==="გეგმა"?"✓ გავეცანი":"✓ შესრულდა"}</button>`:`<button class="btn primary" data-a="tgo" data-v="${esc(t.id)}">შესრულება — ფოტოს გაგზავნა ›</button>`)
       :`${t.doneAt?`<span class="small muted">შესრულდა ${esc(t.doneAt)}</span>`:""}${t.agentNote?`<span class="small">„${esc(t.agentNote)}“</span>`:""}`}</div>`;
   const list=f==="open"?open:done;
   h+=list.length?`<div class="box">${list.map(card).join("")}</div>`:`<div class="empty"><b>${f==="open"?"ღია დავალება არ გაქვს":"ჯერ არაფერი შეგისრულებია"}</b></div>`;
@@ -2654,7 +2656,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261120141223";
+const APP_BUILD = "20261120142702";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -3038,7 +3040,7 @@ function plnDoc() { const d = PLN.docs = PLN.docs || {}; const k = plnKey(); d[k
 function kPlan() {
   kInitF();
   if (!PLN.ym) PLN.ym = K.info.max;
-  if (!PLN.docs && !PLN.busy) { PLN.busy = true; kcall("docs").then(r => { PLN.docs = {}; PLN.jde = {}; (r || []).forEach(x => { if (String(x.path).startsWith("plan/")) PLN.docs[x.path] = x.data || {}; if (String(x.path).startsWith("jde/")) PLN.jde[x.path] = x.data || {}; }); PLN.busy = false; render(); }).catch(e => { PLN.busy = false; PLN.docs = {}; toast(errMsg(e)); render(); }); }
+  if (!PLN.docs && !PLN.busy) { PLN.busy = true; kcall("docs").then(r => { PLN.docs = {}; PLN.jde = {}; (r || []).forEach(x => { if (String(x.path).startsWith("plan/")) PLN.docs[x.path] = x.data || {}; if (String(x.path).startsWith("jde/")) PLN.jde[x.path] = x.data || {}; if (String(x.path).startsWith("tplan/")) (PLN.tps = PLN.tps || {})[x.path] = x.data || {}; }); PLN.busy = false; render(); }).catch(e => { PLN.busy = false; PLN.docs = {}; toast(errMsg(e)); render(); }); }
   const ym = plnYm(), key = String(ym);
   if (PLN.dashKey !== key && !K.loading.pdash) {
     K.loading.pdash = true;
@@ -3050,7 +3052,7 @@ function kPlan() {
   let h = `<div class="kbar"><div class="row"><span class="klab">თვე</span><select data-plnym>${months.map(m => `<option value="${m}" ${m === ym ? "selected" : ""}>${kYm(m)}</option>`).join("")}</select>
     <span class="small muted">ბოლო ატვირთული თვე: ${kYm(K.info.max)}</span>
     <span style="margin-left:auto" class="morng"><label>გეგმა = შარშანდელი</label><input type="number" data-plngrow value="${PLN.grow}" style="width:70px"><label>%-ით მეტი</label><button class="btn sm" data-a="plnauto">ავტომატური გეგმა</button><label class="btn sm">⬆ გეგმა Excel-იდან<input type="file" accept=".xlsx,.xls" data-plnfile hidden></label></span></div></div>`;
-  if (!d || PLN.dashKey !== key) return h + jdePfmCard() + `<div class="empty"><b>იტვირთება…</b></div>`;
+  if (!d || PLN.dashKey !== key) return h + tplanCard() + jdePfmCard() + `<div class="empty"><b>იტვირთება…</b></div>`;
   const F = PLN.f = PLN.f || { nets: [], ags: [], st: "", q: "", sort: "pct", show: "" };
   const st = (x, p) => !p ? "none" : (x.cur || 0) >= p ? "ok" : (x.cur || 0) >= p * 0.8 ? "near" : "bad";
   const allNets = (d.nets || []).filter(x => x.cur || x.ly || doc.net[x.k]), allAgs = (d.agents || []).filter(x => x.k && (x.cur || x.ly || doc.ag[x.k]));
@@ -3093,7 +3095,7 @@ function kPlan() {
         <td style="min-width:150px" data-x="${p ? pc + "%" : ""}"><div style="display:flex;align-items:center;gap:8px"><div class="kbarc" style="flex:1"><div style="width:${Math.min(100, pc)}%;background:${pc >= 100 ? "var(--ok)" : pc >= 80 ? "var(--accent)" : "var(--warn)"}"></div></div><b class="small" style="min-width:38px;text-align:right">${p ? pc + "%" : "—"}</b></div></td></tr>`;
     }).join("") || `<tr><td colspan="7" class="muted">ამ ფილტრით არაფერია</td></tr>`}</tbody>${rows.length ? `<tfoot><tr><td><b>სულ</b></td><td>${kmoney(tp)}</td><td><b>${kmoney(tf)}</b></td><td>${kmoney(Math.max(0, tp - tf))}</td><td class="muted">${kmoney(tl)}</td><td>${kpct(tf, tl)}</td><td><b>${tp ? Math.round(tf / tp * 100) + "%" : "—"}</b></td></tr></tfoot>` : ""}</table></div></div>`;
   };
-  return h + jdePfmCard() + jdePfCard() + jdeMhCard() + (F.show !== "ag" ? tbl("ქსელები", allNets, "net", "ქსელი") : "") + (F.show !== "net" ? tbl("აგენტები (ჩემი გეგმა, ატვირთული გაყიდვებით)", allAgs, "ag", "აგენტი") : "");
+  return h + tplanCard() + jdePfmCard() + jdePfCard() + jdeMhCard() + (F.show !== "ag" ? tbl("ქსელები", allNets, "net", "ქსელი") : "") + (F.show !== "net" ? tbl("აგენტები (ჩემი გეგმა, ატვირთული გაყიდვებით)", allAgs, "ag", "აგენტი") : "");
 }
 /* JDE-ს ოფიციალური გეგმა-ფაქტი (ნინის ყოველდღიური ფაილიდან, ავტომატურად) */
 const pct = (f, p) => p ? Math.round(f / p * 100) : 0;
@@ -3122,7 +3124,7 @@ function jdeMhCard() {
 }
 /* ჯიბის/ექსპრესის ვადის გაფრთხილებები (ფოსტიდან, ავტომატურად) */
 function vadaCard() {
-  if (!PLN.jde && !PLN.busy) { PLN.busy = true; kcall("docs").then(r => { PLN.docs = PLN.docs || {}; PLN.jde = {}; (r || []).forEach(x => { if (String(x.path).startsWith("plan/")) PLN.docs[x.path] = x.data || {}; if (String(x.path).startsWith("jde/")) PLN.jde[x.path] = x.data || {}; }); PLN.busy = false; render(); }).catch(() => { PLN.busy = false; PLN.jde = {}; }); }
+  if (!PLN.jde && !PLN.busy) { PLN.busy = true; kcall("docs").then(r => { PLN.docs = PLN.docs || {}; PLN.jde = {}; (r || []).forEach(x => { if (String(x.path).startsWith("plan/")) PLN.docs[x.path] = x.data || {}; if (String(x.path).startsWith("jde/")) PLN.jde[x.path] = x.data || {}; if (String(x.path).startsWith("tplan/")) (PLN.tps = PLN.tps || {})[x.path] = x.data || {}; }); PLN.busy = false; render(); }).catch(() => { PLN.busy = false; PLN.jde = {}; }); }
   const l = ((PLN.jde || {})["jde/vada"] || {}).list || []; if (!l.length) return "";
   return `<div class="kcard"><div class="kh"><b>ვადის გაფრთხილებები (ჯიბე / ექსპრესი)</b><span class="small muted">ფოსტიდან ავტომატურად · ბოლო ${Math.min(l.length, 12)}</span></div><div class="ktw"><table class="kt"><thead><tr><th>თარიღი</th><th>ვისგან</th><th>თემა</th><th>ფაილი</th></tr></thead><tbody>${l.slice(0, 12).map(x => `<tr><td>${esc(x.date)}</td><td>${esc(x.from)}</td><td class="kw">${esc(x.subject)}</td><td>${(x.files || []).map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>`).join("<br>") || "—"}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
@@ -4192,6 +4194,109 @@ Object.assign(A, {
   pcrep() { PC.rep = PC.rep === 0 ? 1 : 0; render(); },
   pcrepxl() { pcRepXl(); },
 });
+
+/* ---------- ობიექტების გეგმა აგენტებზე: შარშანდელი გაყიდვა + ზრდა %, დავალებად გაგზავნა ---------- */
+const TP = { cats: null, open: {}, busy: false };
+const tpYmAdd = (y, n) => { const t = Math.floor(y / 100) * 12 + (y % 100 - 1) + n; return Math.floor(t / 12) * 100 + t % 12 + 1; };
+const tpLastDay = ym => { const y = Math.floor(ym / 100), m = ym % 100; return `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`; };
+function tpF() {
+  const mx = K.info.max || 202610;
+  // სამიზნე: მომდევნო თვე (თუ ბოლო ატვირთული ოქტომბერია — ნოემბერი/დეკემბერი); ნაგულისხმევად დეკემბერი, თუ ახლოსაა
+  let tg = tpYmAdd(mx, 1); for (let i = 1; i <= 3; i++) if (tpYmAdd(mx, i) % 100 === 12) tg = tpYmAdd(mx, i);
+  return PLN.tpf = PLN.tpf || { cat: "ერთჯერადი", lvl1: "", target: tg, base: [tpYmAdd(tg, -12)], g: 20, mine: true, by: "q" };
+}
+function tpTeam() { return (K.info.agents || []).filter(kMine); }
+function tpSucc() { return ((PLN.jde || {})["jde/succ"] || {}).list || []; }
+function tpOld() { const s = new Set(tpTeam()); tpSucc().forEach(z => { s.add(z.from); z.to.forEach(([t]) => s.add(t)); }); return [...s]; }
+// ობიექტი → მიმდინარე აგენტი: ბოლო 6 თვის გაყიდვით; თუ არ არის — შარშანდელი აგენტი (ან მისი 100%-იანი მემკვიდრე)
+function tpAg(r) {
+  if (r.cag) return r.cag;
+  const team = tpTeam(); let a = r.dag, seen = new Set();
+  while (a && !team.includes(a) && !seen.has(a)) { seen.add(a); const z = tpSucc().find(x => norm(x.from) === norm(a)); if (!z || z.to.length !== 1) return ""; a = z.to[0][0]; }
+  return team.includes(a) ? a : "";
+}
+async function tpCalc() {
+  const F = tpF(); if (TP.busy) return; TP.busy = true; render();
+  try {
+    const rows = await kcall("tplan", { cat: F.cat, lvl1: F.lvl1, base: F.base, target: F.target, team: tpTeam(), old: F.mine ? tpOld() : null });
+    const k = 1 + (+F.g || 0) / 100;
+    PLN.tp = { cat: F.cat, lvl1: F.lvl1, base: F.base.slice(), target: F.target, g: +F.g || 0, at: new Date().toISOString().slice(0, 16).replace("T", " "),
+      rows: (rows || []).map(r => ({ id: r.id, n: r.n, ad: r.ad, net: kNet(r.net, r.n, r.ad) || r.net, ag: tpAg(r), dag: r.dag, cym: r.cym, q: +r.q || 0, a: +r.a || 0, pq: Math.ceil((+r.q || 0) * k), pa: Math.round((+r.a || 0) * k), tq: +r.tq || 0, ta: +r.ta || 0 })) };
+    const old = (PLN.tps || {})[tpPath(PLN.tp)]; if (old && old.sent) PLN.tp.sent = old.sent;
+  } catch (e) { toast(errMsg(e)); }
+  TP.busy = false; render();
+}
+const tpPath = p => `tplan/${p.target}-${norm(p.cat + (p.lvl1 ? "-" + p.lvl1 : "")).replace(/\s+/g, "_")}`;
+async function tpSave(quiet) { const p = PLN.tp; if (!p) return; PLN.tps = PLN.tps || {}; PLN.tps[tpPath(p)] = p; await kcall("docSet", { path: tpPath(p), data: p }); if (!quiet) toast("გეგმა შეინახა"); render(); }
+function tpGroups(p) {
+  const g = {}; (p.rows || []).forEach(r => { const k = r.ag || ""; const o = g[k] = g[k] || { ag: k, rows: [], q: 0, a: 0, pq: 0, pa: 0, tq: 0, ta: 0 }; o.rows.push(r); ["q", "a", "pq", "pa", "tq", "ta"].forEach(f => o[f] += r[f] || 0); });
+  return Object.values(g).sort((x, y) => (!x.ag) - (!y.ag) || y.pa - x.pa);
+}
+function tpTaskOf(p, G) {
+  const nm = kAgent(G.ag), lab = p.cat + (p.lvl1 ? " / " + p.lvl1 : "");
+  const rows = G.rows.slice().sort((a, b) => b.pq - a.pq);
+  return { agent: nm, store: "", due: tpLastDay(p.target),
+    title: `${kYm(p.target)} გეგმა · ${lab}: ${knumT(G.pq)} ც. (${knumT(G.pa)} ₾) — ${rows.length} ობიექტი`,
+    details: `საფუძველი: ${p.base.map(kYm).join(", ")} გაყიდვა +${p.g}%\nობიექტი — გეგმა ც. / ₾ (საფუძველი ც.)\n\n` + rows.map((r, i) => `${i + 1}. ${r.n}${r.ad && !String(r.n).includes(r.ad) ? " (" + r.ad + ")" : ""} — ${knumT(r.pq)} ც. / ${knumT(r.pa)} ₾ (${knumT(r.q)})`).join("\n") };
+}
+async function tpSend() {
+  const p = PLN.tp; if (!p) return; const G = tpGroups(p).filter(x => x.ag && kMine(x.ag));
+  const sent = p.sent || {}, todo = G.filter(x => !sent[x.ag]);
+  if (!todo.length) return toast("ყველა აგენტს უკვე გაეგზავნა");
+  if (!confirm(`გავუგზავნო გეგმა დავალებად ${todo.length} აგენტს?\n\n` + todo.map(x => `${kAgent(x.ag)} — ${knumT(x.pq)} ც., ${x.rows.length} ობიექტი`).join("\n"))) return;
+  TP.busy = true; render();
+  try { const ids = await kcall("tplanSend", { tasks: todo.map(x => tpTaskOf(p, x)) }); todo.forEach((x, i) => { sent[x.ag] = ids[i]; }); p.sent = sent; await tpSave(true); toast(`✓ გაეგზავნა ${todo.length} აგენტს — დავალებებში ჩანს`); }
+  catch (e) { toast(errMsg(e)); }
+  TP.busy = false; render();
+}
+function tpXl() {
+  const p = PLN.tp; if (!p) return;
+  const rows = tpGroups(p).flatMap(G => G.rows.map(r => [G.ag ? kAgent(G.ag) : "მიუბმელი", r.net || "", r.n || "", r.ad || "", r.q, r.pq, Math.round(r.a), r.pa, r.tq || "", r.ta ? Math.round(r.ta) : "", r.pq ? Math.round(r.tq / r.pq * 100) + "%" : ""]));
+  xlRows(`გეგმა ${kYm(p.target)} ${p.cat}`, ["აგენტი", "ქსელი", "ობიექტი", "მისამართი", `საფუძველი ც. (${p.base.map(kYm).join(",")})`, `გეგმა ც. (+${p.g}%)`, "საფუძველი ₾", "გეგმა ₾", "ფაქტი ც.", "ფაქტი ₾", "შესრულება"], rows);
+}
+function tplanCard() {
+  const F = tpF(), mx = K.info.max || 202610, p = PLN.tp;
+  if (!TP.cats && !TP.cl) { TP.cl = 1; kcall("cats").then(r => { TP.cats = r || []; render(); }).catch(() => { TP.cats = []; TP.cl = 0; }); }
+  const cats = TP.cats && TP.cats.length ? TP.cats : [{ c: F.cat, l: [] }], lv = (cats.find(c => c.c === F.cat) || { l: [] }).l;
+  const bms = []; for (let i = 0; i < 24; i++) { const m = tpYmAdd(mx, -i); if (m >= 202501) bms.push(m); }
+  const tms = []; for (let i = -2; i <= 6; i++) tms.push(tpYmAdd(mx, i));
+  const saved = Object.entries(PLN.tps || {}).sort((a, b) => b[0].localeCompare(a[0]));
+  let h = `<div class="kcard tpc"><div class="kh"><b>🎯 ობიექტების გეგმა აგენტებზე</b><span class="small muted">საფუძველი თვის გაყიდვა × ზრდა — ობიექტი მიებმება იმ აგენტს, ვინც ბოლო 6 თვეში ემსახურება</span></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+    <label class="small">კატეგორია <select data-tpf="cat">${cats.map(c => `<option ${c.c === F.cat ? "selected" : ""}>${esc(c.c)}</option>`).join("")}</select></label>
+    ${lv.length ? `<label class="small">ქვეჯგუფი <select data-tpf="lvl1"><option value="">ყველა</option>${lv.map(l => `<option ${l === F.lvl1 ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>` : ""}
+    <label class="small">სამიზნე თვე <select data-tpf="target">${tms.map(m => `<option value="${m}" ${m === F.target ? "selected" : ""}>${kYm(m)}</option>`).join("")}</select></label>
+    <span class="small">საფუძველი</span>${msel("tpbase", bms.map(m => ({ v: m, l: kYm(m) })), F.base, v => { F.base = v.map(Number).sort(); }, { label: "აირჩიე თვე", unit: "თვე", quick: mselQ("tpbase", [["შარშანდელი იგივე თვე", [tpYmAdd(F.target, -12)]], ["ბოლო 3 თვე", bms.slice(0, 3).reverse()]]) })}
+    <label class="small">ზრდა <input type="number" data-tpf="g" value="${F.g}" style="width:64px"> %</label>
+    <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-tpf="mine" ${F.mine ? "checked" : ""}> მხოლოდ ჩემი გუნდის ობიექტები</label>
+    <button class="btn primary sm" data-a="tpcalc" ${TP.busy || !F.base.length ? "disabled" : ""}>${TP.busy ? "ითვლება…" : "გეგმის გამოთვლა"}</button>
+    ${saved.length ? `<span class="small muted">შენახული:</span>${saved.map(([k, d]) => `<button class="chip ${p && tpPath(p) === k ? "on" : ""}" data-a="tpload" data-v="${esc(k)}">${esc(kYm(d.target) + " · " + d.cat + (d.lvl1 ? " / " + d.lvl1 : ""))}${d.sent && Object.keys(d.sent).length ? " ✉" : ""}</button>`).join("")}` : ""}
+  </div>`;
+  if (!p) return h + `<div class="small muted" style="margin-top:8px">აირჩიე პარამეტრები და დააჭირე „გეგმის გამოთვლა“.</div></div>`;
+  const G = tpGroups(p), T = G.reduce((o, x) => { ["q", "a", "pq", "pa", "tq", "ta"].forEach(f => o[f] += x[f]); return o; }, { q: 0, a: 0, pq: 0, pa: 0, tq: 0, ta: 0 });
+  const hasF = T.tq > 0, sent = p.sent || {}, lab = p.cat + (p.lvl1 ? " / " + p.lvl1 : "");
+  h += `<div class="kh" style="margin-top:10px"><b>${esc(kYm(p.target))} · ${esc(lab)} · საფუძველი ${esc(p.base.map(kYm).join(", "))} +${p.g}%</b><span class="row" style="gap:6px"><button class="btn sm" data-a="tpcalc">↻ განახლება${hasF ? "" : " / ფაქტი"}</button><button class="btn sm" data-a="tpxl">⬇ Excel</button><button class="btn sm" data-a="tpsave">შენახვა</button><button class="btn primary sm" data-a="tpsend" ${TP.busy ? "disabled" : ""}>✉ დავალებად გაგზავნა აგენტებს</button></span></div>
+  <div class="kpis" style="margin:8px 0"><div class="kpi"><div class="muted">ობიექტი</div><div class="v">${p.rows.length}</div></div><div class="kpi"><div class="muted">საფუძველი</div><div class="v">${knumT(T.q)} ც.</div><div class="small muted">${kmoney(T.a)}</div></div>
+    <div class="kpi acc"><div class="muted">გეგმა (+${p.g}%)</div><div class="v">${knumT(T.pq)} ც.</div><div class="small muted">${kmoney(T.pa)}</div></div>
+    <div class="kpi ${hasF ? (T.tq >= T.pq ? "good" : "warn") : ""}"><div class="muted">ფაქტი ${esc(kYm(p.target))}</div><div class="v">${hasF ? knumT(T.tq) + " ც." : "—"}</div><div class="small muted">${hasF ? pct(T.tq, T.pq) + "% · " + kmoney(T.ta) : "გაყიდვები ჯერ არ ატვირთულა"}</div></div></div>
+  <div class="ktw"><table class="kt"><thead><tr><th>აგენტი</th><th>ობიექტი</th><th>საფუძველი ც.</th><th>გეგმა ც.</th><th>საფუძველი ₾</th><th>გეგმა ₾</th><th>ფაქტი ც.</th><th>შესრულება</th><th></th></tr></thead><tbody>
+  ${G.map(x => { const op = TP.open[x.ag]; return `<tr class="${x.ag ? "" : "muted"}"><td><button class="lnk" data-a="tpopen" data-v="${esc(x.ag)}">${op ? "▾" : "▸"} ${esc(x.ag ? kAgent(x.ag) : "მიუბმელი (ბოლო 6 თვე გაყიდვა არ არის)")}</button>${x.ag && kMine(x.ag) ? ` <span class="kstar">★</span>` : ""}</td><td>${x.rows.length}</td><td>${knumT(x.q)}</td><td><b>${knumT(x.pq)}</b></td><td>${kmoney(x.a)}</td><td>${kmoney(x.pa)}</td><td>${hasF ? knumT(x.tq) : "—"}</td><td>${hasF && x.pq ? pbar(pct(x.tq, x.pq)) : "—"}</td><td class="small">${sent[x.ag] ? `<span class="pill ok">✉ გაგზავნილია</span>` : ""}</td></tr>
+    ${op ? x.rows.slice().sort((a, b) => b.pq - a.pq).map(r => `<tr class="tpsub"><td class="small" colspan="2">${esc(r.n)}<div class="muted">${esc([r.net, r.ad].filter(Boolean).join(" · "))}${r.dag && r.dag !== r.ag ? ` · შარშან: ${esc(kAgent(r.dag))}` : ""}</div></td><td>${knumT(r.q)}</td><td><b>${knumT(r.pq)}</b></td><td>${kmoney(r.a)}</td><td>${kmoney(r.pa)}</td><td>${hasF ? knumT(r.tq) : "—"}</td><td>${hasF && r.pq ? pbar(pct(r.tq, r.pq)) : "—"}</td><td></td></tr>`).join("") : ""}`; }).join("")}
+  </tbody><tfoot><tr><td><b>სულ</b></td><td><b>${p.rows.length}</b></td><td><b>${knumT(T.q)}</b></td><td><b>${knumT(T.pq)}</b></td><td><b>${kmoney(T.a)}</b></td><td><b>${kmoney(T.pa)}</b></td><td><b>${hasF ? knumT(T.tq) : "—"}</b></td><td>${hasF ? pbar(pct(T.tq, T.pq)) : "—"}</td><td></td></tr></tfoot></table></div>
+  <div class="small muted" style="margin-top:6px">გეგმა ც. = საფუძველი × ${(1 + p.g / 100).toFixed(2)}, ზემოთ დამრგვალებული. დავალებაში თითო აგენტს მიდის მისი ობიექტების სია; ფაქტი ავტომატურად ჩანს, როცა ${esc(kYm(p.target))}-ის გაყიდვები აიტვირთება (↻ განახლება).</div></div>`;
+  return h;
+}
+function tplanAgentBox(t) { return `<div class="small muted">🎯 თვის გეგმა — ობიექტების სია ქვემოთაა. გაეცანი და დააჭირე „გავეცანი“.</div>`; }
+Object.assign(A, {
+  tpcalc() { tpCalc(); }, tpxl() { tpXl(); }, tpsave() { tpSave().catch(e => toast(errMsg(e))); }, tpsend() { tpSend(); },
+  async tpdone(v) { if (await act("markDone", v, S.who, "")) { toast("✓ მონიშნულია"); render(); } },
+  tpopen(v) { TP.open[v] = !TP.open[v]; render(); },
+  tpload(v) { const d = (PLN.tps || {})[v]; if (!d) return; PLN.tp = d; Object.assign(tpF(), { cat: d.cat, lvl1: d.lvl1 || "", target: d.target, base: d.base.slice(), g: d.g }); render(); },
+});
+document.addEventListener("change", e => { const el = e.target, k = el.dataset && el.dataset.tpf; if (!k) return; const F = tpF();
+  if (k === "mine") F.mine = el.checked; else if (k === "target") { const t = +el.value; if (F.base.length === 1 && F.base[0] === tpYmAdd(F.target, -12)) F.base = [tpYmAdd(t, -12)]; F.target = t; }
+  else if (k === "g") F.g = +el.value || 0; else { F[k] = el.value; if (k === "cat") F.lvl1 = ""; }
+  render(); });
 
 /* ---------- Excel-ში ექსპორტი: ყველა ცხრილთან „⬇ Excel“ ღილაკი ---------- */
 /* ტექსტი → რიცხვი / თარიღი / ტექსტი (Excel-ში ფორმულებისთვის) */
