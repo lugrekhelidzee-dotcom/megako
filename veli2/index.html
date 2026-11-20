@@ -2654,7 +2654,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261119163828";
+const APP_BUILD = "20261120132038";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -3050,7 +3050,7 @@ function kPlan() {
   let h = `<div class="kbar"><div class="row"><span class="klab">თვე</span><select data-plnym>${months.map(m => `<option value="${m}" ${m === ym ? "selected" : ""}>${kYm(m)}</option>`).join("")}</select>
     <span class="small muted">ბოლო ატვირთული თვე: ${kYm(K.info.max)}</span>
     <span style="margin-left:auto" class="morng"><label>გეგმა = შარშანდელი</label><input type="number" data-plngrow value="${PLN.grow}" style="width:70px"><label>%-ით მეტი</label><button class="btn sm" data-a="plnauto">ავტომატური გეგმა</button><label class="btn sm">⬆ გეგმა Excel-იდან<input type="file" accept=".xlsx,.xls" data-plnfile hidden></label></span></div></div>`;
-  if (!d || PLN.dashKey !== key) return h + `<div class="empty"><b>იტვირთება…</b></div>`;
+  if (!d || PLN.dashKey !== key) return h + jdePfmCard() + `<div class="empty"><b>იტვირთება…</b></div>`;
   const F = PLN.f = PLN.f || { nets: [], ags: [], st: "", q: "", sort: "pct", show: "" };
   const st = (x, p) => !p ? "none" : (x.cur || 0) >= p ? "ok" : (x.cur || 0) >= p * 0.8 ? "near" : "bad";
   const allNets = (d.nets || []).filter(x => x.cur || x.ly || doc.net[x.k]), allAgs = (d.agents || []).filter(x => x.k && (x.cur || x.ly || doc.ag[x.k]));
@@ -3093,7 +3093,7 @@ function kPlan() {
         <td style="min-width:150px" data-x="${p ? pc + "%" : ""}"><div style="display:flex;align-items:center;gap:8px"><div class="kbarc" style="flex:1"><div style="width:${Math.min(100, pc)}%;background:${pc >= 100 ? "var(--ok)" : pc >= 80 ? "var(--accent)" : "var(--warn)"}"></div></div><b class="small" style="min-width:38px;text-align:right">${p ? pc + "%" : "—"}</b></div></td></tr>`;
     }).join("") || `<tr><td colspan="7" class="muted">ამ ფილტრით არაფერია</td></tr>`}</tbody>${rows.length ? `<tfoot><tr><td><b>სულ</b></td><td>${kmoney(tp)}</td><td><b>${kmoney(tf)}</b></td><td>${kmoney(Math.max(0, tp - tf))}</td><td class="muted">${kmoney(tl)}</td><td>${kpct(tf, tl)}</td><td><b>${tp ? Math.round(tf / tp * 100) + "%" : "—"}</b></td></tr></tfoot>` : ""}</table></div></div>`;
   };
-  return h + jdePfCard() + jdeMhCard() + (F.show !== "ag" ? tbl("ქსელები", allNets, "net", "ქსელი") : "") + (F.show !== "net" ? tbl("აგენტები (ჩემი გეგმა, ატვირთული გაყიდვებით)", allAgs, "ag", "აგენტი") : "");
+  return h + jdePfmCard() + jdePfCard() + jdeMhCard() + (F.show !== "ag" ? tbl("ქსელები", allNets, "net", "ქსელი") : "") + (F.show !== "net" ? tbl("აგენტები (ჩემი გეგმა, ატვირთული გაყიდვებით)", allAgs, "ag", "აგენტი") : "");
 }
 /* JDE-ს ოფიციალური გეგმა-ფაქტი (ნინის ყოველდღიური ფაილიდან, ავტომატურად) */
 const pct = (f, p) => p ? Math.round(f / p * 100) : 0;
@@ -3201,13 +3201,61 @@ document.addEventListener("change", e => {
   if (el.dataset.plnsort !== undefined) { PLN.f.sort = el.value; render(); }
 });
 
-/* გეგმის ფაილი: ვეძებთ სვეტს სათაურით „გეგმა“ და მწკრივებს, სადაც აგენტის (ან ქსელის) სახელია */
+/* გეგმის ფაილი.
+   1) JDE-ს გეგმა-ფაქტი თვეების მიხედვით (სათაურში თვეები, ქვეშ „გეგმა | ფაქტი“ წყვილები) → jde/pfm + თითო თვის გეგმა
+   2) ძველი ფორმა: ერთი „გეგმა“ სვეტი არჩეული თვისთვის */
+const PFMN = ["იანვ", "თებ", "მარტ", "აპრ", "მაის", "ივნ", "ივლ", "აგვ", "სექ", "ოქტ", "ნოე", "დეკ"];
+function pfmYm(v) {
+  if (v instanceof Date) return v.getFullYear() * 100 + v.getMonth() + 1;
+  if (typeof v === "number" && v > 30000 && v < 70000) { const d = new Date(Math.round((v - 25569) * 864e5)); return d.getUTCFullYear() * 100 + d.getUTCMonth() + 1; }
+  const t = String(v || "").toLowerCase().trim(); if (!t) return 0;
+  let m = t.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})/); if (m) return +m[3] * 100 + +m[2];
+  m = t.match(/^(\d{4})[./-](\d{1,2})/); if (m) return +m[1] * 100 + +m[2];
+  m = t.match(/^(\d{1,2})[./-](\d{4})$/); if (m) return +m[2] * 100 + +m[1];
+  const mi = PFMN.findIndex(x => t.includes(x)), y = (t.match(/20\d\d/) || [])[0]; return mi >= 0 && y ? +y * 100 + mi + 1 : 0;
+}
+function pfmParse(rows) {
+  for (let hi = 0; hi < Math.min(rows.length, 30); hi++) {
+    const H = (rows[hi] || []).map(x => String(x == null ? "" : x).toLowerCase().trim());
+    const pcs = []; H.forEach((h, j) => { if (/^(გეგმა|plan)/.test(h)) pcs.push(j); });
+    if (pcs.length < 2) continue;
+    const agC = H.findIndex(h => /აგენტ|agent/.test(h)), supC = H.findIndex(h => /ვაიზერ/.test(h));
+    const cols = []; // [{ym, p, f}]
+    pcs.forEach(j => { const fc = /^(ფაქტ|fact)/.test(H[j + 1] || "") ? j + 1 : -1; let ym = 0;
+      for (let k = hi - 1; k >= Math.max(0, hi - 3) && !ym; k--) { const r = rows[k] || []; ym = pfmYm(r[j]) || pfmYm(r[j + 1]); }
+      if (ym) cols.push({ ym, p: j, f: fc }); });
+    if (cols.length < 1) continue;
+    const ac = agC >= 0 ? agC : Math.max(0, pcs[0] - 1), out = [];
+    rows.slice(hi + 1).forEach(r => { r = r || []; const ag = String(r[ac] == null ? "" : r[ac]).replace(/\s+/g, " ").trim(); if (!ag || /^(სულ|ჯამ|total)/i.test(ag)) return;
+      const m = {}; cols.forEach(c => { const p = +r[c.p] || 0, f = c.f >= 0 ? +r[c.f] || 0 : 0; if (p || f) m[c.ym] = { p: Math.round(p * 100) / 100, f: Math.round(f * 100) / 100 }; });
+      if (Object.keys(m).length) out.push({ ag, sup: supC >= 0 ? String(r[supC] || "").replace(/^სუპერვაიზერი\s*-?\s*/, "").replace(/\s+/g, " ").trim() : "", m }); });
+    if (out.length) return { rows: out, months: [...new Set(cols.map(c => c.ym))].sort() };
+  }
+  return null;
+}
 async function plnImport(file) {
   try {
     await loadXLSX();
     const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
     const known = (K.info.agents || []), nets = (K.info.nets || []);
     const find = (v, list) => { const n = norm(v); return n ? list.find(x => norm(x) === n) : null; };
+    // 1) თვეების გეგმა-ფაქტი
+    for (const sn of wb.SheetNames) {
+      const P = pfmParse(XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: "" })); if (!P) continue;
+      P.rows.forEach(r => { r.ag = find(r.ag, known) || r.ag; });
+      PLN.jde = PLN.jde || {}; const old = PLN.jde["jde/pfm"] || { rows: [] }, by = {};
+      (old.rows || []).forEach(r => { by[norm(r.ag)] = { ...r, m: { ...(r.m || {}) } }; });
+      P.rows.forEach(r => { const o = by[norm(r.ag)] = by[norm(r.ag)] || { ag: r.ag, sup: r.sup, m: {} }; o.sup = r.sup || o.sup; P.months.forEach(ym => { delete o.m[ym]; }); Object.assign(o.m, r.m); });
+      const data = { rows: Object.values(by), file: file.name, at: new Date().toISOString().slice(0, 16).replace("T", " ") };
+      PLN.jde["jde/pfm"] = data; await kcall("docSet", { path: "jde/pfm", data });
+      // ჩემი გეგმის ცხრილიც შეივსოს თითო თვეზე
+      PLN.docs = PLN.docs || {};
+      for (const ym of P.months) { const k = "plan/" + ym, d = PLN.docs[k] = PLN.docs[k] || { ag: {}, net: {} }; d.ag = d.ag || {}; d.net = d.net || {};
+        P.rows.forEach(r => { const v = r.m[ym]; if (v && v.p) d.ag[r.ag] = Math.round(v.p); }); await kcall("docSet", { path: k, data: d }); }
+      PLN.pfm = PLN.pfm || {}; PLN.pfm.ms = [P.months[P.months.length - 1]];
+      render(); return toast(`ჩაიწერა: ${P.rows.length} აგენტი · ${P.months.length} თვე (${kYm(P.months[0])} — ${kYm(P.months[P.months.length - 1])})`);
+    }
+    // 2) ერთი თვის გეგმა
     const doc = plnDoc(); let ag = 0, nt = 0;
     for (const sn of wb.SheetNames) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true });
@@ -3219,13 +3267,46 @@ async function plnImport(file) {
         if (!a) return;
         let v = pc >= 0 ? +r[pc] : NaN;
         if (!(v > 0)) { const nums = r.filter(x => typeof x === "number" && x > 1000); v = nums.length ? nums[nums.length - 1] : 0; }
-        if (v > 0 && doc[kind][a] == null) { doc[kind][a] = Math.round(v); kind === "ag" ? ag++ : nt++; }
+        if (v > 0) { doc[kind][a] = Math.round(v); kind === "ag" ? ag++ : nt++; }
       });
       if (ag || nt) break;
     }
-    plnSave(); render(); toast(ag || nt ? `ჩაიწერა: ${ag} აგენტი, ${nt} ქსელი (${kYm(plnYm())})` : "ფაილში აგენტის სახელები ვერ ვიპოვე");
+    plnSave(); render(); toast(ag || nt ? `ჩაიწერა: ${ag} აგენტი, ${nt} ქსელი (${kYm(plnYm())})` : "ფაილში აგენტის სახელები ან თვეების გეგმა/ფაქტი ვერ ვიპოვე");
   } catch (e) { toast("ვერ წავიკითხე: " + errMsg(e)); }
 }
+/* JDE გეგმა/ფაქტი თვეების მიხედვით — რამდენიმე თვის ერთად არჩევით */
+function jdePfmCard() {
+  const D = (PLN.jde || {})["jde/pfm"]; if (!D || !(D.rows || []).length) return "";
+  const all = [...new Set(D.rows.flatMap(r => Object.keys(r.m || {}).map(Number)))].sort();
+  const F = PLN.pfm = PLN.pfm || {}; if (!F.ms || !F.ms.length) F.ms = [PLN.ym && all.includes(PLN.ym) ? PLN.ym : all[all.length - 1]];
+  if (F.mine == null) F.mine = D.rows.some(r => kMine(r.ag)); F.q = F.q || ""; F.sort = F.sort || "pct";
+  const ms = F.ms.map(Number).filter(m => all.includes(m)).sort(), yrs = [...new Set(all.map(m => Math.floor(m / 100)))];
+  const quick = [["ბოლო თვე", [all[all.length - 1]]], ["ბოლო 3 თვე", all.slice(-3)]];
+  yrs.forEach(y => { const ym = all.filter(m => Math.floor(m / 100) === y); [[1, 3], [4, 6], [7, 9], [10, 12]].forEach(([a, b], i) => { const q = ym.filter(m => m % 100 >= a && m % 100 <= b); if (q.length) quick.push([`Q${i + 1} ${y}`, q]); }); quick.push([`${y} მთელი`, ym]); });
+  const qn = norm(F.q);
+  const rows = D.rows.filter(r => (!F.mine || kMine(r.ag)) && (!qn || norm((kAgent(r.ag) || "") + " " + r.ag + " " + (r.sup || "")).includes(qn))).map(r => {
+    let p = 0, f = 0; const per = {}; ms.forEach(m => { const v = (r.m || {})[m]; if (v) { p += v.p || 0; f += v.f || 0; per[m] = v; } });
+    return { r, p, f, per, pc: p ? f / p : null }; }).filter(x => x.p || x.f);
+  const S = { pct: (a, b) => (a.pc ?? 9) - (b.pc ?? 9), pctd: (a, b) => (b.pc ?? -1) - (a.pc ?? -1), fact: (a, b) => b.f - a.f, plan: (a, b) => b.p - a.p, gap: (a, b) => (b.p - b.f) - (a.p - a.f), name: (a, b) => String(kAgent(a.r.ag) || a.r.ag).localeCompare(String(kAgent(b.r.ag) || b.r.ag), "ka"), sup: (a, b) => String(a.r.sup).localeCompare(String(b.r.sup), "ka") || (a.pc ?? 9) - (b.pc ?? 9) };
+  rows.sort(S[F.sort] || S.pct);
+  const tp = rows.reduce((a, x) => a + x.p, 0), tf = rows.reduce((a, x) => a + x.f, 0), showM = ms.length > 1 && ms.length <= 12;
+  const cell = v => !v ? `<td class="muted">—</td>` : `<td data-x="${v.p}|${v.f}" title="გეგმა ${knumT(v.p)} ₾ · ფაქტი ${knumT(v.f)} ₾" class="${v.p && v.f < v.p * 0.8 ? "kred" : ""}">${v.p ? pct(v.f, v.p) + "%" : kmoney(v.f)}</td>`;
+  const lab = ms.length === 1 ? kYm(ms[0]) : `${kYm(ms[0])} — ${kYm(ms[ms.length - 1])} (${ms.length} თვე)`;
+  return `<div class="kcard"><div class="kh"><b>JDE გეგმა / ფაქტი · ${esc(lab)}</b><span class="small muted">ფაილი: ${esc(D.file || "")} · ${esc(D.at || "")}</span></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+    ${msel("pfmm", all.slice().reverse().map(m => ({ v: m, l: kYm(m) })), ms, v => { F.ms = v.map(Number); }, { label: "აირჩიე თვე", unit: "თვე", quick: mselQ("pfmm", quick) })}
+    ${quick.slice(0, 2).concat(quick.filter(q => /^Q|მთელი/.test(q[0])).slice(-5)).map(q => `<button class="chip ${q[1].length === ms.length && q[1].every(m => ms.includes(m)) ? "on" : ""}" data-a="pfmq" data-v="${q[1].join(",")}">${esc(q[0])}</button>`).join("")}
+    <input type="search" data-pfmq value="${esc(F.q)}" placeholder="ძებნა: აგენტი, სუპერვაიზერი…" style="max-width:220px">
+    <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-pfmmine ${F.mine ? "checked" : ""}> მხოლოდ ჩემი გუნდი ★</label>
+    <span class="kper"><select data-pfmsort>${[["pct", "ყველაზე ჩამორჩენილი"], ["pctd", "შესრულება % ↓"], ["fact", "ფაქტი ↓"], ["plan", "გეგმა ↓"], ["gap", "დანაკლისი ↓"], ["sup", "სუპერვაიზერით"], ["name", "სახელით"]].map(([v, l]) => `<option value="${v}" ${F.sort === v ? "selected" : ""}>დალაგება: ${l}</option>`).join("")}</select></span></div>
+  <div class="kpis" style="margin-bottom:8px"><div class="kpi"><div class="muted">გეგმა</div><div class="v">${kmoney(tp)}</div></div><div class="kpi acc"><div class="muted">ფაქტი</div><div class="v">${kmoney(tf)}</div></div>
+    <div class="kpi ${tp && tf >= tp ? "good" : tp && tf >= tp * 0.8 ? "" : "warn"}"><div class="muted">შესრულება</div><div class="v">${tp ? pct(tf, tp) + "%" : "—"}</div></div><div class="kpi"><div class="muted">${tf >= tp ? "გადაჭარბება" : "დანაკლისი"}</div><div class="v ${tf < tp ? "kred" : ""}">${kmoney(Math.abs(tf - tp))}</div></div></div>
+  <div class="ktw"><table class="kt"><thead><tr><th>აგენტი</th><th>სუპერვაიზერი</th>${showM ? ms.map(m => `<th data-xh="${kYm(m)} გეგმა|${kYm(m)} ფაქტი">${kYm(m)}</th>`).join("") : ""}<th>გეგმა ₾</th><th>ფაქტი ₾</th><th data-xh="სხვაობა ₾">სხვაობა</th><th data-xh="შესრულება %">შესრულება</th></tr></thead><tbody>${rows.map(x => `<tr><td>${esc(kAgent(x.r.ag) || x.r.ag)}${kMine(x.r.ag) ? ` <span class="kstar">★</span>` : ""}${kAgent(x.r.ag) ? `<div class="small muted">${esc(x.r.ag)}</div>` : ""}</td><td class="small">${esc(x.r.sup || "")}</td>${showM ? ms.map(m => cell(x.per[m])).join("") : ""}<td>${kmoney(x.p)}</td><td><b>${kmoney(x.f)}</b></td><td class="${x.f < x.p ? "kred" : ""}">${kmoney(x.f - x.p)}</td><td data-x="${x.p ? pct(x.f, x.p) + "%" : ""}">${x.p ? pbar(pct(x.f, x.p)) : "—"}</td></tr>`).join("") || `<tr><td colspan="9" class="muted">ამ ფილტრით არაფერია</td></tr>`}</tbody>
+  ${rows.length ? `<tfoot><tr><td><b>სულ (${rows.length})</b></td><td></td>${showM ? ms.map(m => { const p = rows.reduce((a, x) => a + ((x.per[m] || {}).p || 0), 0), f = rows.reduce((a, x) => a + ((x.per[m] || {}).f || 0), 0); return `<td data-x="${p}|${f}" title="გეგმა ${knumT(p)} ₾ · ფაქტი ${knumT(f)} ₾"><b>${p ? pct(f, p) + "%" : "—"}</b></td>`; }).join("") : ""}<td><b>${kmoney(tp)}</b></td><td><b>${kmoney(tf)}</b></td><td class="${tf < tp ? "kred" : ""}"><b>${kmoney(tf - tp)}</b></td><td>${tp ? pbar(pct(tf, tp)) : "—"}</td></tr></tfoot>` : ""}</table></div></div>`;
+}
+Object.assign(A, { pfmq(v) { PLN.pfm = PLN.pfm || {}; PLN.pfm.ms = String(v).split(",").map(Number).filter(Boolean); render(); } });
+document.addEventListener("input", e => { const el = e.target; if (el.dataset && el.dataset.pfmq !== undefined) { PLN.pfm.q = el.value; clearTimeout(PLN.pqt); PLN.pqt = setTimeout(() => { render(); const n = document.querySelector("[data-pfmq]"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 300); } });
+document.addEventListener("change", e => { const el = e.target; if (!el.dataset) return; if (el.dataset.pfmmine !== undefined) { PLN.pfm.mine = el.checked; render(); } if (el.dataset.pfmsort !== undefined) { PLN.pfm.sort = el.value; render(); } });
 document.addEventListener("change", e => { const el = e.target; if (el.dataset && el.dataset.plnfile !== undefined && el.files && el.files[0]) { plnImport(el.files[0]); el.value = ""; } });
 
 /* ---------- აქციების არქივი: ქსელის აქციების ფაილები (თითო ხაზს თავისი ტიპი და თარიღები აქვს) ---------- */
