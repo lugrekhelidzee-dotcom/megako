@@ -2654,7 +2654,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261120132511";
+const APP_BUILD = "20261120134052";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
@@ -3267,7 +3267,9 @@ async function plnImport(file) {
       P.rows.forEach(r => { r.ag = find(r.ag, known) || r.ag; });
       PLN.jde = PLN.jde || {}; const old = PLN.jde["jde/pfm"] || { rows: [] }, by = {};
       (old.rows || []).forEach(r => { by[norm(r.ag)] = { ...r, m: { ...(r.m || {}) } }; });
-      P.rows.forEach(r => { const o = by[norm(r.ag)] = by[norm(r.ag)] || { ag: r.ag, sup: r.sup, m: {} }; o.sup = r.sup || o.sup; P.months.forEach(ym => { delete o.m[ym]; }); Object.assign(o.m, r.m); });
+      Object.values(by).forEach(o => P.months.forEach(ym => { delete o.m[ym]; })); // ფაილის თვეები სრულად ჩანაცვლდება
+      P.rows.forEach(r => { const o = by[norm(r.ag)] = by[norm(r.ag)] || { ag: r.ag, sup: r.sup, m: {} }; o.sup = r.sup || o.sup; Object.assign(o.m, r.m); });
+      Object.keys(by).forEach(k => { if (!Object.keys(by[k].m || {}).length) delete by[k]; });
       const data = { rows: Object.values(by), file: file.name, at: new Date().toISOString().slice(0, 16).replace("T", " ") };
       PLN.jde["jde/pfm"] = data; await kcall("docSet", { path: "jde/pfm", data });
       // ჩემი გეგმის ცხრილიც შეივსოს თითო თვეზე
@@ -3306,7 +3308,20 @@ function jdePfmCard() {
   const quick = [["ბოლო თვე", [all[all.length - 1]]], ["ბოლო 3 თვე", all.slice(-3)]];
   yrs.forEach(y => { const ym = all.filter(m => Math.floor(m / 100) === y); [[1, 3], [4, 6], [7, 9], [10, 12]].forEach(([a, b], i) => { const q = ym.filter(m => m % 100 >= a && m % 100 <= b); if (q.length) quick.push([`Q${i + 1} ${y}`, q]); }); quick.push([`${y} მთელი`, ym]); });
   const qn = norm(F.q);
-  const rows = D.rows.filter(r => (!F.mine || kMine(r.ag)) && (!qn || norm((kAgent(r.ag) || "") + " " + r.ag + " " + (r.sup || "")).includes(qn))).map(r => {
+  // ჩემი გუნდი: ჩემი აგენტები + ვინც ჩემს სუპერვაიზერთან იყო (წასულებიც, იმ თვეებში, როცა გაყიდვა აქვთ)
+  const sc = {}; D.rows.filter(r => kMine(r.ag) && r.sup).forEach(r => { sc[r.sup] = (sc[r.sup] || 0) + 1; }); const mySup = Object.keys(sc).sort((a, b) => sc[b] - sc[a])[0] || "";
+  const sameSup = (a, b) => { const t = x => norm(x).replace(/[^a-zა-ჰ ]/g, "").split(" ").filter(Boolean).sort().join(" "); return a && b && t(a) === t(b); };
+  const succ = ((PLN.jde || {})["jde/succ"] || {}).list || [], succOf = ag => succ.find(z => norm(z.from) === norm(ag));
+  const former = ag => !kMine(ag);
+  let src = D.rows.map(r => ({ ...r, m: { ...(r.m || {}) }, pre: [] }));
+  if (F.terr && succ.length) { // ტერიტორიით: წასულის გაყიდვა მემკვიდრეებზე, წილის მიხედვით
+    const by = {}; src.forEach(r => { by[norm(r.ag)] = r; });
+    const final = (ag, w, seen) => { const z = succOf(ag); if (!z || seen.has(norm(ag))) return [[ag, w]]; seen.add(norm(ag)); return z.to.flatMap(([t, sh]) => final(t, w * sh, seen)); };
+    src.filter(r => succOf(r.ag)).forEach(r => { final(r.ag, 1, new Set()).forEach(([t, w]) => { const T = by[norm(t)] = by[norm(t)] || { ag: t, sup: r.sup, m: {}, pre: [] }; if (!src.includes(T)) src.push(T);
+      Object.entries(r.m).forEach(([k, v]) => { const o = T.m[k] = T.m[k] ? { ...T.m[k] } : { p: 0, f: 0 }; o.p += (v.p || 0) * w; o.f += (v.f || 0) * w; }); T.pre.push(kAgent(r.ag) + (w < 1 ? ` ${Math.round(w * 100)}%` : "")); }); r._gone = 1; });
+    src = src.filter(r => !r._gone);
+  }
+  const rows = src.filter(r => (!F.mine || kMine(r.ag) || sameSup(r.sup, mySup)) && (!qn || norm((kAgent(r.ag) || "") + " " + r.ag + " " + (r.sup || "")).includes(qn))).map(r => {
     let p = 0, f = 0; const per = {}; ms.forEach(m => { const v = (r.m || {})[m]; if (v) { p += v.p || 0; f += v.f || 0; per[m] = v; } });
     return { r, p, f, per, pc: p ? f / p : null }; }).filter(x => x.p || x.f);
   const S = { pct: (a, b) => (a.pc ?? 9) - (b.pc ?? 9), pctd: (a, b) => (b.pc ?? -1) - (a.pc ?? -1), fact: (a, b) => b.f - a.f, plan: (a, b) => b.p - a.p, gap: (a, b) => (b.p - b.f) - (a.p - a.f), name: (a, b) => String(kAgent(a.r.ag) || a.r.ag).localeCompare(String(kAgent(b.r.ag) || b.r.ag), "ka"), sup: (a, b) => String(a.r.sup).localeCompare(String(b.r.sup), "ka") || (a.pc ?? 9) - (b.pc ?? 9) };
@@ -3320,15 +3335,16 @@ function jdePfmCard() {
     ${quick.slice(0, 2).concat(quick.filter(q => /^Q|მთელი/.test(q[0])).slice(-5)).map(q => `<button class="chip ${q[1].length === ms.length && q[1].every(m => ms.includes(m)) ? "on" : ""}" data-a="pfmq" data-v="${q[1].join(",")}">${esc(q[0])}</button>`).join("")}
     <input type="search" data-pfmq value="${esc(F.q)}" placeholder="ძებნა: აგენტი, სუპერვაიზერი…" style="max-width:220px">
     <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-pfmmine ${F.mine ? "checked" : ""}> მხოლოდ ჩემი გუნდი ★</label>
+    ${succ.length ? `<label class="small" style="display:flex;gap:6px;align-items:center" title="${esc(succ.map(z => kAgent(z.from) + " → " + z.to.map(([t, sh]) => kAgent(t) + (sh < 1 ? " " + Math.round(sh * 100) + "%" : "")).join(", ")).join("\n"))}"><input type="checkbox" data-pfmterr ${F.terr ? "checked" : ""}> ტერიტორიით (წასულის შედეგი მემკვიდრეს)</label>` : ""}
     <span class="kper"><select data-pfmsort>${[["pct", "ყველაზე ჩამორჩენილი"], ["pctd", "შესრულება % ↓"], ["fact", "ფაქტი ↓"], ["plan", "გეგმა ↓"], ["gap", "დანაკლისი ↓"], ["sup", "სუპერვაიზერით"], ["name", "სახელით"]].map(([v, l]) => `<option value="${v}" ${F.sort === v ? "selected" : ""}>დალაგება: ${l}</option>`).join("")}</select></span></div>
   <div class="kpis" style="margin-bottom:8px"><div class="kpi"><div class="muted">გეგმა</div><div class="v">${kmoney(tp)}</div></div><div class="kpi acc"><div class="muted">ფაქტი</div><div class="v">${kmoney(tf)}</div></div>
     <div class="kpi ${tp && tf >= tp ? "good" : tp && tf >= tp * 0.8 ? "" : "warn"}"><div class="muted">შესრულება</div><div class="v">${tp ? pct(tf, tp) + "%" : "—"}</div></div><div class="kpi"><div class="muted">${tf >= tp ? "გადაჭარბება" : "დანაკლისი"}</div><div class="v ${tf < tp ? "kred" : ""}">${kmoney(Math.abs(tf - tp))}</div></div></div>
-  <div class="ktw"><table class="kt"><thead><tr><th>აგენტი</th><th>სუპერვაიზერი</th>${showM ? ms.map(m => `<th data-xh="${kYm(m)} გეგმა|${kYm(m)} ფაქტი">${kYm(m)}</th>`).join("") : ""}<th>გეგმა ₾</th><th>ფაქტი ₾</th><th data-xh="სხვაობა ₾">სხვაობა</th><th data-xh="შესრულება %">შესრულება</th></tr></thead><tbody>${rows.map(x => `<tr><td>${esc(kAgent(x.r.ag) || x.r.ag)}${kMine(x.r.ag) ? ` <span class="kstar">★</span>` : ""}${kAgent(x.r.ag) ? `<div class="small muted">${esc(x.r.ag)}</div>` : ""}</td><td class="small">${esc(x.r.sup || "")}</td>${showM ? ms.map(m => cell(x.per[m])).join("") : ""}<td>${kmoney(x.p)}</td><td><b>${kmoney(x.f)}</b></td><td class="${x.f < x.p ? "kred" : ""}">${kmoney(x.f - x.p)}</td><td data-x="${x.p ? pct(x.f, x.p) + "%" : ""}">${x.p ? pbar(pct(x.f, x.p)) : "—"}</td></tr>`).join("") || `<tr><td colspan="9" class="muted">ამ ფილტრით არაფერია</td></tr>`}</tbody>
+  <div class="ktw"><table class="kt"><thead><tr><th>აგენტი</th><th>სუპერვაიზერი</th>${showM ? ms.map(m => `<th data-xh="${kYm(m)} გეგმა|${kYm(m)} ფაქტი">${kYm(m)}</th>`).join("") : ""}<th>გეგმა ₾</th><th>ფაქტი ₾</th><th data-xh="სხვაობა ₾">სხვაობა</th><th data-xh="შესრულება %">შესრულება</th></tr></thead><tbody>${rows.map(x => `<tr><td>${esc(kAgent(x.r.ag) || x.r.ag)}${kMine(x.r.ag) ? ` <span class="kstar">★</span>` : former(x.r.ag) && sameSup(x.r.sup, mySup) ? ` <span class="pill w-soon" title="აღარ არის გუნდში — ჩანს იმ თვეებში, როცა გაყიდვა ჰქონდა">ყოფილი</span>` : ""}<div class="small muted">${esc(x.r.ag)}${x.r.pre && x.r.pre.length ? ` · <span title="ტერიტორიის წინა აგენტები">+ ${esc(x.r.pre.join(", "))}</span>` : ""}</div></td><td class="small">${esc(x.r.sup || "")}</td>${showM ? ms.map(m => cell(x.per[m])).join("") : ""}<td>${kmoney(x.p)}</td><td><b>${kmoney(x.f)}</b></td><td class="${x.f < x.p ? "kred" : ""}">${kmoney(x.f - x.p)}</td><td data-x="${x.p ? pct(x.f, x.p) + "%" : ""}">${x.p ? pbar(pct(x.f, x.p)) : "—"}</td></tr>`).join("") || `<tr><td colspan="9" class="muted">ამ ფილტრით არაფერია</td></tr>`}</tbody>
   ${rows.length ? `<tfoot><tr><td><b>სულ (${rows.length})</b></td><td></td>${showM ? ms.map(m => { const p = rows.reduce((a, x) => a + ((x.per[m] || {}).p || 0), 0), f = rows.reduce((a, x) => a + ((x.per[m] || {}).f || 0), 0); return `<td data-x="${p}|${f}" title="გეგმა ${knumT(p)} ₾ · ფაქტი ${knumT(f)} ₾"><b>${p ? pct(f, p) + "%" : "—"}</b></td>`; }).join("") : ""}<td><b>${kmoney(tp)}</b></td><td><b>${kmoney(tf)}</b></td><td class="${tf < tp ? "kred" : ""}"><b>${kmoney(tf - tp)}</b></td><td>${tp ? pbar(pct(tf, tp)) : "—"}</td></tr></tfoot>` : ""}</table></div></div>`;
 }
 Object.assign(A, { pfmq(v) { PLN.pfm = PLN.pfm || {}; PLN.pfm.ms = String(v).split(",").map(Number).filter(Boolean); render(); } });
 document.addEventListener("input", e => { const el = e.target; if (el.dataset && el.dataset.pfmq !== undefined) { PLN.pfm.q = el.value; clearTimeout(PLN.pqt); PLN.pqt = setTimeout(() => { render(); const n = document.querySelector("[data-pfmq]"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 300); } });
-document.addEventListener("change", e => { const el = e.target; if (!el.dataset) return; if (el.dataset.pfmmine !== undefined) { PLN.pfm.mine = el.checked; render(); } if (el.dataset.pfmsort !== undefined) { PLN.pfm.sort = el.value; render(); } });
+document.addEventListener("change", e => { const el = e.target; if (!el.dataset) return; if (el.dataset.pfmmine !== undefined) { PLN.pfm.mine = el.checked; render(); } if (el.dataset.pfmterr !== undefined) { PLN.pfm.terr = el.checked; render(); } if (el.dataset.pfmsort !== undefined) { PLN.pfm.sort = el.value; render(); } });
 document.addEventListener("change", e => { const el = e.target; if (el.dataset && el.dataset.plnfile !== undefined && el.files && el.files[0]) { plnImport(el.files[0]); el.value = ""; } });
 
 /* ---------- აქციების არქივი: ქსელის აქციების ფაილები (თითო ხაზს თავისი ტიპი და თარიღები აქვს) ---------- */
