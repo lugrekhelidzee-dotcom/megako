@@ -726,6 +726,8 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 .pcok{color:var(--acc,#0f7a5c)}.pcbad{color:#c0392b}
 .pcbox.bad{border-color:#e7b3ad}
 
+.npe{width:72px;padding:3px 6px;font-size:13px;border:1px solid var(--line,#ddd);border-radius:6px;background:var(--card,#fff);color:inherit}
+
 </style>
 </head>
 <body>
@@ -2434,6 +2436,24 @@ function npcCell(r, p) {
   return `<div><b class="${ok ? "pcok" : "pcbad"}">${ok ? "✓ ემთხვევა" : "✗ საიტზე " + sp}</b></div>` +
     (ok ? "" : `<button class="btn sm" style="margin-top:4px" data-a="npfix" data-v="${esc(p.id + "|" + sp)}" title="შეთანხმებული ფასი შეიცვლება ${sp}-ით (ჩანს „გუნდი → აქციებშიც“)">ფასის ჩასწორება → ${sp}</button>`) + (r.how === "name" ? `<div class="small muted kw" title="დამთხვევა დასახელებით">≈ ${esc(r.site_title)}</div>` : "");
 }
+/* აქციის ეკონომიკა: პრაისი, შესასყიდი, რეტრო (ასორტიმენტი / ქსელის აქციების ფაილი), დადასტურებული ბონუსი, ნეტ ფასი, მარჟა */
+const NPE = { asReq: {} };
+const npPct = v => { if (v == null || v === "") return null; const n = npcNum(String(v).replace("%", "")); return isFinite(n) ? (Math.abs(n) > 1.5 ? n / 100 : n) : null; };
+function npAs(net) {
+  const sn = NSALES[net] || net; if (PR.as[sn]) return PR.as[sn];
+  if (!NPE.asReq[sn] && K.info) { NPE.asReq[sn] = 1; phAssort(net).then(() => render()).catch(() => {}); } return null;
+}
+function npEcon(p, net, AS, PHI) {
+  const b = phBc(p.barcode), a = b && AS ? AS[b] : null;
+  let hi = null, hd = 1e18; const pf = p.from || "", pt = p.to || "9999";
+  (b && PHI[b] || []).forEach(it => { if ((it.from && it.from > pt) || (it.to && pf && it.to < pf)) return; const d = Math.abs(Date.parse(it.from || pf || "2000-01-01") - Date.parse(pf || it.from || "2000-01-01")) + (it.shelf != null && Math.abs(it.shelf - npcNum(p.price)) < 0.005 ? 0 : 1e9); if (d < hd) { hd = d; hi = it; } });
+  const P = hi && hi.P != null ? hi.P : a ? prF(a.price_list) : null, B = hi && hi.B != null ? hi.B : a ? prF(a.buy_price) : null;
+  const retro = hi && hi.retro != null ? hi.retro : a && prF(a.retro) != null ? (Math.abs(a.retro) > 1.5 ? a.retro / 100 : +a.retro) : null;
+  const own = npPct(p.pct), bonus = own != null ? own : hi && hi.bonus != null ? hi.bonus : null;
+  const shelf = npcNum(p.price), netp = B != null ? B * (1 - (retro || 0) - (bonus || 0)) : null;
+  const marg = shelf > 0 && netp != null ? (shelf - netp) / shelf : null;
+  return { P, B, retro, bonus, bsrc: own != null ? "own" : hi && hi.bonus != null ? "file" : "", shelf, netp, marg, margGel: shelf > 0 && netp != null ? shelf - netp : null };
+}
 function kNetPromos(net) {
   const td = D.today || "", all = K.npf === "a";
   if (all) npLoadAll();
@@ -2447,6 +2467,9 @@ function kNetPromos(net) {
   let pcRows = {}; if (!isG) ((NP.pc && NP.pc.rows) || []).forEach(r => (pcRows[r.promo_id] = r));
   if (pcOn && !isG && !NP.pc && !NP.pcLoading) npcLoad(false);
   if (isG) { glvLoad(); pcRows = glvRows(net); }
+  const asr = npAs(net), AS = {}; ((asr && asr.rows) || []).forEach(r => [r.net_barcode, r.mg_barcode].forEach(b => { b = phBc(b); if (b && !AS[b]) AS[b] = r; }));
+  phLoad(); const PHI = {}; (PH.list || []).filter(d => npNet({ network: d.net || "" }, net)).forEach(d => (d.items || []).forEach(it => { const b = phBc(it.bc); if (b) (PHI[b] = PHI[b] || []).push(it); }));
+  const sd = d => d ? fmtDate(d).replace(/\.(\d{4})$/, (m, y) => y === String(td).slice(0, 4) ? "" : "." + y.slice(2)) : "…", f2 = v => v == null || !isFinite(v) ? "" : (+v).toFixed(2), fp = v => v == null || !isFinite(v) ? "" : (v * 100).toFixed(1).replace(/\.0$/, "") + "%";
   let h = `<div class="kpis">${kKpi("knpf", "0", nf === "0", "good", "მიმდინარე", cnt[0])}${kKpi("knpf", "1", nf === "1", "warn", "მომავალი", cnt[1])}${kKpi("knpf", "2", nf === "2", "", "ბოლო 7 დღეში დასრულდა", cnt[2])}${kKpi("knpf", "a", all, "acc", "ყველა აქცია (არქივი)", NP.all ? NP.all.filter(p => npNet(p, net)).length : "…")}</div>`;
   if (pcOn) {
     const rs = isG ? cntSrc.filter(p => st(p) === 0).map(p => Object.assign({ promo_id: p.id }, pcRows[p.id] || {})) : ((NP.pc && NP.pc.rows) || []).filter(r => r.network === net), pf = r => (D.promos || []).find(x => x.id === r.promo_id), bad = rs.filter(r => npcSt(r, pf(r)) === "mismatch").length, ok = rs.filter(r => npcSt(r, pf(r)) === "ok").length, nf2 = rs.filter(r => r.status === "notfound").length;
@@ -2461,7 +2484,7 @@ function kNetPromos(net) {
   } else if (nf !== "") L = L.filter(p => String(st(p)) === nf);
   L.sort((a, b) => all ? String(b.from || "").localeCompare(String(a.from || "")) : st(a) - st(b) || String(a.from || "").localeCompare(String(b.from || "")));
   if (!L.length) return h + `<div class="empty"><b>${all && (NP.from || NP.to) ? "ამ პერიოდში აქცია არ არის" : esc(net) + "-ზე აქციები არ არის"}</b>აქციებს „გუნდი → აქციები“ გვერდიდან ამატებ.</div>`;
-  h += `<div class="kcard"><div class="small muted" style="margin-bottom:6px">${L.length} აქცია</div><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>შტრიხკოდი</th><th>რეგ. ფასი</th><th>აქციის ფასი</th><th>%</th><th>პერიოდი</th>${pcOn ? "<th>ფასი საიტზე</th>" : ""}<th>შენიშვნა</th></tr></thead><tbody>${L.map(p => `<tr class="${st(p) === 2 ? "kdim" : ""}"><td><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span></td><td class="kw">${esc(p.product)}</td><td class="mono small">${esc(p.barcode)}</td><td>${esc(p.regular)}</td><td><b>${esc(p.price)}</b></td><td>${esc(p.pct)}</td><td class="small nowrap">${fmtDate(p.from)} — ${fmtDate(p.to)}</td>${pcOn ? `<td class="small">${st(p) === 0 ? npcCell(pcRows[p.id], p) : `<span class="muted">—</span>`}</td>` : ""}<td class="small kw">${esc(p.note || "")}</td></tr>`).join("")}</tbody></table></div></div>`;
+  h += `<div class="kcard"><div class="small muted" style="margin-bottom:6px">${L.length} აქცია</div><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>პერიოდი</th><th title="საპრაისო ფასი">პრაისი</th><th>შესასყიდი</th><th>რეტრო</th><th title="დამატებითი დადასტურებული სააქციო ბონუსი — შეგიძლია შეცვალო">დადასტ. ბონუსი</th><th title="შესასყიდი × (1 − რეტრო − ბონუსი)">ნეტ ფასი</th><th title="სააქციო სარეალიზაციო ფასი — შეგიძლია შეცვალო">სააქციო ფასი</th><th title="ქსელის მარჟა: (სააქციო ფასი − ნეტ ფასი) / სააქციო ფასი">მარჟა</th>${pcOn ? "<th>ფასი საიტზე</th>" : ""}</tr></thead><tbody>${L.map(p => { const e = npEcon(p, net, AS, PHI); return `<tr class="${st(p) === 2 ? "kdim" : ""}"><td><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span></td><td class="kw" style="min-width:160px">${esc(p.product)}<div class="small muted mono">${esc(p.barcode)}</div>${p.note ? `<div class="small muted">${esc(p.note)}</div>` : ""}</td><td class="small nowrap">${sd(p.from)}–<br>${sd(p.to)}</td><td>${f2(e.P)}</td><td>${f2(e.B)}</td><td>${fp(e.retro)}</td><td class="nowrap"><input class="npe" data-npe="pct" data-id="${esc(p.id)}" value="${esc(e.bonus == null ? "" : fp(e.bonus))}" placeholder="—" title="${e.bsrc === "file" ? "ქსელის აქციების ფაილიდან" : e.bsrc === "own" ? "შენ მიერ შეყვანილი" : "შეიყვანე %"}">${e.bsrc === "file" ? `<span class="small muted" title="ქსელის აქციების ფაილიდან"> 📄</span>` : ""}</td><td><b>${f2(e.netp)}</b></td><td><input class="npe" data-npe="price" data-id="${esc(p.id)}" value="${esc(p.price)}"></td><td class="nowrap">${e.marg == null ? "" : `<b class="${e.marg < 0 ? "pcbad" : ""}">${fp(e.marg)}</b><div class="small muted">${f2(e.margGel)} ₾</div>`}</td>${pcOn ? `<td class="small">${st(p) === 0 ? npcCell(pcRows[p.id], p) : `<span class="muted">—</span>`}</td>` : ""}</tr>`; }).join("")}</tbody></table></div></div>`;
   return h + `<div class="small muted">აქციების დამატება და რედაქტირება: „გუნდი → აქციები“.${pcOn ? (isG ? " „ფასი საიტზე“ — მაგნიტის ფასი Glovo-ზე (თბილისის მაღაზია). „≈“ — დამთხვევა დასახელებით, გადაამოწმე." : " „ფასი საიტზე“ — ქსელის ონლაინ მაღაზიის მიმდინარე ფასი (მაღაზიებში შეიძლება განსხვავდებოდეს).") : ""}</div>`;
 }
 document.addEventListener("change", e => { const k = e.target && e.target.dataset && e.target.dataset.npd; if (!k) return; NP[k] = e.target.value || ""; render(); });
@@ -2520,10 +2543,22 @@ Object.assign(A, { knpf(v) { K.npf = K.npf === v ? "" : v; render(); }, npclr() 
   async npfix(v) {
     const [id, sp] = v.split("|"), p = (D.promos || []).find(x => x.id === id); if (!p) return;
     if (!confirm(`„${p.product}“\nშეთანხმებული ფასი ${p.price} → ${sp}\n\nჩავასწორო?`)) return;
-    const u = { price: sp }, rg = npcNum(p.regular); if (p.pct && rg > 0) u.pct = Math.round((1 - +sp / rg) * 100) + (String(p.pct).includes("%") ? "%" : "");
+    const u = { price: sp };
     if (await act("updatePromo", S.pin, id, u)) toast("ფასი ჩასწორდა — " + sp);
     render();
   } });
+
+/* ინლაინ რედაქტირება: სააქციო ფასი და დადასტურებული ბონუსი → promos (ჩანს „გუნდი → აქციებშიც“) */
+document.addEventListener("change", async e => {
+  const el = e.target; if (!el || !el.dataset || !el.dataset.npe) return;
+  const id = el.dataset.id, k = el.dataset.npe, p = (D.promos || []).find(x => x.id === id); if (!p) return;
+  let v = String(el.value || "").trim();
+  if (k === "price") { const n = npcNum(v); if (!(n > 0)) { toast("ფასი არასწორია"); el.value = p.price; return; } v = n.toFixed(2); if (v === String(p.price)) return; }
+  else { if (v !== "") { const n = npPct(v); if (n == null || n < 0 || n > 1) { toast("ბონუსი არასწორია"); return; } v = +(n * 100).toFixed(2) + "%"; } if (v === String(p.pct || "")) return; }
+  el.disabled = true;
+  if (await act("updatePromo", S.pin, id, { [k]: v })) toast(k === "price" ? "სააქციო ფასი შეიცვალა — " + v : v ? "ბონუსი შეიცვალა — " + v : "ბონუსი ფაილიდან");
+  render();
+});
 
 /* Claude ასისტენტი — მენეჯერის ჩატი */
 const AI_API = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/ai";
@@ -2767,7 +2802,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261124225508";
+const APP_BUILD = "20261124231436";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
