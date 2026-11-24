@@ -1143,7 +1143,7 @@ const svg=k=>`<svg class="i" viewBox="0 0 24 24">${IC[k]||""}</svg>`;
 // კომპაქტური მენიუ: ერთდროულად ერთი ჯგუფია გახსნილი (აკორდეონი); თავიდან — მიმდინარე გვერდის ჯგუფი
 const NGI={"დავალებები":"rev","გუნდი":"team","ქსელები":"orders","KAM მართვა":"chart","სისტემა":"gear","კომუნიკაცია":"mail"};
 let NGA;try{NGA=localStorage.getItem("mg.nga")}catch(e){}
-function ngOpen(g,items){if(NGA!=null&&NGA!=="")return NGA===g;if(NGA==="")return false;return items.some(x=>x[0]===S.tab)||(g.includes("KAM")&&String(S.tab).startsWith("n|"))}
+function ngOpen(g,items){if(NGA!=null&&NGA!=="")return NGA===g;if(NGA==="")return false;return items.some(x=>x[0]===S.tab)}
 function ngToggle(g,open){NGA=open?"":g;try{localStorage.setItem("mg.nga",NGA)}catch(e){}}
 function mView(){
   const T=D.tasks,tot=T.length,done=T.filter(t=>t.status==="დადასტურებული").length,rev=T.filter(t=>t.status==="შესრულებული").length,
@@ -1152,14 +1152,13 @@ function mView(){
   const todayCnt=T.filter(t=>isLate(t)||isToday(t)).length;
   const prNow=D.promos.filter(promoNow).length;
   const NAV=[["","დავალებები",[["my","ჩემი დავალებები",0,"",IC.ucheck],["today","დღეს",todayCnt,"",IC.cal],["rev","შესამოწმებელი",rev,"",IC.rev],["all","ყველა დავალება",0,"",IC.all]]],
-    ["","გუნდი",[["team","აგენტები",0,"",IC.team],["rep","ფოტო-რეპორტები",unseen,"",IC.rep],["chat","ჩატი",chatUnread(),"",IC.chat]]],
-    ["","ქსელები",[["promo","აქციები",prNow,"pr",IC.promo],["orders","შეკვეთები",0,"",IC.orders],["files","ფაილები",0,"",IC.files]]],
+    ["","გუნდი",[["team","აგენტები",0,"",IC.team],["rep","ფოტო-რეპორტები",unseen,"",IC.rep],["chat","ჩატი",chatUnread(),"",IC.chat],["promo","აქციები",prNow,"pr",IC.promo],["orders","შეკვეთები",0,"",IC.orders],["files","ფაილები",0,"",IC.files]]],
     ["","KAM მართვა",[["k-sales","გაყიდვები",0,"",IC.trend],["k-plan","გეგმა და შესრულება",0,"",IC.chart],["k-alerts","შეკვეთის კონტროლი",0,"",IC.orders],["k-assort","ასორტიმენტი და ფასები",0,"",IC.box],["k-promo","აქციები",0,"",IC.pct],["k-objects","ობიექტები",0,"",IC.pin],["k-import","მონაცემების ატვირთვა",0,"",IC.up]]],
     ["","კომუნიკაცია",[["cm-mail","მეილი",cmCnt("mail"),"",IC.mail],["cm-wa","WhatsApp",cmCnt("whatsapp"),"",IC.wa],["cm-viber","Viber",cmCnt("viber"),"",IC.viber]]],
     ["","სისტემა",[["settings","პარამეტრები",0,"",IC.gear]]]];
   const TT={home:"მთავარი","cm-mail":"მეილი","cm-wa":"WhatsApp","cm-viber":"Viber",my:"ჩემი დავალებები",today:"დღეს",rev:"შესამოწმებელი",all:"ყველა დავალება",team:"აგენტები",rep:"ფოტო-რეპორტები",promo:"აქციები",orders:"შეკვეთები",files:"ფაილები",chat:"ჩატი","k-sales":"გაყიდვები","k-plan":"გეგმა და შესრულება","k-alerts":"შეკვეთის კონტროლი — ვინ შეწყვიტა შეკვეთა","k-assort":"ასორტიმენტი და ფასები","k-objects":"ობიექტები","k-import":"მონაცემების ატვირთვა","k-promo":"აქციები: დაგეგმვა და მარჟა",settings:"პარამეტრები"};
   let h=`<aside class="side ${S.side?"open":""}"><div class="brandbox"><div class="lgm">MG</div><div><div class="bn">JDE vs MEGAKO</div><div class="bs">მეგაკო · მენეჯერი</div></div></div>
-  <nav class="navs"><button class="ni ${S.tab==="home"?"on":""}" data-a="tab" data-v="home">${svg("home")}მთავარი</button>${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0),cur=items.some(x=>x[0]===S.tab)||(g.includes("KAM")&&String(S.tab).startsWith("n|"));return `<button class="ng2 ${op?"op":""} ${cur?"cur":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}">${svg(NGI[g]||"all")}<span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi2">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}">${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+(g.includes("KAM")?kNetNav():"")+`</div>`:"")}).join("")}</nav>
+  <nav class="navs"><button class="ni ${S.tab==="home"?"on":""}" data-a="tab" data-v="home">${svg("home")}მთავარი</button>${NAV.map(([_,g,items])=>{const op=ngOpen(g,items),cnt=items.reduce((a,x)=>a+(+x[2]||0),0),cur=items.some(x=>x[0]===S.tab);return `<button class="ng2 ${op?"op":""} ${cur?"cur":""}" data-a="ngt" data-v="${g}" aria-expanded="${op}">${svg(NGI[g]||"all")}<span>${g}</span>${!op&&cnt?`<span class="nc">${cnt}</span>`:""}<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`+(op?`<div class="ngi2">`+items.map(([v,l,c,cl,ic])=>`<button class="ni ${S.tab===v?"on":""}" data-a="tab" data-v="${v}">${l}${c?`<span class="nc ${cl}">${c}</span>`:""}</button>`).join("")+`</div>`:"")+(g==="გუნდი"?kNetNav():"")}).join("")}</nav>
   <div class="ucard"><div class="av2">მ</div><div><div class="un">მენეჯერი</div><div class="ur">${todayLine()}</div></div><button data-a="logout" title="გასვლა">${svg("out")}</button></div></aside><div class="side-bg" data-a="sidex"></div>
   <header class="v2top"><button class="ib mb" data-a="sidetog" aria-label="მენიუ">${svg("menu")}</button>${S.tab!=="home"?`<button class="ib bk" data-a="goback" title="უკან" aria-label="უკან">${svg("back")}</button>`:""}<div class="tt">${TT[S.tab]||kTitle()||"JDE vs MEGAKO"}<small>შპს მეგაკო · ${todayLine()}</small></div><button class="syncb" data-a="refresh" title="მონაცემების განახლება">${svg("refresh")}<span>სინქრონიზაცია</span></button></header>
   ${["today","rev","all"].includes(S.tab)?`<div class="kpis">
@@ -2321,7 +2320,7 @@ function kNetNav() {
   const r = nRoute();
   const open = nnOpen();
   const chev = o => `<svg class="chev2 ${o ? "op" : ""}" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>`;
-  let h = `<button class="ni nn0" data-a="nntog" data-v=""><svg class="i" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>ჩემი ქსელები${chev(open)}</button>`;
+  let h = `<button class="ng2 nn0 ${open ? "op" : ""} ${r ? "cur" : ""}" data-a="nntog" data-v="" aria-expanded="${open}"><svg class="i" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg><span>ჩემი ქსელები</span><svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>`;
   if (!open) return h;
   h += `<div class="nnl">` + MYNETS.map(n => {
     const o = nnNet(n);
@@ -2604,10 +2603,10 @@ const HSUB = {
   "k-promo": () => "დაგეგმვა, არქივი, ანაზღაურება", "k-objects": () => "ქსელების ობიექტები და აგენტები", "k-import": () => "გაყიდვები, ასორტიმენტი, ობიექტები (Excel)", settings: () => "PIN, ქსელები, სისტემა"
 };
 const HCOL = ["g", "b", "r", "y", "v", "c"];
-const HGI = { "დავალებები": ["rev", "g", "შესასრულებელი, შესამოწმებელი"], "გუნდი": ["team", "b", "აგენტები, ფოტო-რეპორტები, ჩატი"], "ქსელები": ["orders", "r", "აქციები, შეკვეთები, ფაილები"], "KAM მართვა": ["chart", "y", "გაყიდვები, გეგმა, ასორტიმენტი, აქციები"], "ჩემი ქსელები": ["home", "c", "ორი ნაბიჯი, მაგნიტი, კალათა…"], "კომუნიკაცია": ["mail", "b", "მეილი, WhatsApp, Viber — ცალ-ცალკე"], "სისტემა": ["gear", "v", "პარამეტრები"] };
+const HGI = { "დავალებები": ["rev", "g", "შესასრულებელი, შესამოწმებელი"], "გუნდი": ["team", "b", "აგენტები, რეპორტები, ჩატი, აქციები, შეკვეთები, ფაილები"], "ქსელები": ["orders", "r", "აქციები, შეკვეთები, ფაილები"], "KAM მართვა": ["chart", "y", "გაყიდვები, გეგმა, ასორტიმენტი, აქციები"], "ჩემი ქსელები": ["home", "c", "ორი ნაბიჯი, მაგნიტი, კალათა…"], "კომუნიკაცია": ["mail", "b", "მეილი, WhatsApp, Viber — ცალ-ცალკე"], "სისტემა": ["gear", "v", "პარამეტრები"] };
 let HOPEN = null; try { HOPEN = localStorage.getItem("mg.hopen"); } catch (e) {}
 function mHome(NAV0) {
-  const NAV = NAV0.slice(); if (typeof MYNETS !== "undefined") NAV.splice(NAV.length - 1, 0, ["", "ჩემი ქსელები", MYNETS.map(n => ["n|" + n + "|sales", n, 0, "", IC.home])]);
+  const NAV = NAV0.slice(); if (typeof MYNETS !== "undefined") NAV.splice(2, 0, ["", "ჩემი ქსელები", MYNETS.map(n => ["n|" + n + "|sales", n, 0, "", IC.home])]);
   const hr = new Date().getHours(), hi = hr < 12 ? "დილა მშვიდობისა" : hr < 18 ? "გამარჯობა" : "საღამო მშვიდობისა";
   let h = `<div class="hm"><div class="hmd">${todayLine()}</div><h1 class="hmh">${hi}!</h1><div class="small muted" style="margin-bottom:14px">აირჩიე განყოფილება — დაკლიკებით ჩაიშლება მისი ნაწილები</div><div class="hmt hmg0">`;
   NAV.forEach(([_, g, items], gi) => {
@@ -2664,7 +2663,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261124125420";
+const APP_BUILD = "20261124220820";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
