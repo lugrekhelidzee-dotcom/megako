@@ -2360,7 +2360,50 @@ function kNetView() {
 /* შეთანხმებული აქციები: მიმდინარე/მომავალი/დასრულებული + ყველა (პერიოდის ფილტრით) + ფასის შემოწმება ქსელის საიტზე */
 const NP = { all: null, loading: false, from: "", to: "", pc: null, pcLoading: false, pcRun: false, npcAuto: false };
 const npNet = (p, net) => { const a = norm(p.network), b = norm(net); return a === b || a.startsWith(b) || b.startsWith(a) || (a.slice(0, 6) === b.slice(0, 6) && a.length > 5); };
-const PCNETS = ["ორი ნაბიჯი"];
+const PCNETS = ["ორი ნაბიჯი", "მაგნიტი"];
+/* მაგნიტი: Glovo-ს ფასები (სერვერი ყოველ დილით იწერს, „pcheck/glovo-magniti“) + დამთხვევა შტრიხკოდით ან დასახელებით */
+const GLV = { doc: null, loading: false };
+function glvLoad(force) {
+  if ((GLV.doc && !force) || GLV.loading) return; GLV.loading = true;
+  kcall("docs").then(rows => { const r = (rows || []).find(x => x.path === "pcheck/glovo-magniti"); GLV.doc = r ? r.data : { items: [] }; GLV.loading = false; render(); })
+    .catch(() => { GLV.loading = false; GLV.doc = GLV.doc || { items: [] }; render(); });
+}
+const GSTOP = new Set(["ყავა", "ყავის", "გრ", "გრამი", "ც", "ცალი", "და", "the", "ხსნადი"]);
+function gTok(s) {
+  let t = " " + String(s || "").toLowerCase().replace(/იაკობზ|იაკობსი/g, "იაკობს").replace(/კარტ\s*ნუარი/g, "კარტ ნუარ").replace(/მოკკა/g, "მოკა").replace(/3\s*in\s*1|3\s*\/\s*1|3\s*в\s*1/g, " სამიერთში ").replace(/\d{7,14}/g, " ") + " ";
+  const w = []; t.replace(/(\d+(?:[.,]\d+)?)\s*(?:გრ|გ(?![ა-ჰ])|g\b|მლ|ml)/g, (m, x) => { w.push(String(+x.replace(",", "."))); return " "; });
+  const words = new Set(t.replace(/(\d+(?:[.,]\d+)?)\s*(?:გრ|გ(?![ა-ჰ])|g\b|მლ|ml)/g, " ").split(/[^a-zა-ჰ0-9]+/).filter(x => x.length > 2 && !GSTOP.has(x)));
+  return { w, words };
+}
+const GVAR = ["ყინულოვან", "ინტენზ", "მონა", "ველვეტ", "გოლდ", "კარამელ", "მილკა", "მოკა", "დინამიქს", "ლატე", "კაპუჩინო", "კლასიკ", "ელეგანტ", "თეთრ", "ჯეზვე", "მარცვალ", "კაფსულ", "დაფქულ", "ორიგინალ"];
+function gVar(s) { const t = String(s || "").toLowerCase().replace(/მოკკა/g, "მოკა"); const ws = t.split(/[^a-zა-ჰ0-9]+/); const v = GVAR.filter(k => ws.some(x => k === "მონა" ? x === k : x.startsWith(k))); if (/3\s*\+\s*1/.test(t)) v.push("3+1"); if (/\+\s*\d+\s*გ/.test(t)) v.push("bonus"); return v.sort().join("|"); }
+function gMatch(p, items) {
+  const bc = String(p.barcode || "").replace(/\D/g, "");
+  const exact = bc && items.find(i => i.bc === bc); if (exact) return { it: exact, how: "bc" };
+  const A = gTok(p.product); let best = null, bs = 0;
+  items.forEach(i => {
+    const B = gTok(i.n);
+    if (gVar(p.product) !== gVar(i.n)) return;
+    if (A.w.length && B.w.length && !A.w.some(x => B.w.includes(x))) return;
+    const inter = [...A.words].filter(x => B.words.has(x)).length, uni = new Set([...A.words, ...B.words]).size || 1;
+    if (!["იაკობს", "კარტ", "ლორ", "მაქსველ"].some(b => A.words.has(b) === B.words.has(b) && A.words.has(b))) return;
+    const sc = inter / uni + (A.w.length && B.w.length ? 0.25 : 0);
+    if (sc > bs) { bs = sc; best = i; }
+  });
+  return bs >= 0.55 ? { it: best, how: "name" } : null;
+}
+function glvRows(net) {
+  const items = (GLV.doc && GLV.doc.items) || [], out = {};
+  const td = D.today || "", key = {};
+  (D.promos || []).filter(p => npNet(p, net) && !(p.to && p.to < td) && !(p.from && p.from > td)).forEach(p => {
+    const m = gMatch(p, items); if (m) key[p.id] = m.it.n; const agreed = +String(p.price || "").replace(",", ".");
+    if (!m) { out[p.id] = { status: items.length ? "notfound" : "pending", src: "glovo" }; return; }
+    const sp = m.it.pr != null ? +m.it.pr : +m.it.p;
+    out[p.id] = { status: Math.abs(sp - agreed) < 0.005 ? "ok" : "mismatch", site_price: sp, site_regular: +m.it.p, site_disc: m.it.pr, site_title: m.it.n, how: m.how, src: "glovo" };
+  });
+  Object.keys(out).forEach(id => { const r = out[id]; if (r.status === "mismatch" && Object.keys(out).some(j => j !== id && out[j].status === "ok" && key[j] === key[id])) r.status = "overlap"; });
+  return out;
+}
 function npLoadAll() {
   if (NP.all || NP.loading) return; NP.loading = true;
   kcall("promosAll").then(r => { NP.all = (r || []).map(p => ({ id: p.id, network: p.network, product: p.product, barcode: p.barcode, regular: p.regular, price: p.price, pct: p.pct, from: p.from_d, to: p.to_d, note: p.note, file: p.file })); NP.loading = false; render(); })
@@ -2368,7 +2411,7 @@ function npLoadAll() {
 }
 function npcLoad(run) {
   if (NP.pcLoading) return; NP.pcLoading = true; NP.pcRun = !!run; render();
-  kcall("pcheck", { run: !!run }).then(r => { NP.pc = r || { rows: [] }; NP.pcLoading = false; NP.pcRun = false; if (run) toast("✓ ფასები შემოწმდა"); render(); })
+  kcall("pcheck", { run: !!run }).then(r => { NP.pc = r || { rows: [] }; NP.pcLoading = false; NP.pcRun = false; if (run) { toast("✓ ფასები შემოწმდა"); glvLoad(true); } render(); })
     .catch(e => { NP.pcLoading = false; NP.pcRun = false; NP.pc = NP.pc || { rows: [] }; toast(errMsg(e)); render(); });
 }
 // დღეში ერთხელ ავტომატურად, როცა აპი ინტერნეტზეა (სერვერიც ყოველ დილით ამოწმებს)
@@ -2382,12 +2425,13 @@ const npcD = t => { if (!t) return ""; const d = new Date(new Date(t).getTime() 
 function npcCell(r, p) {
   if (!r) return `<span class="small muted">—</span>`;
   if (r.status === "pending") return `<span class="small muted">მოწმდება…</span>`;
-  if (r.status === "notfound") return `<span class="pill">საიტზე არ არის</span>`;
+  if (r.status === "notfound") return `<span class="pill">${r.src === "glovo" ? "Glovo-ზე არ ჩანს" : "საიტზე არ არის"}</span>`;
   if (r.status === "error") return `<span class="small muted">ვერ შემოწმდა</span>`;
   const end = r.site_disc_to ? npcD(r.site_disc_to) : "", endWarn = end && p.to && end < p.to;
   const ok = r.status === "ok";
+  if (r.status === "overlap") return `<div class="small muted" title="ამავე პროდუქტზე ერთდროულად რამდენიმე აქციაა — საიტზე სხვა (დამთხვეული) აქციის ფასი ჩანს">⇄ ${(+r.site_price).toFixed(2)} — მოქმედებს სხვა აქცია</div>`;
   return `<div><b class="${ok ? "pcok" : "pcbad"}">${ok ? "✓" : "✗"} ${(+r.site_price).toFixed(2)}</b>${r.site_disc ? `<span class="small muted"> (რეგ. ${(+r.site_regular).toFixed(2)})</span>` : `<span class="small muted"> რეგ. ფასი</span>`}</div>` +
-    (endWarn ? `<div class="small pcbad">საიტზე მთავრდება ${fmtDate(end)}</div>` : "");
+    (endWarn ? `<div class="small pcbad">საიტზე მთავრდება ${fmtDate(end)}</div>` : "") + (r.how === "name" ? `<div class="small muted kw" title="დამთხვევა დასახელებით">≈ ${esc(r.site_title)}</div>` : "");
 }
 function kNetPromos(net) {
   const td = D.today || "", all = K.npf === "a";
@@ -2398,14 +2442,16 @@ function kNetPromos(net) {
   const nm = ["მიმდინარე", "მომავალი", "დასრულებული"];
   const cntSrc = (D.promos || []).filter(p => npNet(p, net)), cnt = [0, 0, 0]; cntSrc.forEach(p => cnt[st(p)]++);
   const nf = K.npf == null ? "" : K.npf;
-  const pcOn = PCNETS.includes(net), pcRows = {}; ((NP.pc && NP.pc.rows) || []).forEach(r => (pcRows[r.promo_id] = r));
-  if (pcOn && !NP.pc && !NP.pcLoading) npcLoad(false);
+  const pcOn = PCNETS.includes(net), isG = net === "მაგნიტი";
+  let pcRows = {}; if (!isG) ((NP.pc && NP.pc.rows) || []).forEach(r => (pcRows[r.promo_id] = r));
+  if (pcOn && !isG && !NP.pc && !NP.pcLoading) npcLoad(false);
+  if (isG) { glvLoad(); pcRows = glvRows(net); }
   let h = `<div class="kpis">${kKpi("knpf", "0", nf === "0", "good", "მიმდინარე", cnt[0])}${kKpi("knpf", "1", nf === "1", "warn", "მომავალი", cnt[1])}${kKpi("knpf", "2", nf === "2", "", "ბოლო 7 დღეში დასრულდა", cnt[2])}${kKpi("knpf", "a", all, "acc", "ყველა აქცია (არქივი)", NP.all ? NP.all.filter(p => npNet(p, net)).length : "…")}</div>`;
   if (pcOn) {
-    const rs = ((NP.pc && NP.pc.rows) || []).filter(r => r.network === net), bad = rs.filter(r => r.status === "mismatch").length, ok = rs.filter(r => r.status === "ok").length, nf2 = rs.filter(r => r.status === "notfound").length;
+    const rs = isG ? cntSrc.filter(p => st(p) === 0).map(p => Object.assign({ promo_id: p.id }, pcRows[p.id] || {})) : ((NP.pc && NP.pc.rows) || []).filter(r => r.network === net), bad = rs.filter(r => r.status === "mismatch").length, ok = rs.filter(r => r.status === "ok").length, nf2 = rs.filter(r => r.status === "notfound").length;
     const endw = rs.filter(r => { const p = (D.promos || []).find(x => x.id === r.promo_id); return r.site_disc_to && p && p.to && npcD(r.site_disc_to) < p.to; }).length;
-    h += `<div class="kcard pcbox ${bad ? "bad" : ""}"><div class="kh"><b>🔎 ფასების შემოწმება ქსელის საიტზე (2nabiji.ge)</b><span class="row" style="gap:8px"><span class="small muted">${NP.pc && NP.pc.d ? "ბოლოს: " + fmtDate(NP.pc.d) : "ჯერ არ შემოწმებულა"}</span><button class="btn sm" data-a="pcrun" ${NP.pcLoading ? "disabled" : ""}>${NP.pcRun ? "მოწმდება…" : "↻ შემოწმება ახლა"}</button></span></div>
-      ${rs.length ? `<div class="row" style="gap:14px;flex-wrap:wrap"><span class="pcok"><b>✓ ${ok}</b> ემთხვევა</span><span class="${bad ? "pcbad" : "muted"}"><b>✗ ${bad}</b> არ ემთხვევა</span>${endw ? `<span class="pcbad"><b>${endw}</b> — საიტზე აქცია ადრე მთავრდება</span>` : ""}${nf2 ? `<span class="muted">${nf2} საიტზე ვერ მოიძებნა</span>` : ""}</div>` : `<div class="small muted">მიმდინარე აქციებს ყოველ დილით და აპის გახსნისას ავტომატურად ვამოწმებ.</div>`}</div>`;
+    h += `<div class="kcard pcbox ${bad ? "bad" : ""}"><div class="kh"><b>🔎 ფასების შემოწმება ${isG ? "Glovo-ზე (მაგნიტი, თბილისი)" : "ქსელის საიტზე (2nabiji.ge)"}</b><span class="row" style="gap:8px"><span class="small muted">${isG ? (GLV.doc && GLV.doc.d ? "ფასები: " + fmtDate(GLV.doc.d) : GLV.loading ? "იტვირთება…" : "ჯერ არ შემოწმებულა") : NP.pc && NP.pc.d ? "ბოლოს: " + fmtDate(NP.pc.d) : "ჯერ არ შემოწმებულა"}</span><button class="btn sm" data-a="pcrun" ${NP.pcLoading ? "disabled" : ""}>${NP.pcRun ? "მოწმდება…" : "↻ შემოწმება ახლა"}</button></span></div>
+      ${rs.length ? `<div class="row" style="gap:14px;flex-wrap:wrap"><span class="pcok"><b>✓ ${ok}</b> ემთხვევა</span><span class="${bad ? "pcbad" : "muted"}"><b>✗ ${bad}</b> არ ემთხვევა</span>${endw ? `<span class="pcbad"><b>${endw}</b> — საიტზე აქცია ადრე მთავრდება</span>` : ""}${nf2 ? `<span class="muted">${nf2} ${isG ? "Glovo-ზე არ ჩანს" : "საიტზე ვერ მოიძებნა"}</span>` : ""}</div>` : `<div class="small muted">მიმდინარე აქციებს ყოველ დილით და აპის გახსნისას ავტომატურად ვამოწმებ.</div>`}</div>`;
   }
   if (all) {
     h += `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px"><span class="small">პერიოდი:</span><label class="small">დაწყება <input type="date" data-npd="from" value="${esc(NP.from)}"></label><label class="small">დასრულება <input type="date" data-npd="to" value="${esc(NP.to)}"></label>${NP.from || NP.to ? `<button class="btn ghost sm" data-a="npclr">✕ გასუფთავება</button>` : ""}<span class="small muted">ჩანს აქციები, რომლებიც ამ პერიოდს ფარავს</span></div>`;
@@ -2416,7 +2462,7 @@ function kNetPromos(net) {
   L.sort((a, b) => all ? String(b.from || "").localeCompare(String(a.from || "")) : st(a) - st(b) || String(a.from || "").localeCompare(String(b.from || "")));
   if (!L.length) return h + `<div class="empty"><b>${all && (NP.from || NP.to) ? "ამ პერიოდში აქცია არ არის" : esc(net) + "-ზე აქციები არ არის"}</b>აქციებს „გუნდი → აქციები“ გვერდიდან ამატებ.</div>`;
   h += `<div class="kcard"><div class="small muted" style="margin-bottom:6px">${L.length} აქცია</div><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>შტრიხკოდი</th><th>რეგ. ფასი</th><th>აქციის ფასი</th><th>%</th><th>პერიოდი</th>${pcOn ? "<th>ფასი საიტზე</th>" : ""}<th>შენიშვნა</th></tr></thead><tbody>${L.map(p => `<tr class="${st(p) === 2 ? "kdim" : ""}"><td><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span></td><td class="kw">${esc(p.product)}</td><td class="mono small">${esc(p.barcode)}</td><td>${esc(p.regular)}</td><td><b>${esc(p.price)}</b></td><td>${esc(p.pct)}</td><td class="small nowrap">${fmtDate(p.from)} — ${fmtDate(p.to)}</td>${pcOn ? `<td class="small">${st(p) === 0 ? npcCell(pcRows[p.id], p) : `<span class="muted">—</span>`}</td>` : ""}<td class="small kw">${esc(p.note || "")}</td></tr>`).join("")}</tbody></table></div></div>`;
-  return h + `<div class="small muted">აქციების დამატება და რედაქტირება: „გუნდი → აქციები“.${pcOn ? " „ფასი საიტზე“ — ქსელის ონლაინ მაღაზიის მიმდინარე ფასი (მაღაზიებში შეიძლება განსხვავდებოდეს)." : ""}</div>`;
+  return h + `<div class="small muted">აქციების დამატება და რედაქტირება: „გუნდი → აქციები“.${pcOn ? (isG ? " „ფასი საიტზე“ — მაგნიტის ფასი Glovo-ზე (თბილისის მაღაზია). „≈“ — დამთხვევა დასახელებით, გადაამოწმე." : " „ფასი საიტზე“ — ქსელის ონლაინ მაღაზიის მიმდინარე ფასი (მაღაზიებში შეიძლება განსხვავდებოდეს).") : ""}</div>`;
 }
 document.addEventListener("change", e => { const k = e.target && e.target.dataset && e.target.dataset.npd; if (!k) return; NP[k] = e.target.value || ""; render(); });
 /* ანაზღაურება / პლანოგრამა: ფაილები + შენიშვნა თითო ქსელზე */
@@ -2714,7 +2760,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261124222751";
+const APP_BUILD = "20261124224059";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
