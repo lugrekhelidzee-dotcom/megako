@@ -720,6 +720,9 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 .kasgrid .kofm{grid-column:span 2}
 .tpc .tpsub td{background:var(--soft,#f6f8f7);font-size:13px}
 .tpc .lnk{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.tdgs{display:inline-flex;gap:3px;flex-wrap:nowrap}
+.tdg{min-height:28px;padding:2px 7px;border-radius:999px;border:1px solid var(--line,#d6dbd9);background:transparent;color:var(--muted,#6b7572);font-size:12px;cursor:pointer}
+.tdg.on{background:var(--acc,#0f7a5c);border-color:var(--acc,#0f7a5c);color:#fff;font-weight:600}
 
 </style>
 </head>
@@ -940,11 +943,11 @@ function toursView(){
   if(S.tday==null)S.tday=todayDay();
   const T=D.tours||{},all=myObjects(S.who),d=S.tday;
   const anyDays=all.some(o=>tdays(o,S.who).length);
-  let h=`<div class="dtabs">${[1,2,3,4,5,0].map(i=>`<button class="${d===i?"on":""}" data-a="tday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>tdays(o,S.who).includes(i)).length:all.length}</small></button>`).join("")}</div>`;
+  let h=`<div class="dtabs">${[1,2,3,4,5,0].map(i=>`<button class="${d===i?"on":""}" data-a="tday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>tdays(o,S.who).includes(i)).length:all.length}</small></button>`).join("")}${all.some(o=>!tdays(o,S.who).length)?`<button class="${d===9?"on":""}" data-a="tday" data-v="9">ტურის გარეშე<small>${all.filter(o=>!tdays(o,S.who).length).length}</small></button>`:""}</div>`;
   if(!anyDays)h+=`<div class="small muted">ტურის დღეები ჯერ არ არის მიწერილი — მენეჯერი ცხრილის „ტურები“ ფურცელში მონიშნავს.</div>`;
   if(!d)h+=`<input type="search" id="tq2" data-in="tq2" value="${esc(S.tq2||"")}" placeholder="მოძებნე ობიექტი…" autocomplete="off">`;
   const q=d?"":norm(S.tq2||"");
-  let list=all.filter(o=>!d||tdays(o,S.who).includes(d));
+  let list=all.filter(o=>!d||(d===9?!tdays(o,S.who).length:tdays(o,S.who).includes(d)));
   if(q)list=list.filter(o=>norm(o.name+" "+o.address+" "+o.network).includes(q));
   const tasks=myTasks().filter(active);
   const card=o=>{const ts=tasks.filter(t=>t.store===o.name),days=tdays(o,S.who);
@@ -952,7 +955,7 @@ function toursView(){
     ${ts.map(t=>`<div class="tnote"><span>${t.kind==="შეხსენება"?"🔔":"📌"} <b>შემდეგ ვიზიტზე:</b> ${esc(t.title)}</span>${t.kind==="შეხსენება"?`<button class="btn" data-a="tdone" data-v="${esc(t.id)}">✓</button>`:`<button class="btn" data-a="tgo" data-v="${esc(t.id)}">შესრულება ›</button>`}</div>`).join("")}
     ${S.noteFor===o.name?`<textarea id="ntx" data-in="ntx" rows="2" placeholder="მაგ. შემდეგ ვიზიტზე ფასმაჩვენებლები გამოვცვალო">${esc(S.ntx||"")}</textarea><div class="row"><button class="btn primary" data-a="nsave">შენახვა</button><button class="btn ghost" data-a="nx">გაუქმება</button></div>`
      :`<div class="row"><button class="btn" data-a="tphoto" data-v="${esc(o.name)}">📷 ფოტო</button><button class="btn ghost" data-a="nadd" data-v="${esc(o.name)}">+ შეხსენება შემდეგი ვიზიტისთვის</button></div>`}</div>`};
-  if(!list.length)return `<div class="aform">${h}<div class="empty"><b>${d?DN[d]+"-ზე ობიექტი არ გაქვს":"ვერ მოიძებნა"}</b></div></div>`;
+  if(!list.length)return `<div class="aform">${h}<div class="empty"><b>${d===9?"ყველა ობიექტს აქვს ტურის დღე":d?DN[d]+"-ზე ობიექტი არ გაქვს":"ვერ მოიძებნა"}</b></div></div>`;
   const by={};list.forEach(o=>{const k=o.network||"—";(by[k]=by[k]||[]).push(o)});
   const withT=o=>tasks.some(t=>t.store===o.name)?0:1;
   h+=Object.keys(by).sort((a,b)=>a.localeCompare(b,"ka")).map(k=>`<div class="netg box"><h3>${esc(k)} · ${by[k].length}</h3>${by[k].sort((a,b)=>withT(a)-withT(b)||a.name.localeCompare(b.name,"ka")).map(card).join("")}</div>`).join("");
@@ -1230,14 +1233,16 @@ function detail(t){const id=esc(t.id),mk="mn-"+t.id;
 function teamView(){if(!D.agents.length)return `<div class="empty"><b>აგენტები ჯერ არ არის</b>ჩაწერე სახელი, გვარი და ტელეფონი ცხრილის „აგენტები“ ფურცელში და დააჭირე „განახლებას“.</div>`;
   return `<div class="tbl"><table><thead><tr><th>თანამშრომელი</th><th>ობიექტები</th><th>შესასრულებელი</th><th>ვადაგადაც.</th><th>შესამოწმებელი</th><th>დადასტურებული</th><th>ბოლო ფოტო</th><th>კონტაქტი</th></tr></thead><tbody>${D.agents.map(a=>{const ts=D.tasks.filter(t=>t.agent===a.name);const lr=D.reports.find(r=>r.agent===a.name);
     return `<tr><td><b>${esc(a.name)}</b><br><span class="small muted">${roleLabel(a.role)}${a.zone?" · "+esc(a.zone):""}</span><br><span class="small ${a.hasPin?"muted":""}" style="${a.hasPin?"":"color:var(--warn)"}">${a.hasPin?"PIN დაყენებულია":"PIN ჯერ არ აქვს"}</span>${a.hasPin?(S.del==="pin"+a.name?` <button class="btn danger" data-a="rpinyes" data-v="${esc(a.name)}" style="min-height:30px;padding:2px 8px">განულება?</button>`:` <button class="btn ghost" data-a="rpin" data-v="${esc(a.name)}" style="min-height:30px;padding:2px 8px">განულება</button>`):""}</td><td><button class="chip ${S.teamOpen===a.name?"on":""}" data-a="tobj" data-v="${esc(a.name)}">${myObjects(a.name).length} ობიექტი ${S.teamOpen===a.name?"▴":"▾"}</button></td><td class="mono">${ts.filter(active).length}</td><td class="mono" style="color:${ts.filter(isLate).length?"var(--bad)":"inherit"}">${ts.filter(isLate).length}</td><td class="mono">${ts.filter(t=>t.status==="შესრულებული").length}</td><td class="mono">${ts.filter(t=>t.status==="დადასტურებული").length}</td><td class="small muted">${lr?esc(lr.time):"—"}</td><td>${contact(a.name)}</td></tr>`+(S.teamOpen===a.name?`<tr class="detail"><td colspan="8">${teamObjs(a.name)}</td></tr>`:"")}).join("")}</tbody></table></div><p class="small muted">აგენტის დასამატებლად ან ტელეფონის შესაცვლელად ჩაწერე ცხრილის „აგენტები“ ფურცელში და დააჭირე „განახლებას“. როლს (აგენტი / მერჩენდაიზერი) „აგენტები“ ფურცლის სვეტ „როლი“-ში უთითებ, ობიექტის აგენტს და მერჩენდაიზერს — „ობიექტები“ ფურცელში. თანამშრომელი PIN-ს პირველ შესვლაზე თვითონ იყენებს; თუ დაავიწყდა, დააჭირე „განულებას“ და შემდეგ შესვლაზე ახალს მოიფიქრებს.</p>`}
-function teamObjs(name){const q=cbQuery(S.tq||"");const all=myObjects(name);const T=D.tours||{},td=S.mtday||0;
+function tourKey(o,who){return o.merch&&agentOf(o.merch)===who&&agentOf(o.agent)!==who?"მ|"+o.name:o.name}
+function tourEd(o,who){const k=(S._tk=S._tk||[]).push(tourKey(o,who))-1,d=tdays(o,who);return `<span class="tdgs">${[1,2,3,4,5].map(i=>`<button class="tdg ${d.includes(i)?"on":""}" data-a="tourtog" data-v="${i}|${k}" title="${d.includes(i)?"მოხსნა":"დამატება"}">${DN[i]}</button>`).join("")}</span>`}
+function teamObjs(name){S._tk=[];const q=cbQuery(S.tq||"");const all=myObjects(name);const T=D.tours||{},td=S.mtday||0;
   const withD=all.filter(o=>tdays(o,name).length).length;
-  const l=all.filter(o=>cbMatch({l:o.name,sub:o.network+" "+o.address},q)>0&&(!td||tdays(o,name).includes(td)));
-  const dtabs=`<div class="dtabs">${[0,1,2,3,4,5].map(i=>`<button class="${td===i?"on":""}" data-a="mtday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>tdays(o,name).includes(i)).length:all.length}</small></button>`).join("")}</div>
-  <div class="small muted">ტურის დღეები მიწერილი აქვს ${withD} / ${all.length} ობიექტს${withD<all.length?` — დანარჩენს ცხრილის „ტურები“ ფურცელში მონიშნავ`:""}.</div>`;
+  const l=all.filter(o=>cbMatch({l:o.name,sub:o.network+" "+o.address},q)>0&&(!td||(td===9?!tdays(o,name).length:tdays(o,name).includes(td))));
+  const dtabs=`<div class="dtabs">${[0,1,2,3,4,5].map(i=>`<button class="${td===i?"on":""}" data-a="mtday" data-v="${i}">${DN[i]}<small>${i?all.filter(o=>tdays(o,name).includes(i)).length:all.length}</small></button>`).join("")}<button class="${td===9?"on":""}" data-a="mtday" data-v="9">ტურის გარეშე<small>${all.length-withD}</small></button></div>
+  <div class="small muted">ტურის დღეები მიწერილი აქვს ${withD} / ${all.length} ობიექტს. დღის დასამატებლად ან მოსახსნელად დააჭირე დღეს ობიექტის გასწვრივ — ცვლილება აგენტს მაშინვე უჩანს.</div>`;
   const by={};l.forEach(o=>{(by[o.network||"—"]=by[o.network||"—"]||[]).push(o)});
   return `<div class="box">${dtabs}<div class="row"><input type="text" id="tq" data-in="tq" value="${esc(S.tq||"")}" placeholder="მოძებნე ობიექტი — ნომერი ან სახელი" style="max-width:380px" autocomplete="off"><span class="small muted">${l.length} / ${all.length}</span></div>
-  ${Object.keys(by).sort().map(n=>`<div class="kind" style="margin-top:6px">${esc(n)} (${by[n].length})</div><div class="tbl"><table><tbody>${by[n].map(o=>`<tr><td>${esc(o.name)}</td><td class="small muted">${esc(o.address)}</td><td class="nowrap">${tdays(o,name).length?`<span class="dchips">${tdays(o,name).map(i=>`<span>${DN[i]}</span>`).join("")}</span>`:`<span class="small muted">—</span>`}</td></tr>`).join("")}</tbody></table></div>`).join("")||`<div class="muted">${td?DN[td]+"-ზე ობიექტი არ არის":"ვერ მოიძებნა"}</div>`}
+  ${Object.keys(by).sort().map(n=>`<div class="kind" style="margin-top:6px">${esc(n)} (${by[n].length})</div><div class="tbl"><table><tbody>${by[n].map(o=>`<tr><td>${esc(o.name)}</td><td class="small muted">${esc(o.address)}</td><td class="nowrap">${tourEd(o,name)}</td></tr>`).join("")}</tbody></table></div>`).join("")||`<div class="muted">${td===9?"ტურის გარეშე ობიექტი არ არის":td?DN[td]+"-ზე ობიექტი არ არის":"ვერ მოიძებნა"}</div>`}
   <div class="small muted">ობიექტის აგენტის შესაცვლელად შეცვალე სვეტი „აგენტი“ ცხრილის „ობიექტები“ ფურცელში.</div></div>`}
 function objNetMap(){if(S._onm&&S._onm.d===D.objects)return S._onm.m;const m={};D.objects.forEach(o=>{m[norm(o.name)]=o.network||""});S._onm={d:D.objects,m};return m}
 function netOf(store){if(!store)return"";const m=objNetMap();const k=norm(store);if(m[k]!=null)return m[k];
@@ -1569,7 +1574,10 @@ const A={
   pgo(v){const G=S.pgo||(S.pgo={});G[v]=!G[v];render()},
   abtog(){S.abOpen=!(S.abOpen!=null?S.abOpen:ls.get("mg.abOpen")==="1");ls.set("mg.abOpen",S.abOpen?"1":"0");render()},
   asv(v){S.asv=v;render()},sfmore(){S.sf.n+=20;render()},sfclr(){S.sf={net:"",q:"",n:20};render()},
-  tobj(v){S.teamOpen=S.teamOpen===v?null:v;S.tq="";S.mtday=0;render()},mtday(v){S.mtday=+v;render()},
+  tobj(v){S.teamOpen=S.teamOpen===v?null:v;S.tq="";S.mtday=0;render()},
+  async tourtog(v){const [i,k]=String(v).split("|"),key=(S._tk||[])[+k];if(!key)return;const T=D.tours=D.tours||{},old=(T[key]||[]).slice(),d=+i;
+    const nw=(old.includes(d)?old.filter(x=>x!==d):old.concat(d)).sort();if(nw.length)T[key]=nw;else delete T[key];render();
+    const r=await act("setTour",S.pin,key,nw);if(!r){if(old.length)T[key]=old;else delete T[key];render()}else toast(nw.length?"ტური: "+nw.map(x=>DN[x]).join(", "):"ტური მოიხსნა — „ტურის გარეშე“")},mtday(v){S.mtday=+v;render()},
   qflush(){flushQ(true)},rfclr(){S.rf={ag:"",date:"",net:"",q:"",n:30,sn:""};render()},
   fromrep(v){const r=D.reports.find(x=>x.id===v);if(!r)return;S.tab="all";S.q=Object.assign(S.q,{agent:r.agent,store:r.store||"",kind:"სხვა",title:"",details:r.note?"რეპორტიდან: "+r.note:"",ref:r.photos.slice(),more:true});if(!r.seen)run("markSeen",S.pin,v,true).catch(()=>{});render();scrollTo(0,0);setTimeout(()=>$("#qt")&&$("#qt").focus(),0)},
   afpick(v){S.af.task=v;render();scrollTo(0,0)},
@@ -2656,7 +2664,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261120143031";
+const APP_BUILD = "20261124125420";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
