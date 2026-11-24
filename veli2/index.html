@@ -728,6 +728,8 @@ body.dragging::after{content:"ჩააგდე ფაილი განათ
 
 .npe{width:72px;padding:3px 6px;font-size:13px;border:1px solid var(--line,#ddd);border-radius:6px;background:var(--card,#fff);color:inherit}
 
+.npl{display:flex;flex-direction:column;gap:3px}
+
 </style>
 </head>
 <body>
@@ -2476,16 +2478,17 @@ function kNetPromos(net) {
     h += `<div class="kcard pcbox ${bad ? "bad" : ""}"><div class="kh"><b>🔎 ფასების შემოწმება ${isG ? "Glovo-ზე (მაგნიტი, თბილისი)" : "ქსელის საიტზე (2nabiji.ge)"}</b><span class="row" style="gap:8px"><span class="small muted">${isG ? (GLV.doc && GLV.doc.d ? "ფასები: " + fmtDate(GLV.doc.d) : GLV.loading ? "იტვირთება…" : "ჯერ არ შემოწმებულა") : NP.pc && NP.pc.d ? "ბოლოს: " + fmtDate(NP.pc.d) : "ჯერ არ შემოწმებულა"}</span><button class="btn sm" data-a="pcrun" ${NP.pcLoading ? "disabled" : ""}>${NP.pcRun ? "მოწმდება…" : "↻ შემოწმება ახლა"}</button></span></div>
       ${rs.length ? `<div class="row" style="gap:14px;flex-wrap:wrap"><span class="pcok"><b>✓ ${ok}</b> ემთხვევა</span><span class="${bad ? "pcbad" : "muted"}"><b>✗ ${bad}</b> არ ემთხვევა</span>${nf2 ? `<span class="muted">${nf2} ${isG ? "Glovo-ზე არ ჩანს" : "საიტზე ვერ მოიძებნა"}</span>` : ""}</div>` : `<div class="small muted">მიმდინარე აქციებს ყოველ დილით და აპის გახსნისას ავტომატურად ვამოწმებ.</div>`}</div>`;
   }
+  h += npAddForm(net, asr);
   if (all) {
-    h += `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px"><span class="small">პერიოდი:</span><label class="small">დაწყება <input type="date" data-npd="from" value="${esc(NP.from)}"></label><label class="small">დასრულება <input type="date" data-npd="to" value="${esc(NP.to)}"></label>${NP.from || NP.to ? `<button class="btn ghost sm" data-a="npclr">✕ გასუფთავება</button>` : ""}<span class="small muted">ჩანს აქციები, რომლებიც ამ პერიოდს ფარავს</span></div>`;
+    h += `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px"><span class="small">პერიოდი:</span><label class="small npl">დაწყება <input type="date" data-npd="from" value="${esc(NP.from)}"></label><label class="small npl">დასრულება <input type="date" data-npd="to" value="${esc(NP.to)}"></label>${NP.from || NP.to ? `<button class="btn ghost sm" data-a="npclr">✕ გასუფთავება</button>` : ""}<span class="small muted">ჩანს აქციები, რომლებიც ამ პერიოდს ფარავს</span></div>`;
     if (NP.from) L = L.filter(p => !p.to || p.to >= NP.from);
     if (NP.to) L = L.filter(p => !p.from || p.from <= NP.to);
     if (!NP.all) return h + `<div class="empty"><b>იტვირთება…</b></div>`;
   } else if (nf !== "") L = L.filter(p => String(st(p)) === nf);
   L.sort((a, b) => all ? String(b.from || "").localeCompare(String(a.from || "")) : st(a) - st(b) || String(a.from || "").localeCompare(String(b.from || "")));
-  if (!L.length) return h + `<div class="empty"><b>${all && (NP.from || NP.to) ? "ამ პერიოდში აქცია არ არის" : esc(net) + "-ზე აქციები არ არის"}</b>აქციებს „გუნდი → აქციები“ გვერდიდან ამატებ.</div>`;
-  h += `<div class="kcard"><div class="small muted" style="margin-bottom:6px">${L.length} აქცია</div><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>პერიოდი</th><th title="საპრაისო ფასი">პრაისი</th><th>შესასყიდი</th><th>რეტრო</th><th title="დამატებითი დადასტურებული სააქციო ბონუსი — შეგიძლია შეცვალო">დადასტ. ბონუსი</th><th title="შესასყიდი × (1 − რეტრო − ბონუსი)">ნეტ ფასი</th><th title="სააქციო სარეალიზაციო ფასი — შეგიძლია შეცვალო">სააქციო ფასი</th><th title="ქსელის მარჟა: (სააქციო ფასი − ნეტ ფასი) / სააქციო ფასი">მარჟა</th>${pcOn ? "<th>ფასი საიტზე</th>" : ""}</tr></thead><tbody>${L.map(p => { const e = npEcon(p, net, AS, PHI); return `<tr class="${st(p) === 2 ? "kdim" : ""}"><td><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span></td><td class="kw" style="min-width:160px">${esc(p.product)}<div class="small muted mono">${esc(p.barcode)}</div>${p.note ? `<div class="small muted">${esc(p.note)}</div>` : ""}</td><td class="small nowrap">${sd(p.from)}–<br>${sd(p.to)}</td><td>${f2(e.P)}</td><td>${f2(e.B)}</td><td>${fp(e.retro)}</td><td class="nowrap"><input class="npe" data-npe="pct" data-id="${esc(p.id)}" value="${esc(e.bonus == null ? "" : fp(e.bonus))}" placeholder="—" title="${e.bsrc === "file" ? "ქსელის აქციების ფაილიდან" : e.bsrc === "own" ? "შენ მიერ შეყვანილი" : "შეიყვანე %"}">${e.bsrc === "file" ? `<span class="small muted" title="ქსელის აქციების ფაილიდან"> 📄</span>` : ""}</td><td><b>${f2(e.netp)}</b></td><td><input class="npe" inputmode="decimal" data-npe="price" data-id="${esc(p.id)}" value="${esc(p.price)}" title="ჩაწერე ახალი ფასი და დააჭირე Enter"></td><td class="nowrap">${e.marg == null ? "" : `<b class="${e.marg < 0 ? "pcbad" : ""}">${fp(e.marg)}</b><div class="small muted">${f2(e.margGel)} ₾</div>`}</td>${pcOn ? `<td class="small">${st(p) === 0 ? npcCell(pcRows[p.id], p) : `<span class="muted">—</span>`}</td>` : ""}</tr>`; }).join("")}</tbody></table></div></div>`;
-  return h + `<div class="small muted">აქციების დამატება და რედაქტირება: „გუნდი → აქციები“.${pcOn ? (isG ? " „ფასი საიტზე“ — მაგნიტის ფასი Glovo-ზე (თბილისის მაღაზია). „≈“ — დამთხვევა დასახელებით, გადაამოწმე." : " „ფასი საიტზე“ — ქსელის ონლაინ მაღაზიის მიმდინარე ფასი (მაღაზიებში შეიძლება განსხვავდებოდეს).") : ""}</div>`;
+  if (!L.length) return h + `<div class="empty"><b>${all && (NP.from || NP.to) ? "ამ პერიოდში აქცია არ არის" : esc(net) + "-ზე აქციები არ არის"}</b>დაამატე ღილაკით „+ აქციის დამატება“.</div>`;
+  h += `<div class="kcard"><div class="small muted" style="margin-bottom:6px">${L.length} აქცია</div><div class="ktw"><table class="kt"><thead><tr><th>სტატუსი</th><th>პროდუქტი</th><th>პერიოდი</th><th title="საპრაისო ფასი">პრაისი</th><th>შესასყიდი</th><th>რეტრო</th><th title="დამატებითი დადასტურებული სააქციო ბონუსი — შეგიძლია შეცვალო">დადასტ. ბონუსი</th><th title="შესასყიდი × (1 − რეტრო − ბონუსი)">ნეტ ფასი</th><th title="სააქციო სარეალიზაციო ფასი — შეგიძლია შეცვალო">სააქციო ფასი</th><th title="ქსელის მარჟა: (სააქციო ფასი − ნეტ ფასი) / სააქციო ფასი">მარჟა</th>${pcOn ? "<th>ფასი საიტზე</th>" : ""}</tr></thead><tbody>${L.map(p => { const e = npEcon(p, net, AS, PHI); return `<tr class="${st(p) === 2 ? "kdim" : ""}"><td class="nowrap"><span class="kd ${st(p) === 0 ? "up" : ""}">${nm[st(p)]}</span><div><button class="btn ghost sm" style="margin-top:4px" data-a="npdel" data-v="${esc(p.id)}" title="აქციის გაუქმება (წაშლა)">✕ გაუქმება</button></div></td><td class="kw" style="min-width:160px">${esc(p.product)}<div class="small muted mono">${esc(p.barcode)}</div>${p.note ? `<div class="small muted">${esc(p.note)}</div>` : ""}</td><td class="small nowrap">${sd(p.from)}–<br>${sd(p.to)}</td><td>${f2(e.P)}</td><td>${f2(e.B)}</td><td>${fp(e.retro)}</td><td class="nowrap"><input class="npe" data-npe="pct" data-id="${esc(p.id)}" value="${esc(e.bonus == null ? "" : fp(e.bonus))}" placeholder="—" title="${e.bsrc === "file" ? "ქსელის აქციების ფაილიდან" : e.bsrc === "own" ? "შენ მიერ შეყვანილი" : "შეიყვანე %"}">${e.bsrc === "file" ? `<span class="small muted" title="ქსელის აქციების ფაილიდან"> 📄</span>` : ""}</td><td><b>${f2(e.netp)}</b></td><td><input class="npe" inputmode="decimal" data-npe="price" data-id="${esc(p.id)}" value="${esc(p.price)}" title="ჩაწერე ახალი ფასი და დააჭირე Enter"></td><td class="nowrap">${e.marg == null ? "" : `<b class="${e.marg < 0 ? "pcbad" : ""}">${fp(e.marg)}</b><div class="small muted">${f2(e.margGel)} ₾</div>`}</td>${pcOn ? `<td class="small">${st(p) === 0 ? npcCell(pcRows[p.id], p) : `<span class="muted">—</span>`}</td>` : ""}</tr>`; }).join("")}</tbody></table></div></div>`;
+  return h + `<div class="small muted">აქციის დამატება, ფასის/ბონუსის შეცვლა და გაუქმება აქედანაც შეგიძლია — ცვლილება „გუნდი → აქციებშიც“ ჩანს.${pcOn ? (isG ? " „ფასი საიტზე“ — მაგნიტის ფასი Glovo-ზე (თბილისის მაღაზია). „≈“ — დამთხვევა დასახელებით, გადაამოწმე." : " „ფასი საიტზე“ — ქსელის ონლაინ მაღაზიის მიმდინარე ფასი (მაღაზიებში შეიძლება განსხვავდებოდეს).") : ""}</div>`;
 }
 document.addEventListener("change", e => { const k = e.target && e.target.dataset && e.target.dataset.npd; if (!k) return; NP[k] = e.target.value || ""; render(); });
 /* ანაზღაურება / პლანოგრამა: ფაილები + შენიშვნა თითო ქსელზე */
@@ -2551,10 +2554,10 @@ Object.assign(A, { knpf(v) { K.npf = K.npf === v ? "" : v; render(); }, npclr() 
 /* ინლაინ რედაქტირება: სააქციო ფასი და დადასტურებული ბონუსი → promos (ჩანს „გუნდი → აქციებშიც“) */
 // ფონური render-ები აკრეფისას ველს არ უნდა შლიდეს: ვინახავთ აკრეფილს, ფოკუსს და კურსორს
 { const _rnp = render; render = function () {
-  const el = document.activeElement, k = el && el.dataset && el.dataset.npe ? el.dataset.npe + "|" + el.dataset.id : "";
+  const el = document.activeElement, k = el && el.dataset && el.dataset.npe ? el.dataset.npe + "|" + el.dataset.id : el && el.dataset && el.dataset.npa ? "@" + el.dataset.npa : "";
   const v = k ? el.value : "", ss = k ? el.selectionStart : 0, se = k ? el.selectionEnd : 0;
   const o = _rnp.apply(this, arguments);
-  if (k) { const [f, id] = k.split("|"), n = document.querySelector(`input[data-npe="${f}"][data-id="${CSS.escape(id)}"]`); if (n) { n.value = v; n.focus(); try { n.setSelectionRange(ss, se); } catch (e) {} } }
+  if (k) { const [f, id] = k.split("|"), n = k[0] === "@" ? document.querySelector(`input[data-npa="${k.slice(1)}"]`) : document.querySelector(`input[data-npe="${f}"][data-id="${CSS.escape(id)}"]`); if (n) { n.value = v; n.focus(); try { n.setSelectionRange(ss, se); } catch (e) {} } }
   return o;
 }; }
 async function npSave(el) {
@@ -2569,6 +2572,54 @@ async function npSave(el) {
 }
 document.addEventListener("change", e => { const el = e.target; if (el && el.dataset && el.dataset.npe) npSave(el); });
 document.addEventListener("keydown", e => { const el = e.target; if (!el || !el.dataset || !el.dataset.npe) return; if (e.key === "Enter") { e.preventDefault(); el.blur(); } else if (e.key === "Escape") { const p = (D.promos || []).find(x => x.id === el.dataset.id); if (p) el.value = el.dataset.npe === "price" ? p.price : el.defaultValue; el.blur(); } });
+
+/* აქციის დამატება ქსელზე (→ promos, ჩანს „გუნდი → აქციებშიც“) */
+const NPA = { open: "", f: {}, busy: false };
+function npNetName(net) { const p = (D.promos || []).find(x => npNet(x, net)); return p ? p.network : net; }
+function npAddForm(net, asr) {
+  if (NPA.open !== net) return `<div class="row" style="justify-content:flex-end;margin:0 0 10px"><button class="btn primary" data-a="npadd" data-v="${esc(net)}">+ აქციის დამატება</button></div>`;
+  const f = NPA.f, rows = (asr && asr.rows) || [], seen = new Set();
+  const opts = rows.map(r => { const b = phBc(r.net_barcode || r.mg_barcode), n = r.net_name || r.mg_name || ""; if (!b || seen.has(b)) return ""; seen.add(b); return `<option value="${esc(n + " · " + b)}"></option>`; }).join("");
+  const td = D.today || "";
+  return `<div class="kcard"><div class="kh"><b>+ ახალი აქცია · ${esc(net)}</b><button class="btn ghost sm" data-a="npaddx">✕ დახურვა</button></div>
+  <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <label class="small npl" style="flex:3;min-width:260px">პროდუქტი (აირჩიე ასორტიმენტიდან ან ჩაწერე)<input data-npa="product" list="npal" value="${esc(f.product || "")}" style="width:100%" placeholder="დასახელება ან შტრიხკოდი"><datalist id="npal">${opts}</datalist></label>
+    <label class="small npl">შტრიხკოდი<input data-npa="barcode" value="${esc(f.barcode || "")}" style="width:140px"></label>
+    <label class="small npl">სააქციო ფასი<input data-npa="price" inputmode="decimal" value="${esc(f.price || "")}" style="width:90px"></label>
+    <label class="small npl">დადასტ. ბონუსი %<input data-npa="pct" value="${esc(f.pct || "")}" style="width:80px" placeholder="მაგ. 12"></label>
+    <label class="small npl">დაწყება<input type="date" data-npa="from" value="${esc(f.from || td)}"></label>
+    <label class="small npl">დასრულება<input type="date" data-npa="to" value="${esc(f.to || "")}"></label>
+    <label class="small npl" style="flex:2;min-width:160px">შენიშვნა / აქციის ტიპი<input data-npa="note" value="${esc(f.note || "")}" style="width:100%" placeholder="მაგ. კვირეული"></label>
+    <button class="btn primary" data-a="npaddsave" data-v="${esc(net)}" ${NPA.busy ? "disabled" : ""}>${NPA.busy ? "ინახება…" : "შენახვა"}</button>
+  </div><div class="small muted" style="margin-top:6px">შენახვის შემდეგ ფორმა ღია რჩება — შეგიძლია შემდეგი აქციაც დაამატო.</div></div>`;
+}
+document.addEventListener("input", e => {
+  const el = e.target; if (!el || !el.dataset || !el.dataset.npa) return; const k = el.dataset.npa; NPA.f[k] = el.value;
+  if (k === "product") { const m = String(el.value).match(/^(.*) · (\d{6,14})$/); if (m) { NPA.f.product = m[1]; NPA.f.barcode = m[2]; el.value = m[1]; const b = document.querySelector('input[data-npa="barcode"]'); if (b) b.value = m[2]; } }
+});
+Object.assign(A, {
+  npadd(net) { NPA.open = net; NPA.f = { from: D.today || "" }; render(); setTimeout(() => { const i = document.querySelector('input[data-npa="product"]'); if (i) i.focus(); }, 50); },
+  npaddx() { NPA.open = ""; render(); },
+  async npaddsave(net) {
+    const f = NPA.f, price = npcNum(f.price);
+    if (!String(f.product || "").trim()) return toast("აირჩიე პროდუქტი");
+    if (!(price > 0)) return toast("ჩაწერე სააქციო ფასი");
+    if (!f.from || !f.to) return toast("მიუთითე დაწყება და დასრულება");
+    if (f.to < f.from) return toast("დასრულება დაწყებაზე ადრეა");
+    let pct = ""; if (String(f.pct || "").trim()) { const n = npPct(f.pct); if (n == null || n < 0 || n > 1) return toast("ბონუსი არასწორია"); pct = +(n * 100).toFixed(2) + "%"; }
+    NPA.busy = true; render();
+    const ok = await act("savePromos", S.pin, [{ network: npNetName(net), product: String(f.product).trim(), barcode: String(f.barcode || "").trim(), price: price.toFixed(2), pct, from: f.from, to: f.to, note: String(f.note || "").trim() }], "ქსელის გვერდიდან");
+    NPA.busy = false;
+    if (ok) { toast("✓ აქცია დაემატა — " + f.product); NPA.f = { from: f.from, to: f.to, note: f.note }; NP.all = null; }
+    render(); setTimeout(() => { const i = document.querySelector('input[data-npa="product"]'); if (i) i.focus(); }, 50);
+  },
+  async npdel(id) {
+    const p = (D.promos || []).find(x => x.id === id) || (NP.all || []).find(x => x.id === id); if (!p) return;
+    if (!confirm(`გავაუქმო აქცია?\n\n${p.product}\n${p.price} ₾ · ${fmtDate(p.from || p.from_d)} — ${fmtDate(p.to || p.to_d)}\n\nწაიშლება „გუნდი → აქციებიდანაც“.`)) return;
+    if (await act("deletePromo", S.pin, id)) { toast("აქცია გაუქმდა"); NP.all = null; }
+    render();
+  },
+});
 
 /* Claude ასისტენტი — მენეჯერის ჩატი */
 const AI_API = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/ai";
@@ -2812,7 +2863,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261124232125";
+const APP_BUILD = "20261124233634";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
