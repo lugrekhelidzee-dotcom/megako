@@ -1330,7 +1330,14 @@ function mFiles(){const F=S.nf||(S.nf={title:"",to:"ყველა",url:"",file
   const l=D.files||[];
   h+=l.length?`<h2>მიმაგრებული ფაილები (${l.length})</h2><div class="tbl"><table><thead><tr><th>სათაური</th><th>ვისთვის</th><th>დრო</th><th></th></tr></thead><tbody>${l.map(f=>`<tr><td><a href="${esc(safeUrl(f.url))}" target="_blank" rel="noopener">${fileIcon(f)} ${esc(f.title)}</a></td><td>${esc(f.to)}</td><td class="mono nowrap">${esc(f.time)}</td><td class="nowrap">${S.del==="f"+f.id?`<button class="btn danger" data-a="fdelyes" data-v="${esc(f.id)}">წაშლა?</button> <button class="btn ghost" data-a="delno">არა</button>`:`<button class="btn ghost" data-a="fdel" data-v="${esc(f.id)}">×</button>`}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><b>ჯერ ფაილი არ მიგიმაგრებია</b></div>`;
   return h}
-function mOrders(){const im=S.imp;const mo=S.mo;
+const OCAT={d:null,loading:false};
+function ocLoad(){if(OCAT.d||OCAT.loading||typeof kcall!=="function")return;OCAT.loading=true;kcall("prodcat",{}).then(r=>{OCAT.d=r||{b:{},n:{}};OCAT.loading=false;render()}).catch(()=>{OCAT.d={b:{},n:{}};OCAT.loading=false})}
+function ocOf(r){if(r._oc)return r._oc;const d=OCAT.d||{b:{},n:{}};const b=String(r.barcode||"").replace(/\D/g,"").replace(/^0+/,"");
+  let m=(b&&d.b[b])||d.n[String(r.product||"").trim().toLowerCase()];
+  if(!m){const mm=String(r.product||"").match(/(\d{12,14})\s*$/);if(mm)m=d.b[mm[1].replace(/^0+/,"")]}
+  const c=r.category||(m&&m[0])||"",l1=(m&&(m[0]===c||!r.category||m[0].slice(0,5)===c.slice(0,5))?m[1]:"")||"";
+  if(OCAT.d)r._oc=[c||"კატეგორიის გარეშე",l1||"—"];return [c||"კატეგორიის გარეშე",l1||"—"]}
+function mOrders(){const im=S.imp;const mo=S.mo;ocLoad();
   let h=`<section class="qa"><h2>ქსელის შეკვეთის ატვირთვა</h2>
   <div class="small muted">ატვირთე „მთავარი“ ან „ყველა_ქსელი_გაერთიანებული“ Excel ფაილი (ერთი ხაზი = ობიექტი + პროდუქტი). საჭირო სვეტები: <b>აგენტი, ობიექტი, ნომენკლატურა, რაოდენობა</b>; სასურველია თარიღი, ქსელი, ფასი. იმავე თარიღისა და ქსელის ძველი შეკვეთა ჩანაცვლდება.</div>
   <label class="upl">${im&&im.loading?"იკითხება…":"📄 აირჩიე შეკვეთის ფაილი (.xlsx)"}<input type="file" accept=".xlsx,.xls,.csv" data-xls="order"></label>`;
@@ -1362,17 +1369,25 @@ function mOrders(){const im=S.imp;const mo=S.mo;
   <select id="most" data-ch="mo-st">${opt("","ყველა ხაზი",mo.st||"")}${opt("ok","✓ გაწერილი",mo.st||"")}${opt("no","✗ გაუწერელი",mo.st||"")}</select>
   <select id="mosc" data-ch="mo-sc">${opt("","მთლიანი შეკვეთა",mo.sc||"")}${opt("mine","მხოლოდ ჩემი აგენტები",mo.sc||"")}${opt("other","მხოლოდ სხვა ობიექტები",mo.sc||"")}</select>
   ${msel("moag",agl.map(n=>({v:n,l:n})),mo.ag,v=>{mo.ag=v;mo.open=null})}
+  ${(()=>{const cs={};all.forEach(r=>{const[c,l]=ocOf(r);(cs[c]=cs[c]||new Set()).add(l)});const cl=Object.keys(cs).sort((a,b)=>a.localeCompare(b,"ka"));if(mo.cat&&mo.rows&&!cs[mo.cat])mo.cat="";const ll=mo.cat?[...cs[mo.cat]].sort((a,b)=>a.localeCompare(b,"ka")):[];if(mo.l1&&!ll.includes(mo.l1))mo.l1="";
+    return `<select id="mocat" data-ch="mo-cat">${opt("","ყველა კატეგორია",mo.cat||"")}${cl.map(n=>opt(n,n,mo.cat||"")).join("")}</select>${mo.cat?`<select id="mol1" data-ch="mo-l1">${opt("","ყველა ქვეკატეგორია",mo.l1||"")}${ll.map(n=>opt(n,n,mo.l1||"")).join("")}</select>`:""}`})()}
   <div class="sugw"><input type="text" id="moq" data-in="moq" value="${esc(mo.q)}" placeholder="ობიექტი, პროდუქტი, შტრიხკოდი…" autocomplete="off">${moSug(all,mo,agKey)}</div>
-  ${mo.net||(mo.ag&&mo.ag.length)||mo.q||mo.sc||mo.st?`<button class="btn ghost" data-a="moclr">ფილტრის მოხსნა</button>`:""}</div>
+  ${mo.net||(mo.ag&&mo.ag.length)||mo.q||mo.sc||mo.st||mo.cat?`<button class="btn ghost" data-a="moclr">ფილტრის მოხსნა</button>`:""}</div>
   <div class="row"><button class="chip ${mo.view!=="prod"?"on":""}" data-a="moview" data-v="ag">აგენტებით / ობიექტებით</button><button class="chip ${mo.view==="prod"?"on":""}" data-a="moview" data-v="prod">პროდუქტების ჯამი</button></div>`;
   if(mo.loading||mo.rows===null)return h+`<div class="empty"><b>იტვირთება…</b></div>`;
   const fqw=norm(mo.q).replace(/["'„“”«»(),.\/\-]/g," ").split(/\s+/).filter(Boolean),fq=fqw.length;
   const fqOk=r=>{const t=norm(r.object+" "+r.address+" "+r.product+" "+r.barcode+" "+(r.category||"")+" "+(r.agent||r.raw||"")).replace(/["'„“”«»(),.\/\-]/g," ");return fqw.every(w=>t.includes(w))};
-  const rows=all.filter(r=>(!mo.st||(!r.other&&!!r.ok===(mo.st==="ok")))&&(!mo.sc||(mo.sc==="other")===!!r.other)&&(!mo.net||r.network===mo.net)&&agOk(mo.ag,agKey(r))&&(!fq||fqOk(r)));
+  const rows=all.filter(r=>(!mo.st||(!r.other&&!!r.ok===(mo.st==="ok")))&&(!mo.sc||(mo.sc==="other")===!!r.other)&&(!mo.net||r.network===mo.net)&&agOk(mo.ag,agKey(r))&&(!fq||fqOk(r))&&(!mo.cat||ocOf(r)[0]===mo.cat)&&(!mo.l1||ocOf(r)[1]===mo.l1));
   const mt=okSplit(rows.filter(r=>!r.other),r=>r.ok),pc=mt.s?Math.round(mt.os/mt.s*100):0;
   h+=`<div class="stats"><div class="stat"><span>ჯამი, ₾</span><b>${money(rows.reduce((s,r)=>s+r.sum,0))}</b><span class="small muted">${new Set(rows.map(r=>r.network+"|"+r.object)).size} ობ. · ${rows.length} პოზ. · ${qtyf(rows.reduce((s,r)=>s+(+r.qty||0),0))} ც.</span></div><div class="stat"><span>ჩემი აგენტები, ₾</span><b>${money(mt.s)}</b><span class="small muted">${qtyf(mt.q)} ც.</span></div><div class="stat good"><span>✓ გაწერილი, ₾</span><b>${money(mt.os)}</b><span class="small muted">${qtyf(mt.oq)} ც. · ${pc}%</span></div><div class="stat ${mt.ns?"bad":""}"><span>✗ გაუწერელი, ₾</span><b>${money(mt.ns)}</b><span class="small muted">${qtyf(mt.nq)} ც.</span></div><div class="stat"><span>სხვა ობიექტები, ₾</span><b>${money(rows.filter(r=>r.other).reduce((s,r)=>s+r.sum,0))}</b></div></div>`;
   if(!rows.length)return h+`<div class="empty"><b>ამ ფილტრით შეკვეთა არ მოიძებნა</b>შეცვალე თარიღი, ქსელი ან აგენტი.</div>`;
-  if(mo.view==="prod"){const bp={};rows.forEach(r=>{const k=r.barcode||r.product;const e=bp[k]=bp[k]||{product:r.product,barcode:r.barcode,category:r.category,objs:new Set(),qty:0,sum:0,mine:0,okq:0,oks:0};e.objs.add(r.network+"|"+r.object);e.qty+=r.qty;e.sum+=r.sum;if(!r.other)e.mine+=r.qty;if(!r.other&&r.ok){e.okq+=r.qty;e.oks+=r.sum}});
+  if(mo.view==="prod"){const G={};rows.forEach(r=>{const[c,l]=ocOf(r);const g=(G[c]=G[c]||{c,qty:0,sum:0,objs:new Set(),L:{}});g.qty+=r.qty;g.sum+=r.sum;g.objs.add(r.network+"|"+r.object);const s=(g.L[l]=g.L[l]||{l,qty:0,sum:0,objs:new Set(),rows:[]});s.qty+=r.qty;s.sum+=r.sum;s.objs.add(r.network+"|"+r.object);s.rows.push(r)});
+    const pt=rs=>{const bp={};rs.forEach(r=>{const k=r.barcode||r.product;const e=bp[k]=bp[k]||{product:r.product,barcode:r.barcode,objs:new Set(),qty:0,sum:0,mine:0,okq:0,oks:0};e.objs.add(r.network+"|"+r.object);e.qty+=r.qty;e.sum+=r.sum;if(!r.other)e.mine+=r.qty;if(!r.other&&r.ok){e.okq+=r.qty;e.oks+=r.sum}});return Object.values(bp).sort((a,b)=>b.qty-a.qty)};
+    const op=S.mo.cop=S.mo.cop||{};const gl=Object.values(G).sort((a,b)=>b.sum-a.sum);
+    return h+`${OCAT.loading?`<div class="small muted">კატეგორიები იტვირთება…</div>`:""}<div class="tbl"><table><thead><tr><th>კატეგორია / ქვეკატეგორია / ნომენკლატურა</th><th class="n">ობიექტი</th><th class="n">რაოდენობა</th><th class="n">მ.შ. ჩემი აგენტები</th><th class="n">✓ გაწერილი</th><th class="n">ჯამი, ₾</th><th class="n">✓ გაწერილი, ₾</th></tr></thead><tbody>${gl.map(g=>{const gk="c|"+g.c,go=op[gk]!=null?op[gk]:!!(mo.cat||fq);
+      return `<tr class="trow" data-a="mocop" data-v="${esc(gk)}" style="background:var(--soft,#f3f6f4)"><td><b>${go?"▾":"▸"} ${esc(g.c)}</b></td><td class="n">${g.objs.size}</td><td class="n"><b>${qtyf(g.qty)}</b></td><td></td><td></td><td class="n"><b>${money(g.sum)}</b></td><td></td></tr>`+(go?Object.values(g.L).sort((a,b)=>b.qty-a.qty).map(s=>{const sk="l|"+g.c+"|"+s.l,so=op[sk]!=null?op[sk]:!!(mo.l1||fq);
+        return `<tr class="trow" data-a="mocop" data-v="${esc(sk)}"><td style="padding-left:22px"><b>${so?"▾":"▸"} ${esc(s.l)}</b></td><td class="n">${s.objs.size}</td><td class="n"><b>${qtyf(s.qty)}</b></td><td></td><td></td><td class="n">${money(s.sum)}</td><td></td></tr>`+(so?pt(s.rows).map(e=>`<tr><td style="padding-left:44px">${esc(e.product)}${e.barcode?`<br><span class="small muted mono">${esc(e.barcode)}</span>`:""}</td><td class="n">${e.objs.size}</td><td class="n">${qtyf(e.qty)}</td><td class="n">${qtyf(e.mine)}</td><td class="n">${qtyf(e.okq)}</td><td class="n">${money(e.sum)}</td><td class="n">${money(e.oks)}</td></tr>`).join(""):"")}).join(""):"")}).join("")}</tbody></table></div>`}
+  if(mo.view==="prod0"){const bp={};rows.forEach(r=>{const k=r.barcode||r.product;const e=bp[k]=bp[k]||{product:r.product,barcode:r.barcode,category:r.category,objs:new Set(),qty:0,sum:0,mine:0,okq:0,oks:0};e.objs.add(r.network+"|"+r.object);e.qty+=r.qty;e.sum+=r.sum;if(!r.other)e.mine+=r.qty;if(!r.other&&r.ok){e.okq+=r.qty;e.oks+=r.sum}});
     const pl=Object.values(bp).sort((a,b)=>b.sum-a.sum);
     return h+`<div class="tbl"><table><thead><tr><th>ნომენკლატურა</th><th>კატეგორია</th><th class="n">ობიექტი</th><th class="n">რაოდენობა</th><th class="n">მ.შ. ჩემი აგენტები</th><th class="n">✓ გაწერილი</th><th class="n">✗ გაუწერელი</th><th class="n">ჯამი, ₾</th><th class="n">✓ გაწერილი, ₾</th></tr></thead><tbody>${pl.map(e=>`<tr><td>${esc(e.product)}${e.barcode?`<br><span class="small muted mono">${esc(e.barcode)}</span>`:""}</td><td>${esc(e.category||"")}</td><td class="n">${e.objs.size}</td><td class="n">${qtyf(e.qty)}</td><td class="n">${qtyf(e.mine)}</td><td class="n">${qtyf(e.okq)}</td><td class="n">${qtyf(e.mine-e.okq)}</td><td class="n">${money(e.sum)}</td><td class="n">${money(e.oks)}</td></tr>`).join("")}</tbody></table></div>`}
   const by={};rows.forEach(r=>{const k=r.other?"__other":r.agent||("? "+r.raw);(by[k]=by[k]||{agent:r.agent,raw:r.raw,other:!!r.other,rows:[]}).rows.push(r)});
@@ -1604,8 +1619,8 @@ const A={
   mo1d(){S.mo.date2=S.mo.date;S.mo.rows=null;S.mo.open=null;render()},
   mo7d(){const ds=D.orderDates||[];const t=Date.parse(S.mo.date)-6*864e5;const f=ds.filter(d=>d<=S.mo.date&&Date.parse(d)>=t);S.mo.date2=f.length?f[f.length-1]:S.mo.date;S.mo.rows=null;S.mo.open=null;render()},
   async mailnow(){S.mailBusy=true;render();const r=await act("checkMailNow",S.pin);S.mailBusy=false;if(r){S.mo.rows=null;toast(r.files?"დამუშავდა "+r.files+" ფაილი":"ახალი შეკვეთის წერილი არ არის")}render()},
-  moclr(){S.mo.net="";S.mo.ag="";S.mo.q="";S.mo.sc="";S.mo.st="";S.mo.open=null;render()},
-  moview(v){S.mo.view=v;S.mo.open=null;render()},
+  moclr(){S.mo.cat="";S.mo.l1="";S.mo.net="";S.mo.ag="";S.mo.q="";S.mo.sc="";S.mo.st="";S.mo.open=null;render()},
+  moview(v){S.mo.view=v;S.mo.open=null;render()},mocop(v){const o=S.mo.cop=S.mo.cop||{};const mo=S.mo;const def=v.startsWith("c|")?!!(mo.cat||norm(mo.q)):!!(mo.l1||norm(mo.q));o[v]=!(o[v]!=null?o[v]:def);render()},
   impx(){S.imp=null;render()},pimpx(){S.pimp=null;render()},
   async impsave(){const im=S.imp;if(!im||!im.rows)return;
     let rows=im.dates.length?im.rows.filter(r=>r.date===im.date):im.rows.map(r=>Object.assign({},r,{date:im.date}));
@@ -1671,7 +1686,7 @@ document.addEventListener("change",async e=>{const el=e.target,k=el.dataset.ch;
   if(el.dataset.file==="nf"){const f=el.files[0];el.value="";if(f&&S.nf){S.nf.file=f;if(!S.nf.title)S.nf.title=f.name.replace(/\.[^.]+$/,"")}render();return}
   if(k){const v=el.value;
     if(k.startsWith("q-"))S.q[k.slice(2)]=v;else if(k.startsWith("fl-"))S.fl[k.slice(3)]=v;else if(k.startsWith("rf-")){S.rf[k.slice(3)]=v;S.rf.n=30}else if(k==="sf-net"){S.sf.net=v;S.sf.n=20}
-    else if(k==="aft")S.af.task=v;else if(k==="ordd"){S.ord.date=v;S.ord.rows=null;S.ord.open={}}else if(k==="mod"){S.mo.date=v;if(S.mo.date2>v)S.mo.date2=v;S.mo.rows=null;S.mo.open=null}else if(k==="mod2"){S.mo.date2=v;S.mo.rows=null;S.mo.open=null}else if(k==="mo-net"){S.mo.net=v;S.mo.open=null}else if(k==="mo-ag"){S.mo.ag=v;S.mo.open=null}else if(k==="mo-sc"){S.mo.sc=v;S.mo.open=null}else if(k==="mo-st"){S.mo.st=v;S.mo.open=null}
+    else if(k==="aft")S.af.task=v;else if(k==="ordd"){S.ord.date=v;S.ord.rows=null;S.ord.open={}}else if(k==="mod"){S.mo.date=v;if(S.mo.date2>v)S.mo.date2=v;S.mo.rows=null;S.mo.open=null}else if(k==="mod2"){S.mo.date2=v;S.mo.rows=null;S.mo.open=null}else if(k==="mo-net"){S.mo.net=v;S.mo.open=null}else if(k==="mo-ag"){S.mo.ag=v;S.mo.open=null}else if(k==="mo-sc"){S.mo.sc=v;S.mo.open=null}else if(k==="mo-st"){S.mo.st=v;S.mo.open=null}else if(k==="mo-cat"){S.mo.cat=v;S.mo.l1="";S.mo.open=null}else if(k==="mo-l1"){S.mo.l1=v;S.mo.open=null}
     else if(k==="imp-date"&&S.imp)S.imp.date=v;
     else if(k==="nf-to"&&S.nf)S.nf.to=v;else if(k.startsWith("pd-")&&S.pd)S.pd[k.slice(3)]=v;
     render();return}
@@ -2923,7 +2938,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261125090217";
+const APP_BUILD = "20261125091257";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
