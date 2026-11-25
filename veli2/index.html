@@ -1416,7 +1416,7 @@ async function pollChat(){if(document.hidden||!S.loaded||!S.who)return;
       if(!S.cbOpen&&!typing)render()}}catch(e){}}
 function loadXLSX(){return new Promise((res,rej)=>{if(window.XLSX)return res();const s=document.createElement("script");s.src=XLSX_URL;s.onload=()=>res();s.onerror=()=>rej(new Error("Excel-ის წამკითხველი ვერ ჩაიტვირთა. შეამოწმე ინტერნეტი."));document.head.appendChild(s)})}
 function cellDate(v){
-  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+"-"+pad(v.getMonth()+1)+"-"+pad(v.getDate());
+  if(v instanceof Date&&!isNaN(v)){v=new Date(v.getTime()+432e5);return v.getFullYear()+"-"+pad(v.getMonth()+1)+"-"+pad(v.getDate())}
   if(typeof v==="number"&&v>30000&&v<70000){const d=XLSX.SSF.parse_date_code(v);return d.y+"-"+pad(d.m)+"-"+pad(d.d)}
   const s=String(v||"").trim();let m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return m[1]+"-"+pad(m[2])+"-"+pad(m[3]);
   m=s.match(/(\d{1,2})[.\-](\d{1,2})[.\-](\d{4})/);if(m)return m[3]+"-"+pad(m[2])+"-"+pad(m[1]);return""}
@@ -2577,11 +2577,12 @@ document.addEventListener("keydown", e => { const el = e.target; if (!el || !el.
 const NPA = { open: "", f: {}, busy: false };
 function npNetName(net) { const p = (D.promos || []).find(x => npNet(x, net)); return p ? p.network : net; }
 function npAddForm(net, asr) {
-  if (NPA.open !== net) return `<div class="row" style="justify-content:flex-end;margin:0 0 10px"><button class="btn primary" data-a="npadd" data-v="${esc(net)}">+ აქციის დამატება</button></div>`;
+  const bar = `<div class="row" style="justify-content:flex-end;gap:8px;margin:0 0 10px"><label class="btn">${NPX.loading ? "იკითხება…" : "📄 აქციების ფაილის ატვირთვა"}<input type="file" accept=".xlsx,.xls,.csv" data-npx="${esc(net)}" hidden></label>${NPA.open !== net ? `<button class="btn primary" data-a="npadd" data-v="${esc(net)}">+ აქციის დამატება</button>` : ""}</div>`;
+  if (NPA.open !== net) return bar + npxView(net);
   const f = NPA.f, rows = (asr && asr.rows) || [], seen = new Set();
   const opts = rows.map(r => { const b = phBc(r.net_barcode || r.mg_barcode), n = r.net_name || r.mg_name || ""; if (!b || seen.has(b)) return ""; seen.add(b); return `<option value="${esc(n + " · " + b)}"></option>`; }).join("");
   const td = D.today || "";
-  return `<div class="kcard"><div class="kh"><b>+ ახალი აქცია · ${esc(net)}</b><button class="btn ghost sm" data-a="npaddx">✕ დახურვა</button></div>
+  return bar + npxView(net) + `<div class="kcard"><div class="kh"><b>+ ახალი აქცია · ${esc(net)}</b><button class="btn ghost sm" data-a="npaddx">✕ დახურვა</button></div>
   <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
     <label class="small npl" style="flex:3;min-width:260px">პროდუქტი (აირჩიე ასორტიმენტიდან ან ჩაწერე)<input data-npa="product" list="npal" value="${esc(f.product || "")}" style="width:100%" placeholder="დასახელება ან შტრიხკოდი"><datalist id="npal">${opts}</datalist></label>
     <label class="small npl">შტრიხკოდი<input data-npa="barcode" value="${esc(f.barcode || "")}" style="width:140px"></label>
@@ -2617,6 +2618,65 @@ Object.assign(A, {
     const p = (D.promos || []).find(x => x.id === id) || (NP.all || []).find(x => x.id === id); if (!p) return;
     if (!confirm(`გავაუქმო აქცია?\n\n${p.product}\n${p.price} ₾ · ${fmtDate(p.from || p.from_d)} — ${fmtDate(p.to || p.to_d)}\n\nწაიშლება „გუნდი → აქციებიდანაც“.`)) return;
     if (await act("deletePromo", S.pin, id)) { toast("აქცია გაუქმდა"); NP.all = null; }
+    render();
+  },
+});
+
+/* აქციების ფაილის ატვირთვა ქსელის გვერდიდან (→ promos, ჩანს „გუნდი → აქციებშიც“) */
+const NPX = { loading: false, net: "", file: "", rows: null, miss: [], from: "", to: "", skipDup: true, busy: false };
+const NPX_SPEC = { product: [["ნომენკლატურა", "დასახელება", "პროდუქტ", "საქონელი"], []], barcode: [["შტრიხ"], []],
+  price: [["სააქციო ფასი", "აქციის ფასი", "სააქციო გასაყიდი", "აქციით", "გასაყიდი ფასი", "ახალი ფასი", "თაროს ფასი", "ფასი"], ["რეგულარ", "ძველი", "სტანდარტ", "შესასყიდ", "პრაის", "ნეტ"]],
+  pct: [["ბონუს", "დადასტ"], []], from: [["დაწყ", "საწყისი", "დან"], []], to: [["დასრულ", "ბოლო თარიღი", "მდე"], []], note: [["შენიშვნა", "კომენტარი", "აქციის ტიპი", "ტიპი"], []] };
+const npxKey = (r, net) => (phBc(r.barcode) || String(r.product || "").trim().toLowerCase()) + "|" + (r.from || "") + "|" + (r.to || "");
+function npxDupSet(net) { const S2 = new Set(); (D.promos || []).filter(p => npNet(p, net)).forEach(p => S2.add(npxKey(p, net))); return S2; }
+function npxView(net) {
+  if (!NPX.rows || NPX.net !== net) return "";
+  const dup = npxDupSet(net), rows = NPX.rows.map(r => Object.assign({}, r, { from: r.from || NPX.from, to: r.to || NPX.to }));
+  const nd = rows.filter(r => dup.has(npxKey(r, net))).length, bad = rows.filter(r => !(npcNum(r.price) > 0)).length;
+  const go = rows.filter(r => npcNum(r.price) > 0 && !(NPX.skipDup && dup.has(npxKey(r, net)))).length;
+  const fp = v => { const n = npPct(v); return n == null ? "" : +(n * 100).toFixed(2) + "%"; };
+  return `<div class="kcard"><div class="kh"><b>📄 ${esc(NPX.file)} · ${esc(net)}: ${rows.length} ხაზი</b><button class="btn ghost sm" data-a="npxx">✕ გაუქმება</button></div>
+  ${NPX.miss.length ? `<div class="small" style="margin-bottom:6px">ფაილში არ არის: <b>${NPX.miss.map(esc).join(", ")}</b>${NPX.miss.some(m => m !== "სააქციო ფასი") ? " — მიუთითე ქვემოთ, ყველა ხაზს მიენიჭება." : ""}</div>` : ""}
+  <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px">
+    ${NPX.rows.some(r => !r.from || !r.to) ? `<label class="small npl">დაწყება (ცარიელი ხაზებისთვის)<input type="date" data-npxi="from" value="${esc(NPX.from)}"></label>
+    <label class="small npl">დასრულება (ცარიელი ხაზებისთვის)<input type="date" data-npxi="to" value="${esc(NPX.to)}"></label>` : ""}
+    ${nd ? `<label class="small row" style="gap:6px"><input type="checkbox" data-npxi="skipDup" ${NPX.skipDup ? "checked" : ""}> გამოტოვე უკვე არსებული (${nd})</label>` : ""}
+    <button class="btn primary" data-a="npxsave" data-v="${esc(net)}" ${go && !NPX.busy ? "" : "disabled"}>${NPX.busy ? "ინახება…" : `ატვირთვა (${go})`}</button>
+  </div>
+  ${bad ? `<div class="small pcbad" style="margin-bottom:6px">${bad} ხაზს სააქციო ფასი არ აქვს — არ აიტვირთება.</div>` : ""}
+  <div class="ktw" style="max-height:340px;overflow:auto"><table class="kt"><thead><tr><th></th><th>პროდუქტი</th><th>შტრიხკოდი</th><th>სააქციო ფასი</th><th>დადასტ. ბონუსი</th><th>პერიოდი</th><th>შენიშვნა</th></tr></thead><tbody>${rows.map(r => { const d = dup.has(npxKey(r, net)), ok = npcNum(r.price) > 0; return `<tr class="${(d && NPX.skipDup) || !ok ? "kdim" : ""}"><td class="small nowrap">${!ok ? `<span class="pcbad">ფასი არ არის</span>` : d ? `<span class="muted">უკვე არის</span>` : `<span class="pcok">ახალი</span>`}</td><td class="kw">${esc(r.product)}</td><td class="mono small">${esc(r.barcode)}</td><td><b>${ok ? npcNum(r.price).toFixed(2) : ""}</b></td><td>${esc(fp(r.pct))}</td><td class="small nowrap">${fmtDate(r.from)} — ${fmtDate(r.to)}</td><td class="small kw">${esc(r.note || "")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+}
+async function npxRead(file, net) {
+  NPX.loading = true; NPX.rows = null; render();
+  try {
+    const b = await readSheet(file, NPX_SPEC), c = b.cols, g = (r, k) => c[k] >= 0 ? r[c[k]] : "";
+    const rows = []; b.data.forEach(r => { const product = String(g(r, "product") || "").trim(); if (!product) return;
+      const pv = g(r, "pct"); rows.push({ product, barcode: String(g(r, "barcode") || "").trim(), price: g(r, "price") === "" ? "" : num(g(r, "price")),
+        pct: pv === "" || pv == null ? "" : (typeof pv === "number" ? (pv <= 1 ? pv : pv / 100) : String(pv)), from: c.from >= 0 ? cellDate(g(r, "from")) : "", to: c.to >= 0 ? cellDate(g(r, "to")) : "", note: String(g(r, "note") || "").trim() }); });
+    if (!rows.length) throw new Error("ფაილში აქციები ვერ ვიპოვე.");
+    const miss = []; if (c.price < 0) miss.push("სააქციო ფასი"); if (c.from < 0) miss.push("დაწყება"); if (c.to < 0) miss.push("დასრულება");
+    Object.assign(NPX, { net, file: file.name, rows, miss, from: D.today || "", to: addDays(D.today, 6), skipDup: true });
+  } catch (e) { NPX.rows = null; toast(errMsg(e)); }
+  NPX.loading = false; render();
+}
+document.addEventListener("change", e => {
+  const el = e.target; if (!el || !el.dataset) return;
+  if (el.dataset.npx) { const f = el.files && el.files[0]; const net = el.dataset.npx; el.value = ""; if (f) npxRead(f, net); return; }
+  if (el.dataset.npxi) { const k = el.dataset.npxi; NPX[k] = el.type === "checkbox" ? el.checked : el.value; render(); }
+});
+Object.assign(A, {
+  npxx() { NPX.rows = null; render(); },
+  async npxsave(net) {
+    if (!NPX.rows) return; const dup = npxDupSet(net);
+    const list = NPX.rows.map(r => Object.assign({}, r, { from: r.from || NPX.from, to: r.to || NPX.to })).filter(r => npcNum(r.price) > 0 && !(NPX.skipDup && dup.has(npxKey(r, net))));
+    if (!list.length) return toast("ასატვირთი ხაზი არ არის");
+    if (list.some(r => !r.from || !r.to)) return toast("მიუთითე დაწყება და დასრულება");
+    const nn = npNetName(net);
+    const out = list.map(r => { const n = npPct(r.pct); return { network: nn, product: r.product, barcode: r.barcode, price: npcNum(r.price).toFixed(2), pct: n == null || n < 0 || n > 1 ? "" : +(n * 100).toFixed(2) + "%", from: r.from, to: r.to, note: r.note }; });
+    NPX.busy = true; render();
+    const c = await act("savePromos", S.pin, out, NPX.file);
+    NPX.busy = false;
+    if (c) { toast(`✓ აიტვირთა ${c} აქცია — ${net}`); NPX.rows = null; NP.all = null; }
     render();
   },
 });
@@ -2863,7 +2923,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 setTimeout(offBadge, 1500);
 
 /* ავტომატური განახლება: ახალი ვერსია რომ აიტვირთება, აპი თავისით გადაიტვირთება */
-const APP_BUILD = "20261124233634";
+const APP_BUILD = "20261125090217";
 let verBusy = false, verNew = false;
 async function verCheck() {
   if (verBusy || !/^https?:/.test(location.protocol) || location.hostname === "app.test") return; verBusy = true;
