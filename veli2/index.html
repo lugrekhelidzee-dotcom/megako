@@ -4811,7 +4811,7 @@ addEventListener("resize", () => { try { mselClamp(); } catch (e) {} });
     const files = e.dataTransfer.files, z = e.target && e.target.closest && e.target.closest(".dropz"); clear();
     if (!files || !files.length) return;
     let inp = z && z.querySelector('input[type="file"]');
-    if (!inp) { const all = inputs().filter(i => [...files].some(f => okType(i, f))); if (all.length === 1) inp = all[0]; else if (!all.length) return toast("ამ გვერდზე ფაილის ატვირთვის ადგილი არ არის"); else return toast("ამ გვერდზე რამდენიმე ატვირთვაა — ფაილი ჩააგდე სასურველ (განათებულ) ღილაკზე"); }
+    if (!inp) { const all = inputs().filter(i => [...files].some(f => okType(i, f))); const pref = all.filter(i => i.dataset.dropdef); if (all.length === 1) inp = all[0]; else if (pref.length === 1) inp = pref[0]; else if (!all.length) return toast("ამ გვერდზე ფაილის ატვირთვის ადგილი არ არის"); else return toast("ამ გვერდზე რამდენიმე ატვირთვაა — ფაილი ჩააგდე სასურველ (განათებულ) ღილაკზე"); }
     give(inp, files);
   });
 })();
@@ -4855,7 +4855,8 @@ const SLH = `<th class="n">შეკვეთა</th><th class="n">შეკვ�
 function slView() {
   slInit();
   const inf = SLV.info || {};
-  let h = `<div class="kcard"><div class="kh"><b>მომარაგების ფაილი</b><label class="btn">${SLV.up ? esc(SLV.up) : "📄 ატვირთვა (გაყიდვები დღეების მიხედვით)"}<input type="file" accept=".xlsx,.xls" multiple data-slx="1" hidden></label></div>
+  let h = `<div class="kcard"><div class="kh"><b>მომარაგების ფაილი</b></div>
+  <label class="drop" style="display:block;border:2px dashed var(--brand,#1f7a5a);border-radius:12px;padding:18px;text-align:center;cursor:pointer;margin:6px 0 10px;font-weight:600">${SLV.up ? esc(SLV.up) : "📄 ჩააგდე ფაილ(ებ)ი აქ — ან დააჭირე და აირჩიე"}<div class="small muted" style="font-weight:400;margin-top:4px">1C „გაყიდვები“ დღეების მიხედვით (.xlsx) · რამდენიმე ფაილი ერთად შეიძლება · ამ გვერდზე ფაილი სადმეც რომ ჩააგდო, აქ აიტვირთება</div><input type="file" accept=".xlsx,.xls" multiple data-slx="1" data-dropdef="1" hidden></label>
   <div class="small muted">${inf.n ? `ბაზაში: <b>${fmtDate(inf.from)} — ${fmtDate(inf.to)}</b> · ${Number(inf.n).toLocaleString("en-US")} ხაზი · ${inf.days} დღე` : "მომარაგების მონაცემი ჯერ არ არის ატვირთული."} ატვირთე 1C-ის „გაყიდვები“ (აგენტი, ნომენკლატურა, მყიდველი, კოდი, ქსელი, დღეების მიხედვით). ერთდროულად რამდენიმე ფაილიც შეიძლება — დუბლიკატები ერთხელ ჩაიწერება.</div>
   <div class="small muted" style="margin-top:4px">წესი: ობიექტის შეკვეთის თარიღიდან <b>იმავე ობიექტის მომდევნო შეკვეთამდე</b> (მაქს. 10 დღე) მომარაგებული ამ შეკვეთას მიეკუთვნება. ≤2 დღე = დროულად.</div></div>`;
   h += `<div class="filters"><span class="morng"><label>-დან</label><input type="date" data-sli="from" value="${esc(SLV.from)}"><label>-მდე</label><input type="date" data-sli="to" value="${esc(SLV.to)}"></span>`;
