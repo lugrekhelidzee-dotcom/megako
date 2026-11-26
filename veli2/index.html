@@ -1373,7 +1373,8 @@ function mOrders(){const im=S.imp;const mo=S.mo;ocLoad();
     return `<select id="mocat" data-ch="mo-cat">${opt("","ყველა კატეგორია",mo.cat||"")}${cl.map(n=>opt(n,n,mo.cat||"")).join("")}</select>${mo.cat?`<select id="mol1" data-ch="mo-l1">${opt("","ყველა ქვეკატეგორია",mo.l1||"")}${ll.map(n=>opt(n,n,mo.l1||"")).join("")}</select>`:""}`})()}
   <div class="sugw"><input type="text" id="moq" data-in="moq" value="${esc(mo.q)}" placeholder="ობიექტი, პროდუქტი, შტრიხკოდი…" autocomplete="off">${moSug(all,mo,agKey)}</div>
   ${mo.net||(mo.ag&&mo.ag.length)||mo.q||mo.sc||mo.st||mo.cat?`<button class="btn ghost" data-a="moclr">ფილტრის მოხსნა</button>`:""}</div>
-  <div class="row"><button class="chip ${mo.view!=="prod"?"on":""}" data-a="moview" data-v="ag">აგენტებით / ობიექტებით</button><button class="chip ${mo.view==="prod"?"on":""}" data-a="moview" data-v="prod">პროდუქტების ჯამი</button></div>`;
+  <div class="row"><button class="chip ${mo.view!=="prod"&&mo.view!=="sl"?"on":""}" data-a="moview" data-v="ag">აგენტებით / ობიექტებით</button><button class="chip ${mo.view==="prod"?"on":""}" data-a="moview" data-v="prod">პროდუქტების ჯამი</button><button class="chip ${mo.view==="sl"?"on":""}" data-a="moview" data-v="sl">📦 სერვის ლეველი</button></div>`;
+  if(mo.view==="sl")return h+slView();
   if(mo.loading||mo.rows===null)return h+`<div class="empty"><b>იტვირთება…</b></div>`;
   const fqw=norm(mo.q).replace(/["'„“”«»(),.\/\-]/g," ").split(/\s+/).filter(Boolean),fq=fqw.length;
   const fqOk=r=>{const t=norm(r.object+" "+r.address+" "+r.product+" "+r.barcode+" "+(r.category||"")+" "+(r.agent||r.raw||"")).replace(/["'„“”«»(),.\/\-]/g," ");return fqw.every(w=>t.includes(w))};
@@ -4814,6 +4815,150 @@ addEventListener("resize", () => { try { mselClamp(); } catch (e) {} });
     give(inp, files);
   });
 })();
+
+/* ---------- სერვის ლეველი: ქსელის შეკვეთა vs მეგაკოს მომარაგება ---------- */
+const SAPI = "https:" + "/" + "/bwldyaqpntcslmrywwau.supabase.co/functions/v1/svc";
+async function scall(op, a) {
+  let r; try { r = await fetch(SAPI, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ args: [S.pin, op, a || {}] }) }); } catch (e) { throw new Error("NetworkError: კავშირი ვერ შედგა"); }
+  const j = await r.json(); if (!j || !j.ok) throw new Error((j && j.error) || "შეცდომა"); return j.r;
+}
+const SLV = { from: "", to: "", data: null, key: "", loading: false, info: null, lvl: "net", net: "", ag: "", q: "", open: null, lines: {}, prod: null, prodKey: "", up: null, incl: false };
+const slPct = (a, b) => b > 0 ? Math.round(a / b * 1000) / 10 : null;
+const slPf = p => p == null ? "—" : p.toFixed(1).replace(/\.0$/, "") + "%";
+const slCls = p => p == null ? "" : p >= 95 ? "pcok" : p < 85 ? "pcbad" : "";
+const slDd = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+function slInit() {
+  const t = D.today || new Date().toISOString().slice(0, 10);
+  if (!SLV.to) SLV.to = t;
+  if (!SLV.from) SLV.from = t.slice(0, 8) + "01";
+  if (!SLV.info && !SLV.infoLoading) { SLV.infoLoading = true; scall("shipInfo").then(r => { SLV.info = r || {}; SLV.infoLoading = false; render(); }).catch(() => { SLV.infoLoading = false; }); }
+  const key = SLV.from + "|" + SLV.to;
+  if (SLV.key !== key && !SLV.loading) {
+    SLV.loading = true; SLV.key = key; SLV.lines = {}; SLV.prod = null;
+    scall("service", { from: SLV.from, to: SLV.to }).then(r => { if (SLV.key !== key) return; SLV.data = (r || []).map(e => ({ net: e[0], obj: e[1], od: e[2], ag: e[3], n: +e[4], q: +e[5], fq: +e[6], nf: +e[7], v: +e[8], fv: +e[9], d1: e[10], eq: +e[11], map: !!e[12], we: e[14] })); SLV.loading = false; render(); })
+      .catch(e => { if (SLV.key !== key) return; SLV.loading = false; SLV.data = []; toast(errMsg(e)); render(); });
+  }
+}
+// შეკვეთა „მიმდინარეა“, თუ მომარაგების მონაცემი ჯერ არ ფარავს შეკვეთიდან 2 დღეს
+function slPend(o) { const st = SLV.info && SLV.info.to; return !st || addDays(o.od, 2) > st; }
+function slAgg(L) {
+  const a = { o: 0, q: 0, fq: 0, v: 0, fv: 0, n: 0, nf: 0, none: 0, lt: 0, ltn: 0, ontime: 0, late: 0, objs: new Set() };
+  L.forEach(o => { a.o++; a.q += o.q; a.fq += o.fq; a.v += o.v; a.fv += o.fv; a.n += o.n; a.nf += o.nf; a.objs.add(o.net + "|" + o.obj);
+    if (!o.d1) a.none++; else { const d = slDd(o.od, o.d1); a.lt += d; a.ltn++; if (d <= 2) a.ontime++; else a.late++; } });
+  return a;
+}
+function slRowCells(a) {
+  const p = slPct(a.fq, a.q), pv = slPct(a.fv, a.v), pl = slPct(a.nf, a.n);
+  return `<td class="n">${a.o}</td><td class="n">${qtyf(a.q)}</td><td class="n">${qtyf(a.fq)}</td><td class="n"><b class="${slCls(p)}">${slPf(p)}</b></td><td class="n"><b class="${slCls(pv)}">${slPf(pv)}</b></td><td class="n">${slPf(pl)}</td><td class="n">${a.ltn ? (a.lt / a.ltn).toFixed(1) : "—"}</td><td class="n">${a.ontime}</td><td class="n ${a.late ? "pcbad" : ""}">${a.late}</td><td class="n ${a.none ? "pcbad" : ""}">${a.none}</td>`;
+}
+const SLH = `<th class="n">შეკვეთა</th><th class="n">შეკვეთილი, ც.</th><th class="n">მიწოდებული, ც.</th><th class="n" title="მიწოდებული / შეკვეთილი (თითო პოზიციაზე შეკვეთილზე მეტი არ ითვლება)">SL ცალით</th><th class="n" title="ღირებულებით (შეკვეთის ფასით)">SL ₾</th><th class="n" title="სრულად მიწოდებული პოზიციები">სრული პოზ.</th><th class="n" title="შეკვეთიდან პირველ მომარაგებამდე, დღე">საშ. დღე</th><th class="n" title="0–2 დღეში">≤2 დღე</th><th class="n" title="3 დღე და მეტი">დაგვიან.</th><th class="n" title="შეკვეთიდან მომდევნო შეკვეთამდე არაფერი მიწოდებულა">არ მიწოდ.</th>`;
+function slView() {
+  slInit();
+  const inf = SLV.info || {};
+  let h = `<div class="kcard"><div class="kh"><b>მომარაგების ფაილი</b><label class="btn">${SLV.up ? esc(SLV.up) : "📄 ატვირთვა (გაყიდვები დღეების მიხედვით)"}<input type="file" accept=".xlsx,.xls" multiple data-slx="1" hidden></label></div>
+  <div class="small muted">${inf.n ? `ბაზაში: <b>${fmtDate(inf.from)} — ${fmtDate(inf.to)}</b> · ${Number(inf.n).toLocaleString("en-US")} ხაზი · ${inf.days} დღე` : "მომარაგების მონაცემი ჯერ არ არის ატვირთული."} ატვირთე 1C-ის „გაყიდვები“ (აგენტი, ნომენკლატურა, მყიდველი, კოდი, ქსელი, დღეების მიხედვით). ერთდროულად რამდენიმე ფაილიც შეიძლება — დუბლიკატები ერთხელ ჩაიწერება.</div>
+  <div class="small muted" style="margin-top:4px">წესი: ობიექტის შეკვეთის თარიღიდან <b>იმავე ობიექტის მომდევნო შეკვეთამდე</b> (მაქს. 10 დღე) მომარაგებული ამ შეკვეთას მიეკუთვნება. ≤2 დღე = დროულად.</div></div>`;
+  h += `<div class="filters"><span class="morng"><label>-დან</label><input type="date" data-sli="from" value="${esc(SLV.from)}"><label>-მდე</label><input type="date" data-sli="to" value="${esc(SLV.to)}"></span>`;
+  if (SLV.loading || !SLV.data) return h + `</div><div class="empty"><b>ითვლება…</b></div>`;
+  const all = SLV.data, nets = [...new Set(all.map(o => o.net))].sort(), ags = [...new Set(all.map(o => o.ag).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ka"));
+  h += `<select data-sli="net">${opt("", "ყველა ქსელი", SLV.net)}${nets.map(n => opt(n, n, SLV.net)).join("")}</select><select data-sli="ag">${opt("", "ყველა აგენტი", SLV.ag)}${ags.map(n => opt(n, n, SLV.ag)).join("")}</select>
+    <input type="text" data-sli="q" value="${esc(SLV.q)}" placeholder="ობიექტი…" autocomplete="off"><label class="small row" style="gap:6px"><input type="checkbox" data-sli="incl" ${SLV.incl ? "checked" : ""}> მიმდინარე შეკვეთებიც</label></div>`;
+  const fq = norm(SLV.q);
+  const base = all.filter(o => (!SLV.net || o.net === SLV.net) && (!SLV.ag || o.ag === SLV.ag) && (!fq || norm(o.obj).includes(fq)));
+  const nomap = base.filter(o => !o.map), pend = base.filter(o => o.map && slPend(o));
+  const L = base.filter(o => o.map && (SLV.incl || !slPend(o)));
+  const t = slAgg(L), p = slPct(t.fq, t.q), pv = slPct(t.fv, t.v);
+  h += `<div class="stats"><div class="stat"><span>SL ცალით</span><b class="${slCls(p)}">${slPf(p)}</b><span class="small muted">${qtyf(t.fq)} / ${qtyf(t.q)} ც.</span></div>
+    <div class="stat"><span>SL ₾ (შეკვეთის ფასით)</span><b class="${slCls(pv)}">${slPf(pv)}</b><span class="small muted">${money(t.fv)} / ${money(t.v)}</span></div>
+    <div class="stat"><span>სრულად მიწოდებული პოზიცია</span><b>${slPf(slPct(t.nf, t.n))}</b><span class="small muted">${t.nf} / ${t.n}</span></div>
+    <div class="stat"><span>შეკვეთა / ობიექტი</span><b>${t.o}</b><span class="small muted">${t.objs.size} ობ. · საშ. ${t.ltn ? (t.lt / t.ltn).toFixed(1) : "—"} დღე</span></div>
+    <div class="stat"><span>≤2 დღე / დაგვიან. / არ მიწოდ.</span><b class="${t.late + t.none ? "pcbad" : "pcok"}">${t.ontime} / ${t.late} / ${t.none}</b></div></div>`;
+  const notes = [];
+  if (pend.length && !SLV.incl) notes.push(`${pend.length} შეკვეთა მიმდინარეა (მომარაგების მონაცემი შეკვეთიდან 2 დღეს ჯერ არ ფარავს) — არ ითვლება`);
+  if (nomap.length) notes.push(`${nomap.length} შეკვეთის ობიექტი მეგაკოს მყიდველს ვერ მიება — არ ითვლება`);
+  if (notes.length) h += `<div class="small muted" style="margin:-4px 0 8px">${notes.map(esc).join(" · ")}</div>`;
+  const tabs = [["net", "ქსელებით"], ["ag", "აგენტებით"], ["obj", "ობიექტებით"], ["ord", "შეკვეთებით"], ["prod", "ნომენკლატურით"], ["nomap", `მიუბმელი (${nomap.length})`]];
+  h += `<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">${tabs.map(([k, l]) => `<button class="chip ${SLV.lvl === k ? "on" : ""}" data-a="sllvl" data-v="${k}">${l}</button>`).join("")}<button class="chip" data-a="slxl">⬇ Excel</button></div>`;
+  if (SLV.lvl === "nomap") return h + `<div class="tbl"><table><thead><tr><th>ქსელი</th><th>ობიექტი</th><th>შეკვეთის თარიღი</th><th>აგენტი</th></tr></thead><tbody>${nomap.map(o => `<tr><td>${esc(o.net)}</td><td>${esc(o.obj)}</td><td>${fmtDate(o.od)}</td><td>${esc(o.ag)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">ყველა ობიექტი მიბმულია</td></tr>`}</tbody></table></div>`;
+  if (SLV.lvl === "prod") return h + slProdView(L);
+  if (SLV.lvl === "ord") {
+    const R = L.slice().sort((a, b) => slPct(a.fq, a.q) - slPct(b.fq, b.q) || b.q - a.q).slice(0, 600);
+    return h + `<div class="tbl"><table><thead><tr><th>ობიექტი</th><th>შეკვეთა</th><th>პირველი მომარაგება</th><th class="n">პოზ.</th><th class="n">შეკვეთილი</th><th class="n">მიწოდებული</th><th class="n">SL</th><th class="n">SL ₾</th><th class="n" title="შეკვეთის გარეთ მიწოდებული, ც.">ზედმეტი</th></tr></thead><tbody>${R.map(o => {
+      const k = o.net + "|" + o.obj + "|" + o.od, pp = slPct(o.fq, o.q), op = SLV.open === k, dd = o.d1 ? slDd(o.od, o.d1) : null;
+      return `<tr class="trow" data-a="slopen" data-v="${esc(k)}"><td>${op ? "▾" : "▸"} ${esc(o.obj)}<div class="small muted">${esc(o.net)} · ${esc(o.ag)}</div></td><td class="nowrap">${fmtDate(o.od)}</td><td class="nowrap">${o.d1 ? `${fmtDate(o.d1)} <span class="${dd > 2 ? "pcbad" : "pcok"} small">(${dd} დ.)</span>` : `<span class="pcbad">არ მიწოდებულა</span>`}</td><td class="n">${o.nf}/${o.n}</td><td class="n">${qtyf(o.q)}</td><td class="n">${qtyf(o.fq)}</td><td class="n"><b class="${slCls(pp)}">${slPf(pp)}</b></td><td class="n">${slPf(slPct(o.fv, o.v))}</td><td class="n">${o.eq ? qtyf(o.eq) : ""}</td></tr>` + (op ? `<tr class="detail"><td colspan="9">${slLines(o)}</td></tr>` : "");
+    }).join("")}</tbody></table></div>${L.length > 600 ? `<div class="small muted">ნაჩვენებია ყველაზე დაბალი SLV-ის 600 შეკვეთა — გაფილტრე ქსელით ან აგენტით.</div>` : ""}`;
+  }
+  const kf = SLV.lvl === "net" ? o => o.net : SLV.lvl === "ag" ? o => o.ag || "—" : o => o.net + "|" + o.obj;
+  const G = {}; L.forEach(o => { (G[kf(o)] = G[kf(o)] || []).push(o); });
+  const rows = Object.keys(G).map(k => ({ k, a: slAgg(G[k]) })).sort((x, y) => SLV.lvl === "obj" ? (slPct(x.a.fq, x.a.q) - slPct(y.a.fq, y.a.q)) : y.a.v - x.a.v);
+  const lbl = k => SLV.lvl === "obj" ? `${esc(k.split("|")[1])}<div class="small muted">${esc(k.split("|")[0])} · ${esc((G[k][0] || {}).ag || "")}</div>` : esc(k);
+  return h + `<div class="tbl"><table><thead><tr><th>${SLV.lvl === "net" ? "ქსელი" : SLV.lvl === "ag" ? "აგენტი" : "ობიექტი"}</th>${SLH}</tr></thead><tbody>${rows.map(r => `<tr>${`<td>${lbl(r.k)}</td>`}${slRowCells(r.a)}</tr>`).join("")}
+    <tr style="font-weight:600;background:var(--soft,#f3f6f4)"><td>სულ</td>${slRowCells(t)}</tr></tbody></table></div>`;
+}
+function slLines(o) {
+  const k = o.net + "|" + o.obj + "|" + o.od, x = SLV.lines[k];
+  if (!x) { SLV.lines[k] = "…"; scall("service", { from: o.od, to: o.od, mode: "lines", net: o.net, obj: o.obj, od: o.od }).then(r => { SLV.lines[k] = r || []; render(); }).catch(e => { SLV.lines[k] = []; toast(errMsg(e)); render(); }); return `<div class="small muted">იტვირთება…</div>`; }
+  if (x === "…") return `<div class="small muted">იტვირთება…</div>`;
+  return `<div class="small muted" style="margin-bottom:4px">მომარაგების ფანჯარა: ${fmtDate(o.od)} — ${fmtDate(addDays(o.we, -1))}</div><table class="kt"><thead><tr><th>ნომენკლატურა (ქსელის / მეგაკოს)</th><th class="n">შეკვეთილი</th><th class="n">მიწოდებული</th><th class="n">SL</th><th>პირველი მომარაგება</th></tr></thead><tbody>${x.map(l => { const pp = l[1] > 0 ? slPct(Math.min(l[2], l[1]), l[1]) : null;
+    return `<tr><td>${esc(l[0] || "")}${l[6] && l[6] !== l[0] ? `<div class="small muted">${esc(l[6])}</div>` : ""}</td><td class="n">${l[1] ? qtyf(l[1]) : `<span class="muted">შეკვეთის გარეთ</span>`}</td><td class="n">${qtyf(l[2])}</td><td class="n"><b class="${slCls(pp)}">${slPf(pp)}</b></td><td class="nowrap">${l[3] ? fmtDate(l[3]) : `<span class="pcbad">—</span>`}</td></tr>`; }).join("")}</tbody></table>`;
+}
+function slProdView(L) {
+  const key = SLV.from + "|" + SLV.to + "|" + SLV.net;
+  if (SLV.prodKey !== key) { SLV.prodKey = key; SLV.prod = null; scall("service", { from: SLV.from, to: SLV.to, mode: "prod", net: SLV.net || null }).then(r => { if (SLV.prodKey !== key) return; SLV.prod = r || []; render(); }).catch(e => { SLV.prod = []; toast(errMsg(e)); render(); }); }
+  if (!SLV.prod) return `<div class="empty"><b>ითვლება…</b></div>`;
+  const G = {}; SLV.prod.forEach(e => { const k = e[2] || e[3]; const g = G[k] = G[k] || { k, q: 0, fq: 0, sq: 0, n: 0, nf: 0, v: 0, fv: 0 }; g.q += +e[4]; g.fq += +e[5]; g.sq += +e[6]; g.n += +e[7]; g.nf += +e[8]; g.v += +e[9]; g.fv += +e[10]; });
+  const R = Object.values(G).sort((a, b) => b.v - a.v);
+  return `<div class="small muted" style="margin-bottom:6px">${SLV.net ? esc(SLV.net) : "ყველა ქსელი"} · ${fmtDate(SLV.from)} — ${fmtDate(SLV.to)} (აგენტის ფილტრი აქ არ მოქმედებს; მიმდინარე შეკვეთებიც შედის)</div><div class="tbl"><table><thead><tr><th>ნომენკლატურა</th><th class="n">ხაზი</th><th class="n">შეკვეთილი</th><th class="n">მიწოდებული</th><th class="n">SL ცალით</th><th class="n">SL ₾</th><th class="n">სრული პოზ.</th></tr></thead><tbody>${R.map(g => { const p = slPct(g.fq, g.q);
+    return `<tr><td>${esc(g.k)}</td><td class="n">${g.n}</td><td class="n">${qtyf(g.q)}</td><td class="n">${qtyf(g.fq)}</td><td class="n"><b class="${slCls(p)}">${slPf(p)}</b></td><td class="n">${slPf(slPct(g.fv, g.v))}</td><td class="n">${slPf(slPct(g.nf, g.n))}</td></tr>`; }).join("")}</tbody></table></div>`;
+}
+async function slUpload(files) {
+  await loadXLSX();
+  const out = new Map(); let fn = [];
+  for (const f of files) {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
+    const a = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: "" });
+    let hr = -1; for (let i = 0; i < Math.min(30, a.length); i++) if (a[i].some(c => norm(c) === "სავაჭრო აგენტი") && a[i].some(c => norm(c).startsWith("დღეების"))) { hr = i; break; }
+    if (hr < 0) throw new Error(`„${f.name}“ — სათაურის ხაზი (სავაჭრო აგენტი … დღეების მიხედვით) ვერ ვიპოვე`);
+    const H = a[hr].map(norm), c = (...ks) => H.findIndex(x => ks.some(k => x.includes(k)));
+    const ci = { ag: c("სავაჭრო აგენტი"), pr: c("ნომენკლატურა"), by: c("მყიდველი"), ad: c("ფაქტიური მისამართი", "მისამართი"), cd: H.findIndex(x => x === "კოდი"), nt: c("ქსელი"), d: c("დღეების"), q: c("რაოდენობა"), m: c("თანხა") };
+    if ([ci.pr, ci.cd, ci.d, ci.q].some(x => x < 0)) throw new Error(`„${f.name}“ — აკლია სვეტი (ნომენკლატურა, კოდი, დღე ან რაოდენობა)`);
+    for (let i = hr + 1; i < a.length; i++) {
+      const r = a[i], code = String(r[ci.cd] || "").trim(), d = cellDate(r[ci.d]); if (!code || !d) continue;
+      const row = [d, code, String(r[ci.pr] || "").trim(), String(ci.ag >= 0 ? r[ci.ag] : "").trim(), String(ci.by >= 0 ? r[ci.by] : "").trim(), String(ci.ad >= 0 ? r[ci.ad] : "").trim(), String(ci.nt >= 0 ? r[ci.nt] : "").trim(), num(r[ci.q]), ci.m >= 0 ? num(r[ci.m]) : 0];
+      out.set(row[0] + "|" + row[1] + "|" + row[2] + "|" + row[3], row);
+    }
+    fn.push(f.name);
+  }
+  const L = [...out.values()]; if (!L.length) throw new Error("ფაილში მომარაგების ხაზები ვერ ვიპოვე");
+  let done = 0;
+  for (let i = 0; i < L.length; i += 4000) { SLV.up = `იტვირთება… ${Math.round(i / L.length * 100)}%`; render(); done += await scall("shipIngest", { rows: L.slice(i, i + 4000) }); }
+  return { n: done, files: fn };
+}
+document.addEventListener("change", async e => {
+  const el = e.target; if (!el || !el.dataset) return;
+  if (el.dataset.slx) {
+    const files = [...(el.files || [])]; el.value = ""; if (!files.length) return;
+    SLV.up = "იკითხება…"; render();
+    try { const r = await slUpload(files); toast(`✓ ატვირთულია ${r.n.toLocaleString("en-US")} ხაზი`); SLV.info = null; SLV.key = ""; SLV.prodKey = ""; }
+    catch (er) { toast(errMsg(er)); }
+    SLV.up = null; render(); return;
+  }
+  if (el.dataset.sli) { const k = el.dataset.sli; SLV[k] = el.type === "checkbox" ? el.checked : el.value; if (k === "from" || k === "to") { if (SLV.from > SLV.to) SLV.from = SLV.to; } SLV.open = null; render(); }
+});
+document.addEventListener("input", e => { const el = e.target; if (el && el.dataset && el.dataset.sli === "q") { SLV.q = el.value; clearTimeout(SLV.qt); SLV.qt = setTimeout(render, 300); } });
+Object.assign(A, {
+  sllvl(v) { SLV.lvl = v; SLV.open = null; render(); },
+  slopen(v) { SLV.open = SLV.open === v ? null : v; render(); },
+  async slxl() {
+    try {
+      await loadXLSX(); const L = (SLV.data || []).filter(o => (!SLV.net || o.net === SLV.net) && (!SLV.ag || o.ag === SLV.ag));
+      const aoa = [["ქსელი", "ობიექტი", "აგენტი", "შეკვეთის თარიღი", "პირველი მომარაგება", "დღე", "პოზიცია", "სრულად მიწოდ. პოზ.", "შეკვეთილი, ც.", "მიწოდებული (შეკვეთის ფარგლებში), ც.", "SL ცალით %", "შეკვეთა ₾", "მიწოდებული ₾", "SL ₾ %", "შეკვეთის გარეთ, ც.", "სტატუსი"]];
+      L.forEach(o => aoa.push([o.net, o.obj, o.ag, o.od, o.d1 || "", o.d1 ? slDd(o.od, o.d1) : "", o.n, o.nf, o.q, o.fq, slPct(o.fq, o.q), Math.round(o.v * 100) / 100, Math.round(o.fv * 100) / 100, slPct(o.fv, o.v), o.eq, !o.map ? "მიუბმელი" : slPend(o) ? "მიმდინარე" : !o.d1 ? "არ მიწოდებულა" : slDd(o.od, o.d1) > 2 ? "დაგვიანებით" : "დროულად"]));
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "სერვის ლეველი");
+      XLSX.writeFile(wb, `სერვის ლეველი ${SLV.from}_${SLV.to}.xlsx`);
+    } catch (er) { toast(errMsg(er)); }
+  },
+});
 
 </script>
 </body>
