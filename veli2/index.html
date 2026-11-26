@@ -4829,23 +4829,22 @@ const slCls = p => p == null ? "" : p >= 95 ? "pcok" : p < 85 ? "pcbad" : "";
 function slInit() {
   const t = D.today || new Date().toISOString().slice(0, 10);
   if (!SLV.to) SLV.to = t;
-  if (!SLV.from) SLV.from = t.slice(0, 8) + "01";
+  if (!SLV.from) { SLV.from = t.slice(0, 8) + "01"; if (SLV.from < "2026-11-12") SLV.from = "2026-11-12"; } // 12.11-მდე ქსელების შეკვეთები ბაზაში სრულად არ არის
   if (!SLV.info && !SLV.infoLoading) { SLV.infoLoading = true; scall("shipInfo").then(r => { SLV.info = r || {}; SLV.infoLoading = false; render(); }).catch(() => { SLV.infoLoading = false; }); }
   const key = SLV.from + "|" + SLV.to;
   if (SLV.key !== key && !SLV.loading) {
     SLV.loading = true; SLV.key = key;
-    scall("service2", { from: SLV.from, to: SLV.to }).then(r => {
+    scall("service3", { from: SLV.from, to: SLV.to }).then(r => {
       if (SLV.key !== key) return; const P = (r && r.prods) || {};
-      SLV.data = { smax: r && r.smax, nomap: (r && r.nomap) || [], rows: ((r && r.rows) || []).map(e => ({ net: e[0], obj: e[1], ag: e[2] || "—", pid: e[3], pn: P[e[3]] || "?", q: +e[5], s: +e[9], m: +e[4], v: +e[7], map: !!e[10] })) };
+      SLV.data = { smax: r && r.smax, nomap: (r && r.nomap) || [], rows: ((r && r.rows) || []).map(e => ({ net: e[0], obj: e[1], ag: e[2] || "—", pid: e[3], pn: P[e[3]] || "?", q: +e[5], fq: +e[6], s: +e[9], v: +e[7], fv: +e[8] })),
+        ords: ((r && r.ords) || []).map(e => ({ net: e[0], obj: e[1], ag: e[2] || "—", od: e[3], d1: e[4], map: !!e[5] })) };
       SLV.loading = false; render();
     }).catch(e => { if (SLV.key !== key) return; SLV.loading = false; SLV.data = { rows: [], nomap: [] }; toast(errMsg(e)); render(); });
   }
 }
 function slCat(pn) { const d = (typeof OCAT !== "undefined" && OCAT.d) || null; if (!d) return ["", ""]; const m = d.n[String(pn || "").trim().toLowerCase()]; return m ? [m[0] || "სხვა", m[1] || ""] : ["სხვა", ""]; }
 // შესრულება = ქსელი × ნომენკლატურის დონეზე min(მიწოდებული, შეკვეთილი) — ჯგუფის შიგნით
-function slSum(L) { const a = { q: 0, s: 0, m: 0, fq: 0, v: 0, fv: 0 }, G = {};
-  L.forEach(r => { a.q += r.q; a.s += r.s; a.m += r.m; a.v += r.v; const k = r.net + "|" + r.pid, g = G[k] = G[k] || { q: 0, s: 0, v: 0 }; g.q += r.q; g.s += r.s; g.v += r.v; });
-  Object.values(G).forEach(g => { const f = Math.min(g.s, g.q); a.fq += f; a.fv += g.q > 0 ? g.v * f / g.q : 0; }); return a; }
+function slSum(L) { const a = { q: 0, s: 0, fq: 0, v: 0, fv: 0 }; L.forEach(r => { a.q += r.q; a.s += r.s; a.fq += r.fq; a.v += r.v; a.fv += r.fv; }); return a; }
 function slCells(a, bold) { const p = slPct(a.fq, a.q), pv = slPct(a.fv, a.v), w = bold ? "b" : "span";
   return `<td class="n">${qtyf(a.q)}</td><td class="n">${qtyf(a.s)}</td><td class="n ${a.q - a.fq > 0 ? "muted" : ""}">${qtyf(a.q - a.fq)}</td><td class="n"><${w} class="${slCls(p)}">${slPf(p)}</${w}></td><td class="n"><${w} class="${slCls(pv)}">${slPf(pv)}</${w}></td>`; }
 const SLH2 = `<th class="n">შეკვეთილი, ც.</th><th class="n">მიწოდებული, ც.</th><th class="n" title="შეკვეთილს გამოკლებული მიწოდებული (თითო ნომენკლატურაზე, მეტი მიწოდება არ ითვლება)">დანაკლისი, ც.</th><th class="n" title="min(მიწოდებული, შეკვეთილი) / შეკვეთილი">SL ცალით</th><th class="n" title="შეკვეთის ფასით">SL ₾</th>`;
@@ -4865,8 +4864,11 @@ function slView() {
   const t = slSum(L), p = slPct(t.fq, t.q), pv = slPct(t.fv, t.v);
   h += `<div class="stats"><div class="stat"><span>SL ცალით</span><b class="${slCls(p)}">${slPf(p)}</b><span class="small muted">შეკვ. ${qtyf(t.q)} · მიწოდ. ${qtyf(t.s)} ც.</span></div>
     <div class="stat"><span>SL ₾</span><b class="${slCls(pv)}">${slPf(pv)}</b><span class="small muted">${money(t.fv)} / ${money(t.v)}</span></div>
-    <div class="stat"><span>დანაკლისი</span><b>${qtyf(t.q - t.fq)} ც.</b><span class="small muted">${money(t.v - t.fv)} ₾</span></div></div>`;
-  h += `<div class="small muted" style="margin:-4px 0 8px">პერიოდში შეკვეთილი და იმავე პერიოდში მიწოდებული (1C-ის ფაილიდან). SL = მიწოდებული / შეკვეთილი თითო ნომენკლატურაზე (შეკვეთილზე მეტი არ ითვლება). ობიექტებით ხედში „∅“ = მიწოდება ობიექტზე, რომლის შეკვეთა ბაზაში არ არის.${SLV.data.smax ? ` მომარაგება ბაზაშია ${fmtDate(SLV.data.smax)}-მდე.` : ""}</div>`;
+    <div class="stat"><span>დანაკლისი</span><b>${qtyf(t.q - t.fq)} ც.</b><span class="small muted">${money(t.v - t.fv)} ₾</span></div>
+    ${(() => { const O = (SLV.data.ords || []).filter(o => o.map && (!SLV.net || o.net === SLV.net) && (!SLV.ag || o.ag === SLV.ag) && (!fq || norm(o.obj).includes(fq)));
+      let ok = 0, late = 0, none = 0; O.forEach(o => { if (!o.d1) none++; else if ((Date.parse(o.d1) - Date.parse(o.od)) / 864e5 <= 2) ok++; else late++; });
+      return `<div class="stat"><span>შეკვეთა: ≤2 დღეში / გვიან / არ მიწოდ.</span><b>${ok} / <span class="${late ? "pcbad" : ""}">${late}</span> / <span class="${none ? "pcbad" : ""}">${none}</span></b><span class="small muted">სულ ${O.length} შეკვეთა</span></div>`; })()}</div>`;
+  h += `<div class="small muted" style="margin:-4px 0 8px">ობიექტის შეკვეთას ეთვლება მისი თარიღიდან იმავე ობიექტის მომდევნო შეკვეთამდე მიწოდებული (მაქს. 10 დღე). SL — თითო შეკვეთის პოზიციაზე, შეკვეთილზე მეტი არ ითვლება; „მიწოდებული“ სვეტში ჩანს ფანჯარაში მოსული სრული რაოდენობა. ბოლო 2 დღის შეკვეთები ჯერ არ ითვლება${SLV.data.smax ? ` (მომარაგება ბაზაშია ${fmtDate(SLV.data.smax)}-მდე)` : ""}. შეკვეთები ბაზაში სრულად 12.11-დანაა.</div>`;
   const tabs = [["prod", "ნომენკლატურით"], ["net", "ქსელებით"], ["ag", "აგენტებით"], ["obj", "ობიექტებით"]];
   h += `<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">${tabs.map(([k, l]) => `<button class="chip ${SLV.lvl === k ? "on" : ""}" data-a="sllvl" data-v="${k}">${l}</button>`).join("")}<button class="chip" data-a="slxl">⬇ Excel</button></div>`;
   const grp = (R, kf) => { const G = {}; R.forEach(r => { const k = kf(r); (G[k] = G[k] || []).push(r); }); return G; };
@@ -4930,8 +4932,8 @@ Object.assign(A, {
   async slxl() {
     try {
       await loadXLSX(); const L = ((SLV.data && SLV.data.rows) || []).filter(r => (!SLV.net || r.net === SLV.net) && (!SLV.ag || r.ag === SLV.ag) && (!SLV.cat || (r.cat || "სხვა") === SLV.cat));
-      const aoa = [["ქსელი", "ობიექტი", "აგენტი", "კატეგორია", "ნომენკლატურა", "შეკვეთილი, ც.", "მიწოდებული, ც.", "SL ცალით %", "შეკვეთა ₾", "მიწოდებული ₾ (1C)"]];
-      L.forEach(r => aoa.push([r.net, r.obj, r.ag, r.cat || "", r.pn, r.q, r.s, r.q > 0 ? slPct(Math.min(r.s, r.q), r.q) : "", r.v, r.m]));
+      const aoa = [["ქსელი", "ობიექტი", "აგენტი", "კატეგორია", "ნომენკლატურა", "შეკვეთილი, ც.", "მიწოდებული, ც.", "შესრულებული (შეკვეთის ფარგლებში), ც.", "SL ცალით %", "შეკვეთა ₾", "SL ₾ %"]];
+      L.forEach(r => aoa.push([r.net, r.obj, r.ag, r.cat || "", r.pn, r.q, r.s, r.fq, slPct(r.fq, r.q), r.v, slPct(r.fv, r.v)]));
       const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "სერვის ლეველი");
       XLSX.writeFile(wb, `სერვის ლეველი ${SLV.from}_${SLV.to}.xlsx`);
     } catch (er) { toast(errMsg(er)); }
