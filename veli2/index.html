@@ -4828,9 +4828,12 @@ const slPf = p => p == null ? "—" : p.toFixed(1).replace(/\.0$/, "") + "%";
 const slCls = p => p == null ? "" : p >= 95 ? "pcok" : p < 85 ? "pcbad" : "";
 function slInit() {
   const t = D.today || new Date().toISOString().slice(0, 10);
-  if (!SLV.to) SLV.to = t;
+  if (!SLV.info) { if (!SLV.infoLoading) { SLV.infoLoading = true; scall("shipInfo").then(r => { SLV.info = r || {}; SLV.infoLoading = false; render(); }).catch(() => { SLV.info = {}; SLV.infoLoading = false; render(); }); } return; }
+  // შეკვეთები ითვლება მომარაგების ბოლო დღეს გამოკლებული 2 დღე — მერე შეკვეთილი ჯერ არ წასულა
+  const lastOd = SLV.info.to ? addDays(SLV.info.to, -2) : t;
+  if (!SLV.to || SLV.toAuto) { SLV.to = lastOd; SLV.toAuto = true; }
   if (!SLV.from) { SLV.from = t.slice(0, 8) + "01"; if (SLV.from < "2026-11-12") SLV.from = "2026-11-12"; } // 12.11-მდე ქსელების შეკვეთები ბაზაში სრულად არ არის
-  if (!SLV.info && !SLV.infoLoading) { SLV.infoLoading = true; scall("shipInfo").then(r => { SLV.info = r || {}; SLV.infoLoading = false; render(); }).catch(() => { SLV.infoLoading = false; }); }
+  if (SLV.from > SLV.to) SLV.from = SLV.to.slice(0, 8) + "01";
   const key = SLV.from + "|" + SLV.to;
   if (SLV.key !== key && !SLV.loading) {
     SLV.loading = true; SLV.key = key;
@@ -4852,7 +4855,7 @@ function slView() {
   slInit(); if (typeof ocLoad === "function") ocLoad();
   const inf = SLV.info || {};
   let h = `<label class="drop" style="display:block;border:2px dashed var(--brand,#1f7a5a);border-radius:12px;padding:12px;text-align:center;cursor:pointer;margin:4px 0 10px;font-weight:600">${SLV.up ? esc(SLV.up) : "📄 მომარაგების ფაილი — ჩააგდე აქ ან დააჭირე"}<div class="small muted" style="font-weight:400;margin-top:3px">${inf.n ? `ბაზაში: ${fmtDate(inf.from)} — ${fmtDate(inf.to)}` : "მომარაგება ჯერ არ არის ატვირთული"} · 1C „გაყიდვები“ დღეების მიხედვით</div><input type="file" accept=".xlsx,.xls" multiple data-slx="1" data-dropdef="1" hidden></label>`;
-  h += `<div class="filters"><span class="morng"><label>-დან</label><input type="date" data-sli="from" value="${esc(SLV.from)}"><label>-მდე</label><input type="date" data-sli="to" value="${esc(SLV.to)}"></span>`;
+  h += `<div class="filters"><span class="morng"><label>შეკვეთის თარიღი</label><input type="date" data-sli="from" value="${esc(SLV.from)}"><label>—</label><input type="date" data-sli="to" value="${esc(SLV.to)}"></span>`;
   if (SLV.loading || !SLV.data) return h + `</div><div class="empty"><b>ითვლება…</b></div>`;
   const all = SLV.data.rows;
   all.forEach(r => { if (!r.cat) { const c = slCat(r.pn); if (c[0]) { r.cat = c[0]; r.l1 = c[1]; } } });
@@ -4868,7 +4871,7 @@ function slView() {
     ${(() => { const O = (SLV.data.ords || []).filter(o => o.map && (!SLV.net || o.net === SLV.net) && (!SLV.ag || o.ag === SLV.ag) && (!fq || norm(o.obj).includes(fq)));
       let ok = 0, late = 0, none = 0; O.forEach(o => { if (!o.d1) none++; else if ((Date.parse(o.d1) - Date.parse(o.od)) / 864e5 <= 2) ok++; else late++; });
       return `<div class="stat"><span>შეკვეთა: ≤2 დღეში / გვიან / არ მიწოდ.</span><b>${ok} / <span class="${late ? "pcbad" : ""}">${late}</span> / <span class="${none ? "pcbad" : ""}">${none}</span></b><span class="small muted">სულ ${O.length} შეკვეთა</span></div>`; })()}</div>`;
-  h += `<div class="small muted" style="margin:-4px 0 8px">ობიექტის შეკვეთას ეთვლება მისი თარიღიდან იმავე ობიექტის მომდევნო შეკვეთამდე მიწოდებული (მაქს. 10 დღე). SL — თითო შეკვეთის პოზიციაზე, შეკვეთილზე მეტი არ ითვლება; „მიწოდებული“ სვეტში ჩანს ფანჯარაში მოსული სრული რაოდენობა. ბოლო 2 დღის შეკვეთები ჯერ არ ითვლება${SLV.data.smax ? ` (მომარაგება ბაზაშია ${fmtDate(SLV.data.smax)}-მდე)` : ""}. შეკვეთები ბაზაში სრულად 12.11-დანაა.</div>`;
+  h += `<div class="small muted" style="margin:-4px 0 8px">ობიექტის შეკვეთას ეთვლება მისი თარიღიდან იმავე ობიექტის მომდევნო შეკვეთამდე მიწოდებული (მაქს. 10 დღე). SL — თითო შეკვეთის პოზიციაზე, შეკვეთილზე მეტი არ ითვლება; „მიწოდებული“ სვეტში ჩანს ფანჯარაში მოსული სრული რაოდენობა. ${SLV.data.smax ? `მომარაგება ბაზაშია ${fmtDate(SLV.data.smax)}-მდე, ამიტომ შეკვეთები ითვლება ${fmtDate(addDays(SLV.data.smax, -2))}-მდე (მერე შეკვეთილი ჯერ არ წასულა)` : ""}. შეკვეთები ბაზაში სრულად 12.11-დანაა.</div>`;
   const tabs = [["prod", "ნომენკლატურით"], ["net", "ქსელებით"], ["ag", "აგენტებით"], ["obj", "ობიექტებით"]];
   h += `<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">${tabs.map(([k, l]) => `<button class="chip ${SLV.lvl === k ? "on" : ""}" data-a="sllvl" data-v="${k}">${l}</button>`).join("")}<button class="chip" data-a="slxl">⬇ Excel</button></div>`;
   const grp = (R, kf) => { const G = {}; R.forEach(r => { const k = kf(r); (G[k] = G[k] || []).push(r); }); return G; };
@@ -4919,11 +4922,11 @@ document.addEventListener("change", async e => {
   if (el.dataset.slx) {
     const files = [...(el.files || [])]; el.value = ""; if (!files.length) return;
     SLV.up = "იკითხება…"; render();
-    try { const r = await slUpload(files); SLV.up = null; SLV.info = null; SLV.key = ""; render(); toast(`✓ ატვირთულია ${r.n.toLocaleString("en-US")} ხაზი`); }
+    try { const r = await slUpload(files); SLV.up = null; SLV.info = null; SLV.key = ""; if (SLV.toAuto) SLV.to = ""; render(); toast(`✓ ატვირთულია ${r.n.toLocaleString("en-US")} ხაზი`); }
     catch (er) { SLV.up = null; render(); toast(errMsg(er)); }
     return;
   }
-  if (el.dataset.sli) { const k = el.dataset.sli; SLV[k] = el.value; if ((k === "from" || k === "to") && SLV.from > SLV.to) SLV.from = SLV.to; render(); }
+  if (el.dataset.sli) { const k = el.dataset.sli; SLV[k] = el.value; if (k === "to") SLV.toAuto = false; if ((k === "from" || k === "to") && SLV.from > SLV.to) SLV.from = SLV.to; render(); }
 });
 document.addEventListener("input", e => { const el = e.target; if (el && el.dataset && el.dataset.sli === "q") { SLV.q = el.value; clearTimeout(SLV.qt); SLV.qt = setTimeout(render, 300); } });
 Object.assign(A, {
